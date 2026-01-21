@@ -235,7 +235,7 @@ protected = client.tokenize(data)
   <Tab title="cURL">
     ```bash
     curl -X POST https://api.blindfold.dev/api/public/v1/encrypt \
-      -H "Authorization: Bearer your-api-key" \
+      -H "X-API-Key: your-api-key" \
       -H "Content-Type: application/json" \
       -d '{
         "text": "API Key: sk-1234567890abcdef, Secret: my_secret",

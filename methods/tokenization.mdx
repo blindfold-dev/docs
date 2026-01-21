@@ -217,7 +217,7 @@ Tokens follow a predictable format: `<ENTITY_TYPE_N>`
     ```bash
     # Tokenize
     curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
-      -H "Authorization: Bearer your-api-key" \
+      -H "X-API-Key: your-api-key" \
       -H "Content-Type: application/json" \
       -d '{
         "text": "My email is john@example.com and phone is +1-555-1234"
@@ -234,7 +234,7 @@ Tokens follow a predictable format: `<ENTITY_TYPE_N>`
 
     # Detokenize
     curl -X POST https://api.blindfold.dev/api/public/v1/detokenize \
-      -H "Authorization: Bearer your-api-key" \
+      -H "X-API-Key: your-api-key" \
       -H "Content-Type: application/json" \
       -d '{
         "text": "Contact <EMAIL_ADDRESS_1>",

@@ -233,7 +233,7 @@ hash2 = client.hash("john@example.com")  # ID_a3f8b9... (same)
   <Tab title="cURL">
     ```bash
     curl -X POST https://api.blindfold.dev/api/public/v1/synthesize \
-      -H "Authorization: Bearer your-api-key" \
+      -H "X-API-Key: your-api-key" \
       -H "Content-Type: application/json" \
       -d '{
         "text": "John Doe lives in New York and works at Microsoft",
