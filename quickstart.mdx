@@ -151,6 +151,121 @@ Choose your preferred integration method and make your first request.
   </Tab>
 </Tabs>
 
+## Step 4: Restore Original Data (Detokenize)
+
+After sending tokenized data to AI or processing, you can restore the original values using the mapping.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    client = Blindfold(api_key="your-api-key-here")
+
+    # Step 1: Tokenize sensitive data
+    protected = client.tokenize(
+        "Contact John Doe at john@example.com or call +1-555-1234"
+    )
+
+    print(protected.text)
+    # "Contact <PERSON_1> at <EMAIL_ADDRESS_1> or call <PHONE_NUMBER_1>"
+
+    # Step 2: Send to AI (protected data only)
+    ai_response = f"We received your request: {protected.text}"
+    # AI never sees real PII!
+
+    # Step 3: Restore original data
+    original = client.detokenize(
+        text=ai_response,
+        mapping=protected.mapping
+    )
+
+    print(original)
+    # "We received your request: Contact John Doe at john@example.com or call +1-555-1234"
+    ```
+
+    <Tip>
+      Store the mapping securely. Without it, you cannot restore original values.
+    </Tip>
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key-here' });
+
+    // Step 1: Tokenize sensitive data
+    const protected = await client.tokenize(
+      "Contact John Doe at john@example.com or call +1-555-1234"
+    );
+
+    console.log(protected.text);
+    // "Contact <PERSON_1> at <EMAIL_ADDRESS_1> or call <PHONE_NUMBER_1>"
+
+    // Step 2: Send to AI (protected data only)
+    const aiResponse = `We received your request: ${protected.text}`;
+    // AI never sees real PII!
+
+    // Step 3: Restore original data
+    const original = await client.detokenize(
+      aiResponse,
+      protected.mapping
+    );
+
+    console.log(original);
+    // "We received your request: Contact John Doe at john@example.com or call +1-555-1234"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    # Step 1: Tokenize
+    curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+      -H "X-API-Key: your-api-key-here" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "Contact John Doe at john@example.com or call +1-555-1234"
+      }'
+
+    # Save the mapping from response
+    # {
+    #   "text": "Contact <PERSON_1> at <EMAIL_ADDRESS_1> or call <PHONE_NUMBER_1>",
+    #   "mapping": {
+    #     "<PERSON_1>": "John Doe",
+    #     "<EMAIL_ADDRESS_1>": "john@example.com",
+    #     "<PHONE_NUMBER_1>": "+1-555-1234"
+    #   }
+    # }
+
+    # Step 2: Send tokenized text to AI (not shown)
+
+    # Step 3: Detokenize to restore original
+    curl -X POST https://api.blindfold.dev/api/public/v1/detokenize \
+      -H "X-API-Key: your-api-key-here" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "We received: Contact <PERSON_1> at <EMAIL_ADDRESS_1>",
+        "mapping": {
+          "<PERSON_1>": "John Doe",
+          "<EMAIL_ADDRESS_1>": "john@example.com"
+        }
+      }'
+
+    # Response:
+    # {
+    #   "text": "We received: Contact John Doe at john@example.com"
+    # }
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  **Complete Privacy Flow**: Tokenize → Process with AI → Detokenize
+
+  This ensures AI providers never see real PII, meeting GDPR and EU AI Act requirements.
+</Info>
+
 ## Response Format
 
 All responses include:
@@ -184,6 +299,6 @@ Now that you have made your first API call, explore more features:
 
 ## Need Help?
 
-<Card title="Support" icon="headset" href="mailto:hello@blindfold.dev" horizontal>
-  Contact us at hello@blindfold.dev for support and questions.
+<Card title="Support" icon="headset" href="mailto:support@blindfold.dev" horizontal>
+  Contact us at support@blindfold.dev for support and questions.
 </Card>

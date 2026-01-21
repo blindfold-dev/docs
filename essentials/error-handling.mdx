@@ -1,0 +1,455 @@
+---
+title: "Error Handling"
+description: "HTTP status codes and error responses"
+---
+
+Blindfold uses standard HTTP status codes to indicate the success or failure of API requests. All error responses include detailed information to help you debug issues.
+
+## HTTP Status Codes
+
+### Success Codes
+
+<AccordionGroup>
+  <Accordion title="200 OK" icon="check">
+    **Meaning**: Request succeeded.
+
+    **When**: All API methods (tokenize, detokenize, mask, redact, hash, synthesize, encrypt) return 200 on success.
+
+    **Example Response**:
+    ```json
+    {
+      "text": "Protected text with <EMAIL_ADDRESS_1>",
+      "mapping": {
+        "<EMAIL_ADDRESS_1>": "john@example.com"
+      },
+      "entities_count": 1,
+      "detected_entities": [...]
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Client Error Codes
+
+<AccordionGroup>
+  <Accordion title="400 Bad Request" icon="circle-exclamation">
+    **Meaning**: Malformed request or missing parameters.
+
+    **Common Causes**:
+    - Missing required `text` parameter
+    - Invalid JSON format
+    - Invalid entity type specified
+    - Invalid configuration parameters
+    - Empty text field
+
+    **Example Response**:
+    ```json
+    {
+      "detail": "Field required",
+      "error": "validation_error",
+      "status_code": 400
+    }
+    ```
+
+    **How to Fix**:
+    - Verify all required fields are present
+    - Check JSON formatting
+    - Ensure `text` field is not empty
+    - Validate entity type names
+  </Accordion>
+
+  <Accordion title="401 Unauthorized" icon="lock">
+    **Meaning**: Missing or invalid API key.
+
+    **Common Causes**:
+    - Missing `X-API-Key` header
+    - Invalid API key
+    - Expired API key
+    - API key deleted or revoked
+
+    **Example Response**:
+    ```json
+    {
+      "detail": "Invalid or missing API key",
+      "error": "unauthorized",
+      "status_code": 401
+    }
+    ```
+
+    **How to Fix**:
+    - Verify you're sending the `X-API-Key` header
+    - Check your API key is correct
+    - Generate a new API key in the dashboard
+    - Ensure API key hasn't been revoked
+
+    ```bash
+    # Correct header format
+    curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+      -H "X-API-Key: your-api-key-here" \
+      -H "Content-Type: application/json" \
+      -d '{"text": "Sample text"}'
+    ```
+  </Accordion>
+
+  <Accordion title="429 Too Many Requests" icon="gauge-high">
+    **Meaning**: Rate limit exceeded.
+
+    **Common Causes**:
+    - Too many requests in short time period
+    - Exceeded plan quota
+    - Burst limit reached
+
+    **Example Response**:
+    ```json
+    {
+      "detail": "Rate limit exceeded. Try again in 60 seconds.",
+      "error": "rate_limit_exceeded",
+      "status_code": 429,
+      "retry_after": 60
+    }
+    ```
+
+    **Rate Limits** (default):
+    - **Free Plan**: 100 requests/minute
+    - **Pro Plan**: 1,000 requests/minute
+    - **Enterprise**: Custom limits
+
+    **How to Fix**:
+    - Implement exponential backoff
+    - Use the `retry_after` value from response
+    - Batch multiple texts into single requests
+    - Upgrade your plan for higher limits
+  </Accordion>
+</AccordionGroup>
+
+### Server Error Codes
+
+<AccordionGroup>
+  <Accordion title="500 Internal Server Error" icon="server">
+    **Meaning**: Unexpected server-side error.
+
+    **Common Causes**:
+    - Temporary service disruption
+    - Internal processing error
+    - Database connectivity issue
+
+    **Example Response**:
+    ```json
+    {
+      "detail": "An internal error occurred",
+      "error": "internal_server_error",
+      "status_code": 500,
+      "request_id": "req_abc123xyz"
+    }
+    ```
+
+    **How to Fix**:
+    - Retry the request after a few seconds
+    - If error persists, contact support with `request_id`
+    - Check [status page](https://status.blindfold.dev) for service status
+
+    <Warning>
+      If you receive 500 errors frequently, contact support@blindfold.dev with the `request_id`.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="503 Service Unavailable" icon="triangle-exclamation">
+    **Meaning**: Service temporarily unavailable.
+
+    **Common Causes**:
+    - Scheduled maintenance
+    - System overload
+    - Deployment in progress
+
+    **Example Response**:
+    ```json
+    {
+      "detail": "Service temporarily unavailable",
+      "error": "service_unavailable",
+      "status_code": 503,
+      "retry_after": 120
+    }
+    ```
+
+    **How to Fix**:
+    - Wait and retry after the `retry_after` period
+    - Check maintenance schedule
+    - Implement automatic retry logic
+  </Accordion>
+</AccordionGroup>
+
+## Error Response Format
+
+All error responses follow a consistent format:
+
+```json
+{
+  "detail": "Human-readable error message",
+  "error": "error_code_identifier",
+  "status_code": 400,
+  "request_id": "req_unique_identifier"  // Optional, for debugging
+}
+```
+
+### Fields Explained
+
+- **detail**: User-friendly error message explaining what went wrong
+- **error**: Machine-readable error code for programmatic handling
+- **status_code**: HTTP status code
+- **request_id**: Unique identifier for the request (present in 5xx errors)
+
+## Handling Errors in Your Code
+
+### Python SDK
+
+The Python SDK raises specific exceptions for different error types:
+
+```python
+from blindfold import Blindfold
+from blindfold.exceptions import (
+    BlindfoldAPIError,
+    AuthenticationError,
+    RateLimitError,
+    ValidationError
+)
+
+client = Blindfold(api_key="your-api-key")
+
+try:
+    result = client.tokenize("Sample text with PII")
+except AuthenticationError as e:
+    print(f"Invalid API key: {e}")
+    # Re-authenticate or use different key
+except RateLimitError as e:
+    print(f"Rate limit exceeded. Retry after {e.retry_after} seconds")
+    # Implement backoff strategy
+except ValidationError as e:
+    print(f"Invalid input: {e}")
+    # Fix request parameters
+except BlindfoldAPIError as e:
+    print(f"API error: {e.status_code} - {e.message}")
+    # Handle general API errors
+```
+
+### JavaScript SDK
+
+The JavaScript SDK throws typed errors:
+
+```javascript
+import { Blindfold } from '@blindfold/sdk';
+import {
+  AuthenticationError,
+  RateLimitError,
+  ValidationError,
+  BlindfoldError
+} from '@blindfold/sdk/errors';
+
+const client = new Blindfold({ apiKey: 'your-api-key' });
+
+try {
+  const result = await client.tokenize("Sample text with PII");
+} catch (error) {
+  if (error instanceof AuthenticationError) {
+    console.error('Invalid API key:', error.message);
+    // Handle authentication error
+  } else if (error instanceof RateLimitError) {
+    console.error(`Rate limit exceeded. Retry after ${error.retryAfter}s`);
+    // Implement exponential backoff
+  } else if (error instanceof ValidationError) {
+    console.error('Invalid input:', error.message);
+    // Fix request parameters
+  } else if (error instanceof BlindfoldError) {
+    console.error('API error:', error.statusCode, error.message);
+    // Handle general errors
+  }
+}
+```
+
+### REST API (cURL)
+
+When using the REST API directly, check the HTTP status code:
+
+```bash
+# Using curl with error handling
+response=$(curl -s -w "\n%{http_code}" -X POST \
+  https://api.blindfold.dev/api/public/v1/tokenize \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Sample text"}')
+
+http_code=$(echo "$response" | tail -n1)
+body=$(echo "$response" | head -n-1)
+
+if [ "$http_code" -eq 200 ]; then
+  echo "Success: $body"
+elif [ "$http_code" -eq 401 ]; then
+  echo "Authentication failed"
+elif [ "$http_code" -eq 429 ]; then
+  echo "Rate limit exceeded"
+else
+  echo "Error $http_code: $body"
+fi
+```
+
+## Retry Logic
+
+### Exponential Backoff
+
+Implement exponential backoff for transient errors (429, 500, 503):
+
+```python
+import time
+from blindfold import Blindfold
+from blindfold.exceptions import RateLimitError, BlindfoldAPIError
+
+def tokenize_with_retry(text, max_retries=3):
+    client = Blindfold(api_key="your-api-key")
+
+    for attempt in range(max_retries):
+        try:
+            return client.tokenize(text)
+        except RateLimitError as e:
+            if attempt < max_retries - 1:
+                wait_time = e.retry_after or (2 ** attempt)  # Exponential backoff
+                print(f"Rate limited. Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                raise
+        except BlindfoldAPIError as e:
+            if e.status_code >= 500 and attempt < max_retries - 1:
+                wait_time = 2 ** attempt
+                print(f"Server error. Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                raise
+```
+
+### JavaScript Retry Example
+
+```javascript
+async function tokenizeWithRetry(text, maxRetries = 3) {
+  const client = new Blindfold({ apiKey: 'your-api-key' });
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await client.tokenize(text);
+    } catch (error) {
+      if (error instanceof RateLimitError && attempt < maxRetries - 1) {
+        const waitTime = error.retryAfter || Math.pow(2, attempt) * 1000;
+        console.log(`Rate limited. Retrying in ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      } else if (error.statusCode >= 500 && attempt < maxRetries - 1) {
+        const waitTime = Math.pow(2, attempt) * 1000;
+        console.log(`Server error. Retrying in ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Log Request IDs" icon="file-lines">
+    Always log the `request_id` for 5xx errors. This helps support diagnose issues quickly.
+  </Card>
+
+  <Card title="Implement Retry Logic" icon="rotate">
+    Use exponential backoff for rate limits and server errors. Respect the `retry_after` value.
+  </Card>
+
+  <Card title="Validate Before Sending" icon="check-double">
+    Validate input locally before making API calls to avoid 400 errors.
+  </Card>
+
+  <Card title="Monitor Error Rates" icon="chart-line">
+    Track error rates in your application. Sudden increases may indicate issues.
+  </Card>
+</CardGroup>
+
+## Common Error Scenarios
+
+### Scenario 1: Authentication Failure
+
+```python
+# ❌ Wrong
+client = Blindfold(api_key="")  # Empty API key
+result = client.tokenize("text")  # 401 Unauthorized
+
+# ✅ Correct
+client = Blindfold(api_key="your-valid-api-key")
+result = client.tokenize("text")
+```
+
+### Scenario 2: Missing Required Field
+
+```bash
+# ❌ Wrong
+curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{}'  # Missing "text" field -> 400 Bad Request
+
+# ✅ Correct
+curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Sample text"}'
+```
+
+### Scenario 3: Rate Limit Exceeded
+
+```python
+# ❌ Wrong - No rate limit handling
+for i in range(1000):
+    client.tokenize(f"Text {i}")  # Will hit 429 after ~100 requests
+
+# ✅ Correct - With retry logic
+for i in range(1000):
+    try:
+        result = tokenize_with_retry(f"Text {i}")
+    except RateLimitError:
+        print("Rate limit exceeded even after retries")
+        break
+```
+
+## Getting Help
+
+If you encounter persistent errors:
+
+<Card title="Contact Support" icon="headset" href="mailto:support@blindfold.dev" horizontal>
+  Email support@blindfold.dev with the `request_id` from error responses.
+</Card>
+
+<CardGroup cols={2}>
+  <Card title="Status Page" icon="signal" href="https://status.blindfold.dev">
+    Check current service status and maintenance schedules
+  </Card>
+
+  <Card title="API Reference" icon="book" href="/api-reference/rest-api">
+    Full API documentation with request/response examples
+  </Card>
+</CardGroup>
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Rate Limits" icon="gauge" href="/compliance">
+    Learn about rate limits and quotas
+  </Card>
+
+  <Card title="Python SDK" icon="python" href="/sdks/python-sdk">
+    Python SDK error handling
+  </Card>
+
+  <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
+    JavaScript SDK error handling
+  </Card>
+
+  <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
+    Complete API reference
+  </Card>
+</CardGroup>
