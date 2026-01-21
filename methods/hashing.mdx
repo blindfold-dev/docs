@@ -1,0 +1,628 @@
+---
+title: "Hashing"
+description: "Create consistent identifiers without exposing original data"
+---
+
+## What is Hashing?
+
+Hashing is a privacy protection method that replaces sensitive data with deterministic hash values. The same input always produces the same hash, making it perfect for analytics and user tracking without storing actual PII.
+
+**Example:**
+```
+Input:  "User: john@example.com purchased item"
+Output: "User: ID_a3f8b9c2d4e5f6g7 purchased item"
+
+# Same input always produces same hash
+Input:  "User: john@example.com logged in"
+Output: "User: ID_a3f8b9c2d4e5f6g7 logged in"
+```
+
+## How It Works
+
+1. **Detection**: Blindfold identifies sensitive entities in your text
+2. **Hashing**: Each entity is hashed using SHA-256, MD5, or other algorithms
+3. **Prefix Addition**: Optional prefix (e.g., `ID_`, `USER_`) is added
+4. **Deterministic**: Same value always produces the same hash
+
+## When to Use Hashing
+
+Hashing is ideal when you need to:
+
+### 1. Analytics Without PII
+
+Track user behavior without storing email addresses or names.
+
+```python
+# Hash user email for analytics
+event = "User john@example.com completed checkout"
+hashed = client.hash(event, hash_type="sha256", hash_prefix="user_")
+
+analytics.track(hashed.text)
+# "User user_a3f8b9c2d4e5f6g7 completed checkout"
+```
+
+**Why this matters:**
+- Same user has same ID across all events
+- No PII in analytics database
+- Can still calculate user-level metrics
+
+### 2. User Tracking Across Systems
+
+Create consistent user identifiers without sharing PII between systems.
+
+```python
+# System A: Hash user email
+user_id = client.hash("john@example.com", hash_prefix="uid_").text
+
+# System B: Same hash for same user
+# Both systems can track the same user without sharing the email
+```
+
+**Use cases:**
+- Multi-platform tracking
+- Cross-service analytics
+- Data sharing between departments
+
+### 3. Data Matching Without Exposure
+
+Match records across databases without exposing the matching key.
+
+```python
+# Database A
+customer_id = client.hash("john@example.com", hash_prefix="cust_").text
+
+# Database B (can match using hash, not email)
+if hash_exists_in_db(customer_id):
+    # Match found, no PII shared
+    link_records(customer_id)
+```
+
+### 4. Compliance-Friendly User IDs
+
+Create pseudonymous identifiers that comply with GDPR and privacy regulations.
+
+```python
+# Generate pseudonymous ID
+result = client.hash(
+    f"User: {user_email}",
+    hash_type="sha256",
+    hash_prefix="user_"
+)
+
+# Use as consistent user ID
+user_id = result.text.replace("User: ", "")
+```
+
+## When NOT to Use Hashing
+
+Hashing is **not suitable** when:
+
+### 1. You Need to Restore Original Data
+
+Hashing is one-way. Use **Tokenization** instead.
+
+```python
+# Bad - can't restore
+hashed = client.hash("john@example.com")
+# No way to get "john@example.com" back
+
+# Good - use tokenization
+protected = client.tokenize("john@example.com")
+original = client.detokenize(protected.text, protected.mapping)
+```
+
+### 2. Users Need to Recognize Data
+
+If users need to identify their own information, use **Masking**.
+
+```python
+# Bad - user can't recognize this
+hashed = client.hash("Card: 4532-7562-9102-3456")
+# Output: "Card: ID_x7f9a3c4b2e8d5f1"
+
+# Good - show last 4 digits
+masked = client.mask("Card: 4532-7562-9102-3456")
+# Output: "Card: ***************3456"
+```
+
+### 3. Hashes Could Be Rainbow-Attacked
+
+Don't hash easily guessable values without salt.
+
+```python
+# Risky - simple values can be brute-forced
+client.hash("1")  # Easy to reverse
+client.hash("yes")  # Easy to reverse
+
+# Better - add salt or use different method
+client.tokenize("1")  # Random tokens
+```
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Deterministic" icon="equals">
+    Same input always produces same hash
+  </Card>
+  <Card title="One-Way" icon="arrow-right">
+    Cannot reverse hash to get original
+  </Card>
+  <Card title="Multiple Algorithms" icon="gears">
+    MD5, SHA-1, SHA-256, SHA-384, SHA-512
+  </Card>
+  <Card title="Customizable" icon="sliders">
+    Choose prefix and hash length
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    client = Blindfold(api_key="your-api-key")
+
+    # Basic hashing
+    result = client.hash(
+        text="User john@example.com purchased item",
+        hash_type="sha256",
+        hash_prefix="user_",
+        hash_length=16
+    )
+
+    print(result.text)
+    # "User user_a3f8b9c2d4e5f6g7 purchased item"
+
+    # Same input, same output
+    result2 = client.hash(
+        text="User john@example.com purchased item",
+        hash_type="sha256",
+        hash_prefix="user_",
+        hash_length=16
+    )
+
+    print(result.text == result2.text)
+    # True - deterministic!
+
+    # Different algorithm
+    md5_result = client.hash(
+        text="john@example.com",
+        hash_type="md5",
+        hash_prefix="id_"
+    )
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key' });
+
+    // Basic hashing
+    const result = await client.hash(
+      "User john@example.com purchased item",
+      {
+        hash_type: 'sha256',
+        hash_prefix: 'user_',
+        hash_length: 16
+      }
+    );
+
+    console.log(result.text);
+    // "User user_a3f8b9c2d4e5f6g7 purchased item"
+
+    // Same input, same output
+    const result2 = await client.hash(
+      "User john@example.com purchased item",
+      {
+        hash_type: 'sha256',
+        hash_prefix: 'user_',
+        hash_length: 16
+      }
+    );
+
+    console.log(result.text === result2.text);
+    // true - deterministic!
+
+    // Different algorithm
+    const md5Result = await client.hash(
+      "john@example.com",
+      {
+        hash_type: 'md5',
+        hash_prefix: 'id_'
+      }
+    );
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST https://api.blindfold.dev/api/public/v1/hash \
+      -H "Authorization: Bearer your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "User john@example.com purchased item",
+        "hash_type": "sha256",
+        "hash_prefix": "user_",
+        "hash_length": 16
+      }'
+
+    # Response
+    {
+      "text": "User user_a3f8b9c2d4e5f6g7 purchased item",
+      "entities_count": 1,
+      "detected_entities": [
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "text": "john@example.com",
+          "score": 1.0
+        }
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Configuration Options
+
+### Hash Algorithm
+
+Choose from multiple hashing algorithms:
+
+```python
+# SHA-256 (recommended, secure)
+client.hash(text, hash_type="sha256")
+
+# MD5 (fast, less secure)
+client.hash(text, hash_type="md5")
+
+# SHA-512 (most secure, longer)
+client.hash(text, hash_type="sha512")
+
+# SHA-1, SHA-224, SHA-384 also available
+```
+
+**Algorithm Comparison:**
+
+| Algorithm | Length | Speed | Security | Use Case |
+|-----------|--------|-------|----------|----------|
+| MD5 | 32 chars | Fastest | Low | Non-sensitive IDs |
+| SHA-1 | 40 chars | Fast | Medium | General use |
+| SHA-256 | 64 chars | Medium | High | **Recommended** |
+| SHA-384 | 96 chars | Slow | Very High | High security |
+| SHA-512 | 128 chars | Slowest | Highest | Maximum security |
+
+### Hash Prefix
+
+Add a prefix to identify hash type:
+
+```python
+# User IDs
+client.hash(email, hash_prefix="user_")  # user_a3f8b9...
+
+# Customer IDs
+client.hash(email, hash_prefix="cust_")  # cust_a3f8b9...
+
+# Session IDs
+client.hash(session, hash_prefix="sess_")  # sess_a3f8b9...
+
+# No prefix
+client.hash(email, hash_prefix="")  # a3f8b9...
+```
+
+### Hash Length
+
+Control how much of the hash to use:
+
+```python
+# Short (16 characters) - compact
+client.hash(text, hash_length=16)  # a3f8b9c2d4e5f6g7
+
+# Medium (32 characters) - balanced
+client.hash(text, hash_length=32)  # a3f8b9c2d4e5f6g7h8i9j0k1l2m3n4o5
+
+# Full hash (default)
+client.hash(text, hash_length=64)  # full SHA-256 hash
+```
+
+<Note>
+Shorter hashes are easier to work with but have higher collision risk. Use at least 16 characters for production.
+</Note>
+
+### Filter Entity Types
+
+Only hash specific types of data:
+
+```python
+result = client.hash(
+    "User john@example.com from IP 192.168.1.1",
+    entities=["EMAIL_ADDRESS"],  # Only hash emails
+    hash_prefix="user_"
+)
+# Output: "User user_a3f8b9c2... from IP 192.168.1.1"
+```
+
+## Common Patterns
+
+### User Tracking in Analytics
+
+```python
+def track_user_event(user_email: str, event: str, properties: dict):
+    """Track user event with hashed identifier"""
+
+    # Create consistent user ID
+    hashed = client.hash(
+        f"User: {user_email}",
+        hash_type="sha256",
+        hash_prefix="user_",
+        hash_length=16
+    )
+
+    user_id = hashed.text.replace("User: ", "")
+
+    # Track event
+    analytics.track(user_id, event, properties)
+
+# Usage
+track_user_event("john@example.com", "page_view", {"page": "/dashboard"})
+track_user_event("john@example.com", "button_click", {"button": "submit"})
+# Both events have same user_id: user_a3f8b9c2d4e5f6g7
+```
+
+### Cross-Platform User Matching
+
+```python
+def create_universal_id(email: str) -> str:
+    """Create universal user ID that works across platforms"""
+
+    result = client.hash(
+        email,
+        hash_type="sha256",
+        hash_prefix="uid_",
+        hash_length=20
+    )
+
+    return result.text
+
+# Platform A
+uid_a = create_universal_id("john@example.com")
+platform_a_db.save(uid_a, user_data)
+
+# Platform B
+uid_b = create_universal_id("john@example.com")
+# uid_a == uid_b, can match records without sharing email
+```
+
+### Pseudonymous Database IDs
+
+```python
+def generate_pseudonymous_id(pii_value: str) -> str:
+    """Generate GDPR-compliant pseudonymous identifier"""
+
+    result = client.hash(
+        pii_value,
+        hash_type="sha256",
+        hash_prefix="pseudo_",
+        hash_length=24
+    )
+
+    return result.text
+
+# Store with pseudonymous ID
+user_id = generate_pseudonymous_id("john@example.com")
+database.insert({
+    'id': user_id,
+    'preferences': {...},
+    'activity': [...]
+})
+```
+
+## Common Use Cases
+
+<AccordionGroup>
+  <Accordion title="Web Analytics" icon="chart-line">
+    Track users without storing email or names:
+
+    ```python
+    # Hash user identifier for analytics
+    def log_page_view(user_email, page_url):
+        hashed = client.hash(
+            user_email,
+            hash_type="sha256",
+            hash_prefix="user_"
+        )
+
+        analytics.page_view({
+            'user_id': hashed.text,
+            'page': page_url,
+            'timestamp': datetime.now()
+        })
+
+    log_page_view("john@example.com", "/products")
+    # Analytics: user_id="user_a3f8b9...", page="/products"
+    ```
+
+    **Benefits**: User-level analytics without PII, GDPR compliant
+  </Accordion>
+
+  <Accordion title="A/B Testing" icon="flask">
+    Assign users to test groups consistently:
+
+    ```python
+    def get_ab_test_variant(user_email):
+        """Consistently assign user to A/B test variant"""
+        hashed = client.hash(user_email, hash_length=8)
+
+        # Use hash to determine variant
+        hash_int = int(hashed.text[:8], 16)
+        variant = 'A' if hash_int % 2 == 0 else 'B'
+
+        return variant
+
+    # Same user always gets same variant
+    variant1 = get_ab_test_variant("john@example.com")  # 'A'
+    variant2 = get_ab_test_variant("john@example.com")  # 'A' (same)
+    ```
+
+    **Benefits**: Consistent variants, no PII stored, reproducible
+  </Accordion>
+
+  <Accordion title="Data Warehouse Integration" icon="database">
+    Share data between teams without exposing PII:
+
+    ```python
+    # Marketing hashes customer emails
+    def prepare_for_warehouse(customer_data):
+        for customer in customer_data:
+            customer['id'] = client.hash(
+                customer['email'],
+                hash_prefix="c_"
+            ).text
+            del customer['email']  # Remove PII
+
+        return customer_data
+
+    # Analytics team can match using hash
+    # No access to actual emails
+    ```
+
+    **Benefits**: Data sharing without PII exposure, compliance maintained
+  </Accordion>
+
+  <Accordion title="Duplicate Detection" icon="copy">
+    Find duplicates without comparing raw data:
+
+    ```python
+    def check_duplicate(email):
+        """Check if user already exists using hash"""
+        hashed = client.hash(email, hash_prefix="user_")
+
+        if database.exists(hashed.text):
+            return True, "User already registered"
+        else:
+            database.insert(hashed.text)
+            return False, "New user"
+
+    # Check without storing actual email
+    is_duplicate, message = check_duplicate("john@example.com")
+    ```
+
+    **Benefits**: Duplicate detection without storing PII
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+### 1. Use Strong Algorithms
+
+Prefer SHA-256 or higher for security:
+
+```python
+# Good - strong algorithm
+client.hash(text, hash_type="sha256")
+
+# Acceptable for non-sensitive data
+client.hash(text, hash_type="md5")
+
+# Not recommended for sensitive data
+# (MD5 has known vulnerabilities)
+```
+
+### 2. Use Consistent Parameters
+
+Keep hash parameters consistent across your application:
+
+```python
+# Good - create a helper function
+def create_user_hash(identifier):
+    return client.hash(
+        identifier,
+        hash_type="sha256",
+        hash_prefix="user_",
+        hash_length=20
+    ).text
+
+# Use everywhere
+user_id = create_user_hash(email)
+```
+
+### 3. Document Your Hashing Strategy
+
+Clearly document what gets hashed and how:
+
+```python
+# hash_config.py
+HASH_CONFIG = {
+    'users': {
+        'algorithm': 'sha256',
+        'prefix': 'user_',
+        'length': 20
+    },
+    'sessions': {
+        'algorithm': 'sha256',
+        'prefix': 'sess_',
+        'length': 16
+    }
+}
+```
+
+### 4. Consider Rainbow Table Attacks
+
+For highly sensitive data, add application-level salt:
+
+```python
+# Add salt before hashing
+APP_SALT = os.environ['APP_HASH_SALT']
+
+def secure_hash(value):
+    salted = f"{value}{APP_SALT}"
+    return client.hash(salted, hash_type="sha256")
+```
+
+## Security Considerations
+
+<Warning>
+Important hashing considerations:
+- **One-way only**: Cannot reverse hash to original
+- **Rainbow tables**: Simple values can be brute-forced
+- **Collision risk**: Shorter hashes have higher collision risk
+- **Algorithm choice**: Use SHA-256 or higher for sensitive data
+- **Not encryption**: Hashing is not the same as encryption
+</Warning>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Python SDK" icon="python" href="/sdks/python-sdk">
+    Full Python SDK documentation
+  </Card>
+  <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
+    Complete JavaScript guide
+  </Card>
+  <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
+    HTTP API reference for /hash
+  </Card>
+  <Card title="Examples" icon="code" href="/examples">
+    Practical integration examples
+  </Card>
+</CardGroup>
+
+## Compare with Other Methods
+
+<CardGroup cols={2}>
+  <Card title="Tokenization" icon="shuffle" href="/methods/tokenization">
+    Reversible replacement (restore later)
+  </Card>
+  <Card title="Masking" icon="eye-slash" href="/methods/masking">
+    Partial visibility for users
+  </Card>
+  <Card title="Redaction" icon="eraser" href="/methods/redaction">
+    Complete permanent removal
+  </Card>
+  <Card title="Encryption" icon="lock" href="/methods/encryption">
+    Reversible with encryption key
+  </Card>
+</CardGroup>

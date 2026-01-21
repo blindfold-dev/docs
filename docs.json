@@ -21,6 +21,17 @@
             ]
           },
           {
+            "group": "Privacy Methods",
+            "pages": [
+              "methods/tokenization",
+              "methods/masking",
+              "methods/redaction",
+              "methods/hashing",
+              "methods/synthesis",
+              "methods/encryption"
+            ]
+          },
+          {
             "group": "SDKs",
             "pages": [
               "sdks/python-sdk",
