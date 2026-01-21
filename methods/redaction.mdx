@@ -1,0 +1,581 @@
+---
+title: "Redaction"
+description: "Permanently remove sensitive data from text"
+---
+
+## What is Redaction?
+
+Redaction is a permanent privacy protection method that completely removes sensitive data from text by replacing it with generic placeholders (e.g., `<PERSON>`, `<EMAIL_ADDRESS>`). Unlike tokenization, redacted data cannot be restored.
+
+**Example:**
+```
+Input:  "My name is John Doe and SSN is 123-45-6789"
+Output: "My name is <PERSON> and SSN is <US_SSN>"
+```
+
+## How It Works
+
+1. **Detection**: Blindfold identifies sensitive entities in your text
+2. **Complete Replacement**: Each entity is replaced with a generic type label
+3. **Permanent Removal**: Original values are discarded and cannot be recovered
+4. **Type Preservation**: The type of data (email, SSN, etc.) is indicated but not the value
+
+## When to Use Redaction
+
+Redaction is ideal when you need to:
+
+### 1. Permanent Data Anonymization
+
+Remove PII from logs, support tickets, or archives that will be stored long-term.
+
+```python
+# Redact support ticket before archiving
+ticket = "Customer John Doe (john@example.com) reported an issue with order #12345"
+redacted = client.redact(ticket)
+
+# Store safely
+archive_db.save(redacted.text)
+# "Customer <PERSON> (<EMAIL_ADDRESS>) reported an issue with order #12345"
+```
+
+**Why this matters:**
+- Compliant long-term storage
+- No risk of data breach exposing PII
+- Meets "right to be forgotten" requirements
+
+### 2. Third-Party Analytics
+
+Share data with analytics platforms without exposing sensitive information.
+
+```python
+# Redact before sending to analytics
+event = "User john.doe@company.com completed purchase"
+redacted = client.redact(event)
+
+# Send to analytics
+analytics.track(redacted.text)
+# "User <EMAIL_ADDRESS> completed purchase"
+```
+
+**Use cases:**
+- Google Analytics
+- Mixpanel, Amplitude
+- Custom analytics platforms
+- Business intelligence tools
+
+### 3. Public Disclosure
+
+Prepare data for public release or legal disclosure.
+
+```python
+# Redact before publishing
+document = """
+Incident involving John Smith (SSN: 123-45-6789)
+Contact: john@example.com, Phone: +1-555-1234
+"""
+
+redacted = client.redact(document)
+# All PII removed, safe for public release
+```
+
+### 4. Log Sanitization
+
+Remove sensitive data from application logs.
+
+```python
+# Redact logs before storage
+log_entry = "User login: john@example.com from IP 192.168.1.100"
+redacted = client.redact(log_entry)
+
+logger.info(redacted.text)
+# "User login: <EMAIL_ADDRESS> from IP <IP_ADDRESS>"
+```
+
+### 5. GDPR Compliance
+
+Implement "right to be forgotten" by permanently removing user data.
+
+```python
+# User requests data deletion
+user_records = fetch_user_records(user_id)
+
+# Redact instead of delete (keeps records for analysis)
+for record in user_records:
+    redacted = client.redact(record)
+    update_record(record.id, redacted.text)
+```
+
+## When NOT to Use Redaction
+
+Redaction is **not suitable** when:
+
+### 1. You Need to Restore Data Later
+
+Redaction is permanent. Use **Tokenization** instead.
+
+```python
+# Bad - can't restore
+redacted = client.redact("Contact john@example.com")
+# No way to get "john@example.com" back
+
+# Good - use tokenization
+protected = client.tokenize("Contact john@example.com")
+original = client.detokenize(protected.text, protected.mapping)
+```
+
+### 2. Users Need to Identify the Data
+
+If users need to recognize their own data, use **Masking**.
+
+```python
+# Bad - user can't identify their card
+redacted = client.redact("Card: 4532-7562-9102-3456")
+# Output: "Card: <CREDIT_CARD>"
+
+# Good - show last 4 digits
+masked = client.mask("Card: 4532-7562-9102-3456")
+# Output: "Card: ***************3456"
+```
+
+### 3. You Need Consistent Identifiers
+
+For analytics with user tracking, use **Hashing**.
+
+```python
+# Bad - can't track same user across events
+redacted1 = client.redact("User: john@example.com")  # <EMAIL_ADDRESS>
+redacted2 = client.redact("User: john@example.com")  # <EMAIL_ADDRESS>
+# Both look the same, can't distinguish users
+
+# Good - same user gets same hash
+hash1 = client.hash("User: john@example.com")  # ID_a3f8b9...
+hash2 = client.hash("User: john@example.com")  # ID_a3f8b9... (same)
+```
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Permanent Removal" icon="trash">
+    Data cannot be recovered once redacted
+  </Card>
+  <Card title="Type-Aware" icon="tags">
+    Shows entity type (EMAIL, SSN) not value
+  </Card>
+  <Card title="GDPR Compliant" icon="scale-balanced">
+    Meets data minimization requirements
+  </Card>
+  <Card title="50+ Entity Types" icon="list">
+    Redacts all detected PII types
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    client = Blindfold(api_key="your-api-key")
+
+    # Basic redaction
+    result = client.redact(
+        "Contact John Doe at john@example.com or call +1-555-1234"
+    )
+
+    print(result.text)
+    # "Contact <PERSON> at <EMAIL_ADDRESS> or call <PHONE_NUMBER>"
+
+    print(f"Redacted {result.entities_count} entities")
+    # "Redacted 3 entities"
+
+    # Check what was redacted
+    for entity in result.detected_entities:
+        print(f"- {entity.entity_type}: {entity.text}")
+    # - PERSON: John Doe
+    # - EMAIL_ADDRESS: john@example.com
+    # - PHONE_NUMBER: +1-555-1234
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key' });
+
+    // Basic redaction
+    const result = await client.redact(
+      "Contact John Doe at john@example.com or call +1-555-1234"
+    );
+
+    console.log(result.text);
+    // "Contact <PERSON> at <EMAIL_ADDRESS> or call <PHONE_NUMBER>"
+
+    console.log(`Redacted ${result.entities_count} entities`);
+    // "Redacted 3 entities"
+
+    // Check what was redacted
+    result.detected_entities.forEach(entity => {
+      console.log(`- ${entity.entity_type}: ${entity.text}`);
+    });
+    // - PERSON: John Doe
+    // - EMAIL_ADDRESS: john@example.com
+    // - PHONE_NUMBER: +1-555-1234
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST https://api.blindfold.dev/api/public/v1/redact \
+      -H "Authorization: Bearer your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "Contact John Doe at john@example.com or call +1-555-1234"
+      }'
+
+    # Response
+    {
+      "text": "Contact <PERSON> at <EMAIL_ADDRESS> or call <PHONE_NUMBER>",
+      "entities_count": 3,
+      "detected_entities": [
+        {
+          "entity_type": "PERSON",
+          "text": "John Doe",
+          "start": 8,
+          "end": 16,
+          "score": 0.95
+        },
+        {
+          "entity_type": "EMAIL_ADDRESS",
+          "text": "john@example.com",
+          "start": 20,
+          "end": 36,
+          "score": 1.0
+        },
+        {
+          "entity_type": "PHONE_NUMBER",
+          "text": "+1-555-1234",
+          "start": 48,
+          "end": 59,
+          "score": 0.85
+        }
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Configuration Options
+
+### Filter Specific Entity Types
+
+Only redact specific types of sensitive data:
+
+```python
+# Only redact SSNs and credit cards
+result = client.redact(
+    "John Doe (SSN: 123-45-6789) paid with card 4532-7562-9102-3456",
+    entities=["US_SSN", "CREDIT_CARD"]
+)
+# Output: "John Doe (SSN: <US_SSN>) paid with card <CREDIT_CARD>"
+# Name is NOT redacted
+```
+
+### Adjust Confidence Threshold
+
+Control detection sensitivity:
+
+```python
+# Only high-confidence redactions
+result = client.redact(
+    text="Maybe email: test@test",
+    score_threshold=0.8  # High confidence only
+)
+# Low-confidence detections are skipped
+```
+
+## Common Patterns
+
+### Log Sanitization
+
+Automatically redact logs before storage:
+
+```python
+def safe_log(message: str, level: str = "info"):
+    """Log messages with automatic PII redaction"""
+    redacted = client.redact(message)
+
+    if level == "info":
+        logger.info(redacted.text)
+    elif level == "error":
+        logger.error(redacted.text)
+
+# Usage
+safe_log("User john@example.com failed to login from 192.168.1.100")
+# Logs: "User <EMAIL_ADDRESS> failed to login from <IP_ADDRESS>"
+```
+
+### Support Ticket Archival
+
+Redact tickets before long-term storage:
+
+```python
+def archive_ticket(ticket_data: dict):
+    """Archive support ticket with redacted PII"""
+
+    # Redact sensitive fields
+    ticket_data['description'] = client.redact(
+        ticket_data['description']
+    ).text
+
+    ticket_data['customer_notes'] = client.redact(
+        ticket_data['customer_notes']
+    ).text
+
+    # Store safely
+    archive_db.insert(ticket_data)
+
+# Usage
+ticket = {
+    'id': 12345,
+    'description': 'Customer John Doe (john@example.com) needs help',
+    'customer_notes': 'My SSN is 123-45-6789'
+}
+
+archive_ticket(ticket)
+# All PII removed before storage
+```
+
+### Analytics Event Tracking
+
+Send events to analytics without PII:
+
+```python
+def track_event(event_name: str, properties: dict):
+    """Track analytics event with redacted PII"""
+
+    # Redact all string properties
+    safe_properties = {}
+    for key, value in properties.items():
+        if isinstance(value, str):
+            safe_properties[key] = client.redact(value).text
+        else:
+            safe_properties[key] = value
+
+    # Send to analytics
+    analytics.track(event_name, safe_properties)
+
+# Usage
+track_event("user_signup", {
+    "email": "john@example.com",
+    "source": "landing_page",
+    "age": 25
+})
+# Analytics receives: email="<EMAIL_ADDRESS>", source="landing_page", age=25
+```
+
+## Common Use Cases
+
+<AccordionGroup>
+  <Accordion title="Compliance Logs" icon="file-shield">
+    Maintain audit logs without storing PII:
+
+    ```python
+    # Log user actions without PII
+    def log_user_action(user_email, action):
+        redacted = client.redact(f"{user_email} performed {action}")
+        compliance_log.write(redacted.text)
+
+    log_user_action("john@example.com", "password_reset")
+    # Logs: "<EMAIL_ADDRESS> performed password_reset"
+    ```
+
+    **Benefits**: Audit trail maintained, no PII storage, GDPR compliant
+  </Accordion>
+
+  <Accordion title="Customer Feedback" icon="comment">
+    Collect feedback without storing customer PII:
+
+    ```python
+    # Redact customer feedback before storage
+    def save_feedback(feedback_text, rating):
+        redacted = client.redact(feedback_text)
+
+        feedback_db.insert({
+            'text': redacted.text,
+            'rating': rating,
+            'date': datetime.now()
+        })
+
+    save_feedback(
+        "Great service! Contact me at john@example.com",
+        5
+    )
+    # Stores: "Great service! Contact me at <EMAIL_ADDRESS>"
+    ```
+
+    **Benefits**: Feedback preserved, PII removed, safe for analysis
+  </Accordion>
+
+  <Accordion title="Error Reports" icon="bug">
+    Share error reports without exposing user data:
+
+    ```python
+    # Redact error reports before sending to bug tracker
+    def report_error(error_message, user_context):
+        redacted_message = client.redact(error_message)
+        redacted_context = client.redact(user_context)
+
+        bug_tracker.create_issue({
+            'title': redacted_message.text,
+            'description': redacted_context.text
+        })
+
+    report_error(
+        "Database error for user john@example.com",
+        "User IP: 192.168.1.100, Session: abc123"
+    )
+    # Bug report contains no real PII
+    ```
+
+    **Benefits**: Developers get context, user privacy protected
+  </Accordion>
+
+  <Accordion title="Public Dataset Creation" icon="database">
+    Create shareable datasets from sensitive data:
+
+    ```python
+    # Prepare dataset for public release
+    def create_public_dataset(private_records):
+        public_records = []
+
+        for record in private_records:
+            redacted = client.redact(record)
+            public_records.append(redacted.text)
+
+        return public_records
+
+    # Original: ["John Doe, john@example.com, +1-555-1234", ...]
+    # Public: ["<PERSON>, <EMAIL_ADDRESS>, <PHONE_NUMBER>", ...]
+    ```
+
+    **Benefits**: Data useful for research, no privacy violations
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+### 1. Redact Early
+
+Redact sensitive data as early as possible in your pipeline:
+
+```python
+# Good - redact immediately
+user_input = request.get_json()['message']
+safe_message = client.redact(user_input).text
+process_message(safe_message)
+
+# Bad - redact late (PII may leak in logs, errors, etc.)
+user_input = request.get_json()['message']
+process_message(user_input)  # PII exposed during processing
+redacted = client.redact(result)
+```
+
+### 2. Log What Was Redacted
+
+Keep audit trails of redaction events:
+
+```python
+result = client.redact(text)
+
+# Log redaction metadata
+audit_log.info({
+    'action': 'redaction',
+    'entities_redacted': result.entities_count,
+    'entity_types': [e.entity_type for e in result.detected_entities],
+    'timestamp': datetime.now()
+})
+```
+
+### 3. Review Redaction Policies
+
+Regularly review what gets redacted:
+
+```python
+# Monitor redaction statistics
+def analyze_redactions(timeframe):
+    stats = {
+        'total_redactions': 0,
+        'entity_types': {}
+    }
+
+    for event in get_redaction_events(timeframe):
+        stats['total_redactions'] += event.entities_count
+        for entity in event.detected_entities:
+            stats['entity_types'][entity.entity_type] = \
+                stats['entity_types'].get(entity.entity_type, 0) + 1
+
+    return stats
+```
+
+### 4. Combine with Other Methods
+
+Use redaction alongside other privacy methods:
+
+```python
+# Redact for long-term storage, tokenize for processing
+def process_and_store(data):
+    # Tokenize for processing
+    protected = client.tokenize(data)
+    result = process_with_ai(protected.text)
+
+    # Redact for storage
+    redacted = client.redact(result)
+    database.save(redacted.text)
+```
+
+## Security Considerations
+
+<Warning>
+Important redaction considerations:
+- **Permanent**: Redacted data cannot be recovered
+- **Type visibility**: Entity types are visible (e.g., `<EMAIL_ADDRESS>`)
+- **Context preservation**: Surrounding text remains unchanged
+- **Not encryption**: Redaction is removal, not encryption
+- **Review before production**: Test redaction on sample data first
+</Warning>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Python SDK" icon="python" href="/sdks/python-sdk">
+    Full Python SDK documentation
+  </Card>
+  <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
+    Complete JavaScript guide
+  </Card>
+  <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
+    HTTP API reference for /redact
+  </Card>
+  <Card title="Examples" icon="code" href="/examples">
+    Practical integration examples
+  </Card>
+</CardGroup>
+
+## Compare with Other Methods
+
+<CardGroup cols={2}>
+  <Card title="Tokenization" icon="shuffle" href="/methods/tokenization">
+    Reversible replacement (restore later)
+  </Card>
+  <Card title="Masking" icon="eye-slash" href="/methods/masking">
+    Partial visibility for users
+  </Card>
+  <Card title="Hashing" icon="hashtag" href="/methods/hashing">
+    Consistent identifiers for tracking
+  </Card>
+  <Card title="Synthesis" icon="wand-magic-sparkles" href="/methods/synthesis">
+    Replace with fake realistic data
+  </Card>
+</CardGroup>

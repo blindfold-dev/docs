@@ -110,7 +110,7 @@ Choose your preferred integration method and make your first request.
 
     ```bash
     curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
-      -H "Authorization: Bearer your-api-key-here" \
+      -H "X-API-Key: your-api-key-here" \
       -H "Content-Type: application/json" \
       -d '{
         "text": "My email is john@example.com and phone is +1-555-1234"

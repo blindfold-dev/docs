@@ -1,0 +1,427 @@
+---
+title: "Tokenization"
+description: "Replace sensitive data with reversible tokens"
+---
+
+## What is Tokenization?
+
+Tokenization is a reversible privacy protection method that replaces sensitive data with placeholder tokens (e.g., `<PERSON_1>`, `<EMAIL_ADDRESS_1>`). The original values are stored in a mapping that allows you to restore the data later.
+
+**Example:**
+```
+Input:  "Contact John Doe at john@example.com"
+Output: "Contact <PERSON_1> at <EMAIL_ADDRESS_1>"
+
+Mapping: {
+  "<PERSON_1>": "John Doe",
+  "<EMAIL_ADDRESS_1>": "john@example.com"
+}
+```
+
+## How It Works
+
+1. **Detection**: Blindfold's AI engine scans your text and identifies sensitive entities (names, emails, phone numbers, etc.)
+2. **Replacement**: Each detected entity is replaced with a unique token based on its type
+3. **Mapping**: A mapping dictionary is created to link tokens back to original values
+4. **Detokenization**: Later, you can use the mapping to restore the original data
+
+## When to Use Tokenization
+
+Tokenization is ideal when you need to:
+
+### 1. Protect Data Sent to AI Models
+
+Send user data to OpenAI, Anthropic, or other LLMs without exposing sensitive information.
+
+```python
+# Tokenize before sending to AI
+protected = client.tokenize("My email is john@example.com")
+ai_response = openai.chat(protected.text)
+
+# Restore original data in the response
+final = client.detokenize(ai_response, protected.mapping)
+```
+
+**Why this matters:**
+- AI providers log conversations
+- Prevents PII from being stored in third-party systems
+- Maintains compliance with privacy regulations
+
+### 2. Temporary Data Anonymization
+
+Anonymize data for processing, then restore it afterward.
+
+```python
+# Process data anonymously
+protected = client.tokenize(user_message)
+processed = process_in_third_party_service(protected.text)
+
+# Restore when needed
+final = client.detokenize(processed, protected.mapping)
+```
+
+### 3. Data Sharing with External Partners
+
+Share data with partners or contractors without exposing real PII.
+
+```python
+# Share tokenized data
+protected = client.tokenize(customer_data)
+send_to_partner(protected.text)
+
+# Partner processes tokenized data
+# You can restore when getting results back
+```
+
+### 4. Development and Testing
+
+Use tokenized production data in development environments.
+
+```python
+# Tokenize production data for dev environment
+protected = client.tokenize(production_data)
+load_into_dev_database(protected.text)
+```
+
+## When NOT to Use Tokenization
+
+Tokenization is **not suitable** when:
+
+### 1. You Don't Need to Restore Data
+
+If you never need the original values, use **Redaction** or **Hashing** instead.
+
+```python
+# Bad - unnecessary tokenization
+protected = client.tokenize(log_message)
+# Never use the mapping
+
+# Good - use redaction
+redacted = client.redact(log_message)
+```
+
+### 2. You Need Partial Visibility
+
+If users need to see part of the data (like last 4 digits of a card), use **Masking**.
+
+```python
+# Bad - completely hidden
+protected = client.tokenize("Card: 4532-7562-9102-3456")
+# Output: "Card: <CREDIT_CARD_1>"
+
+# Good - show last 4 digits
+masked = client.mask("Card: 4532-7562-9102-3456")
+# Output: "Card: ***************3456"
+```
+
+### 3. You Need Consistent Identifiers
+
+For analytics or tracking, use **Hashing** to get deterministic identifiers.
+
+```python
+# Bad - different tokens each time
+token1 = client.tokenize("john@example.com")  # <EMAIL_ADDRESS_1>
+token2 = client.tokenize("john@example.com")  # <EMAIL_ADDRESS_2> (different!)
+
+# Good - same hash every time
+hash1 = client.hash("john@example.com")  # ID_a3f8b9c2...
+hash2 = client.hash("john@example.com")  # ID_a3f8b9c2... (same!)
+```
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Reversible" icon="rotate">
+    Restore original data anytime using the mapping
+  </Card>
+  <Card title="Type-Aware" icon="tags">
+    Different tokens for different entity types (PERSON, EMAIL, etc.)
+  </Card>
+  <Card title="Consistent Within Text" icon="equals">
+    Same value gets same token within one request
+  </Card>
+  <Card title="50+ Entity Types" icon="list">
+    Automatically detects names, emails, SSNs, cards, and more
+  </Card>
+</CardGroup>
+
+## Token Format
+
+Tokens follow a predictable format: `<ENTITY_TYPE_N>`
+
+- `<PERSON_1>`, `<PERSON_2>` - Person names
+- `<EMAIL_ADDRESS_1>`, `<EMAIL_ADDRESS_2>` - Email addresses
+- `<PHONE_NUMBER_1>` - Phone numbers
+- `<CREDIT_CARD_1>` - Credit card numbers
+- `<US_SSN_1>` - Social Security Numbers
+- And 50+ more types...
+
+## Quick Start
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    client = Blindfold(api_key="your-api-key")
+
+    # Tokenize
+    response = client.tokenize(
+        "My email is john@example.com and phone is +1-555-1234"
+    )
+
+    print(response.text)
+    # "My email is <EMAIL_ADDRESS_1> and phone is <PHONE_NUMBER_1>"
+
+    print(response.mapping)
+    # {'<EMAIL_ADDRESS_1>': 'john@example.com', '<PHONE_NUMBER_1>': '+1-555-1234'}
+
+    # Detokenize
+    original = client.detokenize(
+        "Contact <EMAIL_ADDRESS_1>",
+        response.mapping
+    )
+    print(original.text)
+    # "Contact john@example.com"
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key' });
+
+    // Tokenize
+    const response = await client.tokenize(
+      "My email is john@example.com and phone is +1-555-1234"
+    );
+
+    console.log(response.text);
+    // "My email is <EMAIL_ADDRESS_1> and phone is <PHONE_NUMBER_1>"
+
+    console.log(response.mapping);
+    // {'<EMAIL_ADDRESS_1>': 'john@example.com', '<PHONE_NUMBER_1>': '+1-555-1234'}
+
+    // Detokenize
+    const original = await client.detokenize(
+      "Contact <EMAIL_ADDRESS_1>",
+      response.mapping
+    );
+    console.log(original.text);
+    // "Contact john@example.com"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    # Tokenize
+    curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+      -H "Authorization: Bearer your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "My email is john@example.com and phone is +1-555-1234"
+      }'
+
+    # Response includes mapping for detokenization
+    {
+      "text": "My email is <EMAIL_ADDRESS_1> and phone is <PHONE_NUMBER_1>",
+      "mapping": {
+        "<EMAIL_ADDRESS_1>": "john@example.com",
+        "<PHONE_NUMBER_1>": "+1-555-1234"
+      }
+    }
+
+    # Detokenize
+    curl -X POST https://api.blindfold.dev/api/public/v1/detokenize \
+      -H "Authorization: Bearer your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "Contact <EMAIL_ADDRESS_1>",
+        "mapping": {
+          "<EMAIL_ADDRESS_1>": "john@example.com"
+        }
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+## Configuration Options
+
+### Filter Specific Entity Types
+
+Only detect and tokenize specific types of sensitive data:
+
+```python
+response = client.tokenize(
+    "John Doe lives at 123 Main St, email: john@example.com",
+    config={
+        "entities": ["EMAIL_ADDRESS"]  # Only tokenize emails
+    }
+)
+# Output: "John Doe lives at 123 Main St, email: <EMAIL_ADDRESS_1>"
+```
+
+### Adjust Confidence Threshold
+
+Control detection sensitivity (0.0 - 1.0):
+
+```python
+response = client.tokenize(
+    text="Maybe email: test@test",
+    config={
+        "score_threshold": 0.8  # Only high-confidence detections
+    }
+)
+```
+
+- **Lower threshold (0.3)**: More detections, may include false positives
+- **Higher threshold (0.8)**: Fewer detections, only very confident matches
+
+## Security Best Practices
+
+### 1. Store Mappings Securely
+
+Treat mappings like passwords - store them encrypted:
+
+```python
+# Store mapping in encrypted session
+session['token_mapping'] = encrypt(protected.mapping)
+
+# Later, decrypt and detokenize
+mapping = decrypt(session['token_mapping'])
+final = client.detokenize(text, mapping)
+```
+
+### 2. Implement Mapping TTL
+
+Don't store mappings forever:
+
+```python
+# Set expiration on mapping storage
+redis.setex(
+    f"mapping:{session_id}",
+    3600,  # 1 hour TTL
+    json.dumps(protected.mapping)
+)
+```
+
+### 3. Clear Mappings After Use
+
+Delete mappings when no longer needed:
+
+```python
+# Process and clean up
+protected = client.tokenize(user_input)
+ai_response = process_with_ai(protected.text)
+final = client.detokenize(ai_response, protected.mapping)
+
+# Clear the mapping
+del protected.mapping  # or delete from storage
+```
+
+## Common Use Cases
+
+<AccordionGroup>
+  <Accordion title="AI Chatbot Integration" icon="robot">
+    Protect user conversations with AI models:
+
+    ```python
+    # 1. Tokenize user input
+    protected = client.tokenize(user_message)
+
+    # 2. Send to AI (protected)
+    ai_response = openai.chat(protected.text)
+
+    # 3. Restore original data
+    final = client.detokenize(ai_response, protected.mapping)
+    ```
+
+    **Benefits**: No PII reaches AI provider, full compliance maintained
+  </Accordion>
+
+  <Accordion title="Third-Party Data Processing" icon="share-nodes">
+    Share data with vendors without exposing PII:
+
+    ```python
+    # Tokenize before sending to vendor
+    protected = client.tokenize(customer_data)
+    vendor_api.process(protected.text)
+
+    # Restore results from vendor
+    results = vendor_api.get_results()
+    final = client.detokenize(results, protected.mapping)
+    ```
+
+    **Benefits**: Vendors never see real PII, easier compliance
+  </Accordion>
+
+  <Accordion title="Development Environments" icon="code">
+    Use production-like data safely in dev:
+
+    ```python
+    # Tokenize production data
+    protected = client.tokenize(prod_customer_records)
+
+    # Load into dev database
+    dev_db.insert(protected.text)
+
+    # Developers work with realistic but safe data
+    ```
+
+    **Benefits**: Realistic testing without PII exposure risk
+  </Accordion>
+
+  <Accordion title="Audit Logging" icon="file-lines">
+    Log events without storing sensitive data:
+
+    ```python
+    # Tokenize before logging
+    protected = client.tokenize(event_details)
+
+    # Log safely
+    logger.info(f"User action: {protected.text}")
+
+    # Store mapping separately if needed for investigation
+    audit_store.save_mapping(event_id, protected.mapping)
+    ```
+
+    **Benefits**: Logs are safe to store, can restore if needed
+  </Accordion>
+</AccordionGroup>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Python SDK" icon="python" href="/sdks/python-sdk">
+    Full Python SDK documentation
+  </Card>
+  <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
+    Complete JavaScript guide
+  </Card>
+  <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
+    HTTP API reference for /tokenize
+  </Card>
+  <Card title="Examples" icon="code" href="/examples">
+    Practical integration examples
+  </Card>
+</CardGroup>
+
+## Compare with Other Methods
+
+Not sure if tokenization is right for you? Compare with alternatives:
+
+<CardGroup cols={2}>
+  <Card title="Masking" icon="eye-slash" href="/methods/masking">
+    Partial visibility (e.g., ****3456)
+  </Card>
+  <Card title="Redaction" icon="eraser" href="/methods/redaction">
+    Permanent removal
+  </Card>
+  <Card title="Hashing" icon="hashtag" href="/methods/hashing">
+    Consistent identifiers for analytics
+  </Card>
+  <Card title="Encryption" icon="lock" href="/methods/encryption">
+    AES encryption with key
+  </Card>
+</CardGroup>
