@@ -222,29 +222,6 @@ Blindfold supports country-specific variants of many entity types:
   </Card>
 </CardGroup>
 
-## Custom Entity Types
-
-You can also define custom entity types for your specific use case:
-
-```python
-from blindfold import Blindfold
-
-client = Blindfold(api_key="your-api-key")
-
-# Detect specific custom patterns
-result = client.tokenize(
-    "Employee ID: EMP-12345",
-    entities=["PERSON", "EMAIL_ADDRESS"],
-    custom_patterns=[
-        {
-            "name": "EMPLOYEE_ID",
-            "pattern": r"EMP-\d{5}",
-            "score": 0.9
-        }
-    ]
-)
-```
-
 ## Entity Detection Confidence
 
 All detected entities include a confidence score:
@@ -271,23 +248,16 @@ result = client.tokenize(
 
 ## Multi-Language Support
 
-Blindfold supports entity detection in multiple languages:
+Blindfold currently supports entity detection in **English**.
 
-- **English** (en)
-- **Spanish** (es)
-- **French** (fr)
-- **German** (de)
-- **Italian** (it)
-- **Portuguese** (pt)
-- **Dutch** (nl)
-- **Czech** (cs)
-- And more...
+<Info>
+  **Coming Soon**: Support for additional languages including Spanish, French, German, Italian, Portuguese, and more is planned for future releases.
+</Info>
 
 ```python
-# Specify language for better detection
+# English language detection (default)
 result = client.tokenize(
-    "Jan Novák, email: jan@example.cz",
-    language="cs"  # Czech language
+    "John Doe, email: john@example.com"
 )
 ```
 
@@ -307,11 +277,11 @@ result = client.tokenize(
 
 ## Need More Entity Types?
 
-If you need additional entity types for your use case:
+If you need additional entity types for your use case, contact us at hello@blindfold.dev to request new entity types or regional variants.
 
-<Card title="Request Custom Entities" icon="plus" href="mailto:hello@blindfold.dev" horizontal>
-  Contact us at hello@blindfold.dev to request new entity types or regional variants.
-</Card>
+<Info>
+  **Coming Soon**: Custom entity types will be supported in future releases, allowing you to define custom patterns for your specific use case.
+</Info>
 
 ## See Also
 

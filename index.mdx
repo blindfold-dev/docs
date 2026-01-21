@@ -98,37 +98,27 @@ Names • Emails • Phone Numbers • SSNs • Credit Cards • Bank Accounts �
 
 ## Data Residency & Regional Endpoints
 
-Blindfold supports regional endpoints to meet data residency requirements:
+Blindfold is designed to meet data residency requirements for different regions.
 
-<CardGroup cols={2}>
-  <Card title="US Region (Default)" icon="flag-usa">
-    **Base URL**: `https://api.blindfold.dev`
+<Card title="EU Region" icon="flag-eu">
+  **Base URL**: `https://api.blindfold.dev`
 
-    Default endpoint for North American customers
-  </Card>
+  GDPR-compliant EU data residency
+</Card>
 
-  <Card title="EU Region" icon="flag-eu">
-    **Base URL**: `https://api-eu.blindfold.dev`
+<Info>
+  **Coming Soon**: US region endpoint will be available in future releases to support North American data residency requirements.
+</Info>
 
-    GDPR-compliant EU data residency
-  </Card>
-</CardGroup>
-
-### Using Regional Endpoints
+### Using the API
 
 <Tabs>
   <Tab title="Python">
     ```python
     from blindfold import Blindfold
 
-    # US region (default)
-    client = Blindfold(api_key="your-key")
-
     # EU region
-    client = Blindfold(
-        api_key="your-key",
-        base_url="https://api-eu.blindfold.dev"
-    )
+    client = Blindfold(api_key="your-key")
     ```
   </Tab>
 
@@ -136,35 +126,20 @@ Blindfold supports regional endpoints to meet data residency requirements:
     ```javascript
     import { Blindfold } from '@blindfold/sdk';
 
-    // US region (default)
-    const client = new Blindfold({ apiKey: 'your-key' });
-
     // EU region
-    const client = new Blindfold({
-      apiKey: 'your-key',
-      baseUrl: 'https://api-eu.blindfold.dev'
-    });
+    const client = new Blindfold({ apiKey: 'your-key' });
     ```
   </Tab>
 
   <Tab title="cURL">
     ```bash
-    # US region (default)
-    curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
-      -H "X-API-Key: your-key" \
-      -d '{"text": "Sample text"}'
-
     # EU region
-    curl -X POST https://api-eu.blindfold.dev/api/public/v1/tokenize \
+    curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
       -H "X-API-Key: your-key" \
       -d '{"text": "Sample text"}'
     ```
   </Tab>
 </Tabs>
-
-<Info>
-  **GDPR Compliance**: For EU customers, we recommend using the EU endpoint to ensure data is processed and stored within the European Union.
-</Info>
 
 ## Compliance & Legal
 
