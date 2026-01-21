@@ -1,0 +1,645 @@
+---
+title: "JavaScript SDK"
+description: "Official JavaScript/TypeScript SDK for Blindfold - Comprehensive Guide"
+---
+
+The official JavaScript/TypeScript SDK for Blindfold provides a simple and powerful way to protect sensitive data in your JavaScript and TypeScript applications. It works in both Node.js and browser environments.
+
+## Installation
+
+Install the SDK using your preferred package manager:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install @blindfold/sdk
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add @blindfold/sdk
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm add @blindfold/sdk
+    ```
+  </Tab>
+</Tabs>
+
+## Initialization
+
+### Basic Setup (TypeScript)
+
+```typescript
+import { Blindfold } from '@blindfold/sdk';
+
+const client = new Blindfold({
+  apiKey: 'your-api-key-here'
+});
+```
+
+### Basic Setup (JavaScript)
+
+```javascript
+const { Blindfold } = require('@blindfold/sdk');
+
+const client = new Blindfold({
+  apiKey: 'your-api-key-here'
+});
+```
+
+### With Custom Configuration
+
+```typescript
+import { Blindfold } from '@blindfold/sdk';
+
+const client = new Blindfold({
+  apiKey: 'your-api-key-here',
+  baseUrl: 'https://api.blindfold.dev/api/public/v1',  // Optional: Custom API endpoint
+  userId: 'user_123'  // Optional: Track specific user for audit logs
+});
+```
+
+## Core Methods
+
+### Tokenize
+
+Replace sensitive data with reversible tokens. Perfect for AI interactions where you need to restore original values later.
+
+```typescript
+const response = await client.tokenize(
+  "Contact John Doe at john@example.com or call +1-555-1234",
+  {
+    entities: ['PERSON', 'EMAIL_ADDRESS', 'PHONE_NUMBER'],  // Optional: Filter specific entities
+    score_threshold: 0.4  // Optional: Confidence threshold (0.0-1.0)
+  }
+);
+
+console.log(response.text);
+// "Contact <PERSON_1> at <EMAIL_ADDRESS_1> or call <PHONE_NUMBER_1>"
+
+console.log(response.mapping);
+// {'<PERSON_1>': 'John Doe', '<EMAIL_ADDRESS_1>': 'john@example.com', '<PHONE_NUMBER_1>': '+1-555-1234'}
+
+console.log(response.entities_count);
+// 3
+
+response.detected_entities.forEach(entity => {
+  console.log(`${entity.entity_type}: ${entity.text} (confidence: ${entity.score.toFixed(2)})`);
+});
+```
+
+**Parameters:**
+- `text` (string, required): The text to tokenize
+- `config` (object, optional):
+  - `entities` (string[]): Array of entity types to detect
+  - `score_threshold` (number): Minimum confidence score (0.0-1.0)
+
+**Returns:** `TokenizeResponse` with:
+- `text`: Anonymized text with tokens
+- `mapping`: Object mapping tokens to original values
+- `detected_entities`: Array of detected entities with details
+- `entities_count`: Total number of entities found
+
+### Detokenize
+
+Restore original values from tokens.
+
+```typescript
+const original = await client.detokenize(
+  "AI response for <PERSON_1> at <EMAIL_ADDRESS_1>",
+  response.mapping
+);
+
+console.log(original.text);
+// "AI response for John Doe at john@example.com"
+
+console.log(original.replacements_made);
+// 2
+```
+
+**Parameters:**
+- `text` (string, required): Text containing tokens
+- `mapping` (object, required): Token-to-value mapping from tokenize response
+
+**Returns:** `DetokenizeResponse` with:
+- `text`: Original text with tokens replaced
+- `replacements_made`: Number of token replacements
+
+### Mask
+
+Partially hide sensitive data (e.g., `****-****-****-1234`).
+
+```typescript
+const response = await client.mask(
+  "Credit card: 4532-7562-9102-3456",
+  {
+    masking_char: '*',
+    chars_to_show: 4,
+    from_end: true
+  }
+);
+
+console.log(response.text);
+// "Credit card: ***************3456"
+```
+
+**Parameters:**
+- `text` (string, required): Text to mask
+- `config` (object, optional):
+  - `masking_char` (string): Character to use for masking (default: `*`)
+  - `chars_to_show` (number): Number of characters to keep visible (default: 4)
+  - `from_end` (boolean): Show characters from end if true, start if false (default: true)
+
+**Returns:** `MaskResponse` with:
+- `text`: Masked text
+- `detected_entities`: Array of detected and masked entities
+- `entities_count`: Number of entities masked
+
+### Redact
+
+Permanently remove sensitive data.
+
+```typescript
+const response = await client.redact(
+  "My SSN is 123-45-6789 and password is secret123",
+  {
+    entities: ['US_SSN']  // Optional: specific entities to redact
+  }
+);
+
+console.log(response.text);
+// "My SSN is <US_SSN> and password is <PASSWORD>"
+```
+
+**Parameters:**
+- `text` (string, required): Text to redact
+- `config` (object, optional):
+  - `entities` (string[]): Specific entity types to redact
+  - `score_threshold` (number): Minimum confidence score
+
+**Returns:** `RedactResponse` with:
+- `text`: Redacted text
+- `detected_entities`: Array of redacted entities
+- `entities_count`: Number of entities redacted
+
+### Hash
+
+Replace data with deterministic hashes. Useful for analytics and matching without exposing original values.
+
+```typescript
+const response = await client.hash(
+  "User ID: john@example.com purchased item X",
+  {
+    hash_type: 'sha256',
+    hash_prefix: 'ID_',
+    hash_length: 16
+  }
+);
+
+console.log(response.text);
+// "User ID: ID_a3f8b9c2d4e5f6g7 purchased item X"
+```
+
+**Parameters:**
+- `text` (string, required): Text to hash
+- `config` (object, optional):
+  - `hash_type` (string): Hash algorithm - `md5`, `sha1`, `sha224`, `sha256`, `sha384`, `sha512` (default: `sha256`)
+  - `hash_prefix` (string): Prefix for hash values (default: `""`)
+  - `hash_length` (number): Length of hash to use (default: 16)
+
+**Returns:** `HashResponse` with:
+- `text`: Text with hashed entities
+- `detected_entities`: Array of hashed entities
+- `entities_count`: Number of entities hashed
+
+### Synthesize
+
+Replace real data with realistic fake data using Faker.
+
+```typescript
+const response = await client.synthesize(
+  "John lives in New York and works at Microsoft",
+  {
+    language: 'en'
+  }
+);
+
+console.log(response.text);
+// "Michael Smith lives in Boston and works at TechCorp" (example output)
+```
+
+**Parameters:**
+- `text` (string, required): Text to synthesize
+- `config` (object, optional):
+  - `language` (string): Language code for fake data - `en`, `cs`, `de`, `fr`, `es`, `it`, `pl`, `sk` (default: `en`)
+  - `entities` (string[]): Specific entity types to synthesize
+  - `score_threshold` (number): Minimum confidence score
+
+**Returns:** `SynthesizeResponse` with:
+- `text`: Text with synthesized data
+- `detected_entities`: Array of replaced entities
+- `entities_count`: Number of entities synthesized
+
+### Encrypt
+
+Encrypt sensitive data using AES encryption (reversible with key).
+
+```typescript
+const response = await client.encrypt(
+  "Secret message: API key is sk-12345",
+  {
+    encryption_key: 'your-secure-key-min-16-chars'
+  }
+);
+
+console.log(response.text);
+// "Secret message: gAAAAABh..." (encrypted string)
+```
+
+**Parameters:**
+- `text` (string, required): Text to encrypt
+- `config` (object, optional):
+  - `encryption_key` (string): Encryption key (min 16 characters)
+  - `entities` (string[]): Specific entity types to encrypt
+  - `score_threshold` (number): Minimum confidence score
+
+**Returns:** `EncryptResponse` with:
+- `text`: Text with encrypted entities
+- `detected_entities`: Array of encrypted entities
+- `entities_count`: Number of entities encrypted
+
+## TypeScript Support
+
+The SDK is written in TypeScript and provides full type definitions:
+
+```typescript
+import {
+  Blindfold,
+  TokenizeResponse,
+  DetokenizeResponse,
+  MaskResponse,
+  DetectedEntity
+} from '@blindfold/sdk';
+
+const client = new Blindfold({ apiKey: 'your-api-key' });
+
+// TypeScript knows the response type
+const response: TokenizeResponse = await client.tokenize("Hello John");
+
+// Autocomplete and type checking for entity properties
+response.detected_entities.forEach((entity: DetectedEntity) => {
+  console.log(entity.entity_type);  // TypeScript autocomplete works
+  console.log(entity.score);        // Type-safe access
+});
+```
+
+## Supported Entity Types
+
+The SDK automatically detects 50+ types of sensitive information:
+
+### Personal Information
+- `PERSON` - Person names
+- `EMAIL_ADDRESS` - Email addresses
+- `PHONE_NUMBER` - Phone numbers
+- `DATE_TIME` - Dates and times
+
+### Financial Information
+- `CREDIT_CARD` - Credit card numbers
+- `IBAN_CODE` - International Bank Account Numbers
+- `CRYPTO` - Cryptocurrency addresses
+
+### Government IDs
+- `US_SSN` - US Social Security Numbers
+- `US_DRIVER_LICENSE` - US Driver Licenses
+- `US_PASSPORT` - US Passport Numbers
+- `NRP` - National Registry Person (various countries)
+
+### Medical Information
+- `MEDICAL_LICENSE` - Medical license numbers
+- `US_ITIN` - Individual Taxpayer Identification Numbers
+
+### Technical Information
+- `IP_ADDRESS` - IP addresses (IPv4/IPv6)
+- `URL` - URLs and domains
+- `API_KEY` - API keys and tokens
+
+### Location Information
+- `LOCATION` - Cities, addresses, and locations
+- `ADDRESS` - Physical addresses
+
+And many more...
+
+## Error Handling
+
+The SDK provides specific error classes for different scenarios:
+
+```typescript
+import {
+  Blindfold,
+  AuthenticationError,
+  APIError,
+  NetworkError
+} from '@blindfold/sdk';
+
+const client = new Blindfold({ apiKey: 'invalid-key' });
+
+try {
+  const response = await client.tokenize("Test");
+} catch (error) {
+  if (error instanceof AuthenticationError) {
+    console.error('Invalid API key:', error.message);
+  } else if (error instanceof APIError) {
+    console.error(`API error (${error.statusCode}):`, error.message);
+  } else if (error instanceof NetworkError) {
+    console.error('Network error:', error.message);
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
+```
+
+**Error Types:**
+- `AuthenticationError` - Invalid or missing API key
+- `APIError` - API validation or processing errors (includes statusCode)
+- `NetworkError` - Connection issues, timeouts
+- `Error` - Unexpected errors
+
+## Configuration Options
+
+### Entity Filtering
+
+Filter which types of entities to detect:
+
+```typescript
+const response = await client.tokenize(
+  "Contact John at john@example.com or 555-1234",
+  {
+    entities: ['EMAIL_ADDRESS']  // Only detect emails
+  }
+);
+```
+
+### Confidence Threshold
+
+Set minimum confidence score (0.0-1.0) for entity detection:
+
+```typescript
+const response = await client.tokenize(
+  "Maybe this is an email: test@test",
+  {
+    score_threshold: 0.8  // Only high-confidence detections
+  }
+);
+```
+
+Lower threshold = more detections (higher recall, lower precision)
+Higher threshold = fewer detections (lower recall, higher precision)
+
+## Best Practices
+
+### 1. Use Environment Variables for API Keys
+
+```typescript
+// Node.js
+const client = new Blindfold({
+  apiKey: process.env.BLINDFOLD_API_KEY
+});
+
+// Browser with build tool (e.g., Vite, Next.js)
+const client = new Blindfold({
+  apiKey: import.meta.env.VITE_BLINDFOLD_API_KEY  // Vite
+  // or
+  apiKey: process.env.NEXT_PUBLIC_BLINDFOLD_API_KEY  // Next.js
+});
+```
+
+<Warning>
+Never expose API keys in client-side code in production. Use server-side API routes or edge functions.
+</Warning>
+
+### 2. Handle Errors Gracefully
+
+```typescript
+async function protectData(text: string) {
+  try {
+    return await client.tokenize(text);
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      // Handle auth error
+      throw new Error('Authentication failed');
+    } else if (error instanceof NetworkError) {
+      // Retry logic
+      return retryWithBackoff(() => client.tokenize(text));
+    }
+    throw error;
+  }
+}
+```
+
+### 3. Store Mappings Securely
+
+When using tokenization, store the mapping securely:
+
+```typescript
+// Server-side (Node.js with Express)
+app.post('/chat', async (req, res) => {
+  const { message } = req.body;
+
+  // Tokenize
+  const protected = await client.tokenize(message);
+
+  // Store mapping in session
+  req.session.tokenMapping = protected.mapping;
+
+  // Send to AI...
+  const aiResponse = await getAIResponse(protected.text);
+
+  // Detokenize
+  const final = await client.detokenize(aiResponse, req.session.tokenMapping);
+
+  res.json({ response: final.text });
+});
+```
+
+### 4. Process Multiple Requests in Parallel
+
+```typescript
+// Process multiple texts concurrently
+const texts = [
+  "Text with john@example.com",
+  "Text with jane@example.com",
+  "Text with bob@example.com"
+];
+
+const results = await Promise.all(
+  texts.map(text => client.tokenize(text))
+);
+```
+
+## Framework Integration Examples
+
+### Next.js API Route
+
+```typescript
+// app/api/protect/route.ts
+import { Blindfold } from '@blindfold/sdk';
+import { NextRequest, NextResponse } from 'next/server';
+
+const client = new Blindfold({
+  apiKey: process.env.BLINDFOLD_API_KEY!
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const { text } = await request.json();
+    const response = await client.tokenize(text);
+    return NextResponse.json(response);
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to protect data' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### Express.js Middleware
+
+```typescript
+import express from 'express';
+import { Blindfold } from '@blindfold/sdk';
+
+const app = express();
+const client = new Blindfold({
+  apiKey: process.env.BLINDFOLD_API_KEY!
+});
+
+app.use(express.json());
+
+app.post('/api/tokenize', async (req, res) => {
+  try {
+    const { text } = req.body;
+    const response = await client.tokenize(text);
+    res.json(response);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to tokenize' });
+  }
+});
+
+app.listen(3000);
+```
+
+### React Hook
+
+```typescript
+// hooks/useBlindfold.ts
+import { useState } from 'react';
+
+export function useBlindfold() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const tokenize = async (text: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Call your API route, not directly from client
+      const response = await fetch('/api/protect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { tokenize, loading, error };
+}
+```
+
+## Complete Example
+
+Here's a complete example integrating Blindfold with OpenAI in Node.js:
+
+```typescript
+import { Blindfold } from '@blindfold/sdk';
+import OpenAI from 'openai';
+
+// Initialize clients
+const blindfold = new Blindfold({
+  apiKey: process.env.BLINDFOLD_API_KEY!
+});
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!
+});
+
+async function chatWithPrivacy(userMessage: string): Promise<string> {
+  // 1. Tokenize sensitive data
+  const protected = await blindfold.tokenize(userMessage);
+  console.log(`Protected: ${protected.text}`);
+
+  // 2. Send protected text to OpenAI
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [{ role: 'user', content: protected.text }]
+  });
+
+  const aiResponse = completion.choices[0].message.content || '';
+
+  // 3. Detokenize AI response to restore original data
+  const final = await blindfold.detokenize(aiResponse, protected.mapping);
+  console.log(`Final: ${final.text}`);
+
+  return final.text;
+}
+
+// Usage
+chatWithPrivacy("My name is John Doe and my email is john@example.com")
+  .then(response => console.log(response))
+  .catch(error => console.error(error));
+```
+
+## Browser vs Node.js
+
+The SDK works in both environments with some considerations:
+
+### Node.js
+- Use environment variables for API keys
+- Full access to all features
+- Server-side API routes recommended
+
+### Browser
+- **Never expose API keys in client code**
+- Use server-side API routes or edge functions
+- The SDK can be used in the browser, but authentication should happen server-side
+
+```typescript
+// ❌ Bad - API key exposed in browser
+const client = new Blindfold({
+  apiKey: 'sk-1234...' // Never do this!
+});
+
+// ✅ Good - API key on server
+// Client calls your API route, which uses Blindfold SDK
+fetch('/api/protect', {
+  method: 'POST',
+  body: JSON.stringify({ text: userInput })
+});
+```
+
+## Need Help?
+
+- **GitHub Issues**: Report bugs or request features
+- **Email Support**: hello@blindfold.dev
+- **Documentation**: Check out the [API Reference](/api-reference/rest-api) and [Examples](/examples)
