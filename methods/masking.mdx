@@ -1,0 +1,573 @@
+---
+title: "Masking"
+description: "Partially hide sensitive data while maintaining usability"
+---
+
+## What is Masking?
+
+Masking is a privacy protection method that partially hides sensitive data by replacing most characters with a masking character (typically `*`), while keeping a few characters visible for identification purposes.
+
+**Example:**
+```
+Input:  "Card: 4532-7562-9102-3456"
+Output: "Card: ***************3456"
+
+Input:  "Email: john.doe@company.com"
+Output: "Email: joh******************"
+```
+
+## How It Works
+
+1. **Detection**: Blindfold identifies sensitive entities in your text
+2. **Partial Replacement**: Most characters are replaced with masking characters
+3. **Selective Visibility**: A configurable number of characters remain visible
+4. **Direction Control**: Choose to show characters from the beginning or end
+
+## When to Use Masking
+
+Masking is ideal when you need to:
+
+### 1. Display Payment Information
+
+Show payment methods in user interfaces without exposing full details.
+
+```python
+result = client.mask(
+    "Card ending in 4532-7562-9102-3456",
+    masking_char="*",
+    chars_to_show=4,
+    from_end=True
+)
+# Output: "Card ending in ***************3456"
+```
+
+**Why this matters:**
+- Users can identify their card (last 4 digits)
+- Full card number stays protected
+- PCI-DSS compliant display
+
+### 2. Show Partial Email Addresses
+
+Display enough to identify the account without exposing the full email.
+
+```python
+result = client.mask(
+    "Account: john.doe@company.com",
+    masking_char="*",
+    chars_to_show=3,
+    from_end=False
+)
+# Output: "Account: joh******************"
+```
+
+**Use cases:**
+- Account recovery confirmation
+- Security notifications
+- Multi-account selection
+
+### 3. Protect Phone Numbers
+
+Show country code or last digits for verification.
+
+```python
+result = client.mask(
+    "Contact: +1-555-1234",
+    masking_char="X",
+    chars_to_show=2,
+    from_end=True
+)
+# Output: "Contact: +1-555-XX34"
+```
+
+### 4. Display User Information in Admin Panels
+
+Allow admins to identify users without seeing full sensitive data.
+
+```python
+user_info = """
+Name: John Doe
+Email: john.doe@company.com
+SSN: 123-45-6789
+"""
+
+masked = client.mask(user_info, chars_to_show=4, from_end=True)
+# Admins see partially masked information
+```
+
+## When NOT to Use Masking
+
+Masking is **not suitable** when:
+
+### 1. You Need to Restore Original Data
+
+Masking is irreversible. Use **Tokenization** instead.
+
+```python
+# Bad - can't restore
+masked = client.mask("john@example.com")
+# No way to get "john@example.com" back
+
+# Good - use tokenization
+protected = client.tokenize("john@example.com")
+original = client.detokenize(protected.text, protected.mapping)
+```
+
+### 2. You Need Complete Removal
+
+If no part should be visible, use **Redaction**.
+
+```python
+# Bad - still shows part of SSN
+masked = client.mask("SSN: 123-45-6789")
+# Output: "SSN: **********89"
+
+# Good - complete removal
+redacted = client.redact("SSN: 123-45-6789")
+# Output: "SSN: <US_SSN>"
+```
+
+### 3. Data is for Processing (Not Display)
+
+For data processing by systems, use **Tokenization** or **Redaction**.
+
+```python
+# Bad - processing masked data is unreliable
+masked = client.mask(api_key)
+send_to_api(masked.text)  # API won't work with ***key
+
+# Good - tokenize for processing
+protected = client.tokenize(api_key)
+```
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Configurable Visibility" icon="eye">
+    Choose how many characters to show (1-10+)
+  </Card>
+  <Card title="Direction Control" icon="arrows-left-right">
+    Show characters from start or end
+  </Card>
+  <Card title="Custom Mask Character" icon="asterisk">
+    Use *, X, #, or any character
+  </Card>
+  <Card title="Multiple Entity Types" icon="list">
+    Works with emails, cards, SSNs, phones, etc.
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    client = Blindfold(api_key="your-api-key")
+
+    # Basic masking (show last 4)
+    result = client.mask(
+        text="Credit card: 4532-7562-9102-3456",
+        masking_char="*",
+        chars_to_show=4,
+        from_end=True
+    )
+    print(result.text)
+    # "Credit card: ***************3456"
+
+    # Custom mask character
+    result = client.mask(
+        text="SSN: 123-45-6789",
+        masking_char="X",
+        chars_to_show=4,
+        from_end=True
+    )
+    print(result.text)
+    # "SSN: XXXXXXX6789"
+
+    # Show from beginning
+    result = client.mask(
+        text="Email: john.doe@company.com",
+        masking_char="*",
+        chars_to_show=3,
+        from_end=False
+    )
+    print(result.text)
+    # "Email: joh******************"
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key' });
+
+    // Basic masking (show last 4)
+    const result = await client.mask(
+      "Credit card: 4532-7562-9102-3456",
+      {
+        masking_char: '*',
+        chars_to_show: 4,
+        from_end: true
+      }
+    );
+    console.log(result.text);
+    // "Credit card: ***************3456"
+
+    // Custom mask character
+    const result2 = await client.mask(
+      "SSN: 123-45-6789",
+      {
+        masking_char: 'X',
+        chars_to_show: 4,
+        from_end: true
+      }
+    );
+    console.log(result2.text);
+    // "SSN: XXXXXXX6789"
+
+    // Show from beginning
+    const result3 = await client.mask(
+      "Email: john.doe@company.com",
+      {
+        masking_char: '*',
+        chars_to_show: 3,
+        from_end: false
+      }
+    );
+    console.log(result3.text);
+    // "Email: joh******************"
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST https://api.blindfold.dev/api/public/v1/mask \
+      -H "X-API-Key: your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "Credit card: 4532-7562-9102-3456",
+        "masking_char": "*",
+        "chars_to_show": 4,
+        "from_end": true
+      }'
+
+    # Response
+    {
+      "text": "Credit card: ***************3456",
+      "entities_count": 1,
+      "detected_entities": [
+        {
+          "entity_type": "CREDIT_CARD",
+          "text": "4532-7562-9102-3456",
+          "score": 1.0
+        }
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Configuration Options
+
+### Masking Character
+
+Choose which character to use for masking:
+
+```python
+# Asterisks (default)
+client.mask(text, masking_char="*")  # ***3456
+
+# X marks
+client.mask(text, masking_char="X")  # XXX3456
+
+# Dashes
+client.mask(text, masking_char="-")  # ---3456
+
+# Dots
+client.mask(text, masking_char=".")  # ...3456
+```
+
+### Characters to Show
+
+Control how many characters remain visible:
+
+```python
+# Show last 4 (common for cards)
+client.mask(text, chars_to_show=4)  # ***************3456
+
+# Show last 2 (for phone numbers)
+client.mask(text, chars_to_show=2)  # *********34
+
+# Show first 3 (for emails)
+client.mask(text, chars_to_show=3, from_end=False)  # joh***************
+```
+
+### Direction
+
+Choose to show characters from the start or end:
+
+```python
+# Show from end (default) - good for cards, phones
+client.mask(text, from_end=True)  # ***3456
+
+# Show from start - good for emails, names
+client.mask(text, from_end=False)  # joh***
+```
+
+### Filter Entity Types
+
+Only mask specific types of data:
+
+```python
+result = client.mask(
+    "Card: 4532-7562-9102-3456, Email: john@example.com",
+    entities=["CREDIT_CARD"],  # Only mask cards
+    chars_to_show=4,
+    from_end=True
+)
+# Output: "Card: ***************3456, Email: john@example.com"
+```
+
+## Common Patterns
+
+### Payment Card Display
+
+Standard pattern for showing payment cards:
+
+```python
+def display_payment_method(card_number):
+    """Display card with last 4 digits visible"""
+    result = client.mask(
+        f"Card: {card_number}",
+        masking_char="*",
+        chars_to_show=4,
+        from_end=True
+    )
+    return result.text
+
+# Usage
+display_payment_method("4532-7562-9102-3456")
+# "Card: ***************3456"
+```
+
+### Email Display
+
+Show beginning of email for identification:
+
+```python
+def display_email(email):
+    """Show first 3 characters of email"""
+    result = client.mask(
+        email,
+        masking_char="*",
+        chars_to_show=3,
+        from_end=False
+    )
+    return result.text
+
+# Usage
+display_email("john.doe@company.com")
+# "joh******************"
+```
+
+### Phone Number Display
+
+Show last 2 or 4 digits:
+
+```python
+def display_phone(phone):
+    """Show last 2 digits of phone"""
+    result = client.mask(
+        phone,
+        masking_char="X",
+        chars_to_show=2,
+        from_end=True
+    )
+    return result.text
+
+# Usage
+display_phone("+1-555-1234")
+# "+1-555-XX34"
+```
+
+## Common Use Cases
+
+<AccordionGroup>
+  <Accordion title="E-commerce Payment Display" icon="credit-card">
+    Show saved payment methods to customers:
+
+    ```python
+    # Display stored cards
+    cards = [
+        "4532-7562-9102-3456",
+        "5425-2334-3010-9903"
+    ]
+
+    for card in cards:
+        masked = client.mask(card, chars_to_show=4, from_end=True)
+        print(f"Card ending in {masked.text[-4:]}")
+    ```
+
+    **Benefits**: Users can identify their cards, PCI compliance maintained
+  </Accordion>
+
+  <Accordion title="Account Recovery" icon="key">
+    Confirm user identity by showing partial email:
+
+    ```python
+    def show_recovery_email(email):
+        masked = client.mask(
+            email,
+            chars_to_show=3,
+            from_end=False
+        )
+        return f"We'll send a code to {masked.text}"
+
+    show_recovery_email("john.doe@company.com")
+    # "We'll send a code to joh******************"
+    ```
+
+    **Benefits**: User knows which account, email address not exposed
+  </Accordion>
+
+  <Accordion title="Admin Dashboards" icon="chart-line">
+    Show user information to admins without full PII:
+
+    ```python
+    def display_user_info(user_data):
+        masked = client.mask(
+            user_data,
+            chars_to_show=4,
+            from_end=True
+        )
+        return masked.text
+
+    user = "Email: john@example.com, Phone: +1-555-1234"
+    print(display_user_info(user))
+    # Shows partially masked information
+    ```
+
+    **Benefits**: Admins can identify users, reduced PII exposure
+  </Accordion>
+
+  <Accordion title="Security Notifications" icon="shield-halved">
+    Notify users about security events without exposing full details:
+
+    ```python
+    def send_security_alert(phone_number):
+        masked = client.mask(
+            phone_number,
+            chars_to_show=2,
+            from_end=True
+        )
+        return f"Security alert sent to phone ending in {masked.text[-2:]}"
+
+    send_security_alert("+1-555-1234")
+    # "Security alert sent to phone ending in 34"
+    ```
+
+    **Benefits**: User can verify it's their number, privacy maintained
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+### 1. Follow Industry Standards
+
+Use established patterns for different data types:
+
+```python
+# Credit cards: Show last 4
+client.mask(card, chars_to_show=4, from_end=True)
+
+# Emails: Show first 3
+client.mask(email, chars_to_show=3, from_end=False)
+
+# Phones: Show last 2-4
+client.mask(phone, chars_to_show=2, from_end=True)
+
+# SSNs: Show last 4
+client.mask(ssn, chars_to_show=4, from_end=True)
+```
+
+### 2. Balance Security and Usability
+
+Show enough for identification, not more:
+
+```python
+# Good - enough to identify
+client.mask(card, chars_to_show=4)  # ***3456
+
+# Risky - too much visible
+client.mask(card, chars_to_show=12)  # 4532-7562-9103456
+```
+
+### 3. Use Consistent Masking
+
+Be consistent across your application:
+
+```python
+# Create a helper function
+def mask_pii(text, entity_type):
+    if entity_type == "card":
+        return client.mask(text, chars_to_show=4, from_end=True)
+    elif entity_type == "email":
+        return client.mask(text, chars_to_show=3, from_end=False)
+    # etc.
+```
+
+### 4. Document Your Masking Rules
+
+Make it clear what's shown and what's hidden:
+
+```python
+# Add tooltips or help text
+"Card ending in ***3456 (only last 4 digits shown)"
+"Email: joh*** (only first 3 characters shown)"
+```
+
+## Security Considerations
+
+<Warning>
+Masking reduces but does not eliminate risk. Consider:
+- **Not reversible**: Once masked, data cannot be restored
+- **Partial exposure**: Some characters remain visible
+- **Pattern recognition**: Repeated masking may reveal patterns
+- **Compliance**: Check if masking meets your regulatory requirements
+</Warning>
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Python SDK" icon="python" href="/sdks/python-sdk">
+    Full Python SDK documentation
+  </Card>
+  <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
+    Complete JavaScript guide
+  </Card>
+  <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
+    HTTP API reference for /mask
+  </Card>
+  <Card title="Examples" icon="code" href="/examples">
+    Practical integration examples
+  </Card>
+</CardGroup>
+
+## Compare with Other Methods
+
+<CardGroup cols={2}>
+  <Card title="Tokenization" icon="shuffle" href="/methods/tokenization">
+    Reversible replacement with tokens
+  </Card>
+  <Card title="Redaction" icon="eraser" href="/methods/redaction">
+    Complete permanent removal
+  </Card>
+  <Card title="Hashing" icon="hashtag" href="/methods/hashing">
+    Deterministic identifiers
+  </Card>
+  <Card title="Encryption" icon="lock" href="/methods/encryption">
+    AES encryption with key
+  </Card>
+</CardGroup>

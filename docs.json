@@ -21,6 +21,17 @@
             ]
           },
           {
+            "group": "Privacy Methods",
+            "pages": [
+              "methods/tokenization",
+              "methods/masking",
+              "methods/redaction",
+              "methods/hashing",
+              "methods/synthesis",
+              "methods/encryption"
+            ]
+          },
+          {
             "group": "SDKs",
             "pages": [
               "sdks/python-sdk",
@@ -82,7 +93,7 @@
   "footer": {
     "socials": {
       "x": "https://x.com/blindfolddev",
-      "github": "https://github.com/blindfold-ai",
+      "github": "https://github.com/blindfold-dev",
       "linkedin": "https://linkedin.com/company/blindfold"
     }
   }

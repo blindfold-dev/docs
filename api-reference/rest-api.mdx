@@ -13,10 +13,10 @@ https://api.blindfold.dev/api/public/v1
 
 ## Authentication
 
-All API requests require authentication using an API key in the `Authorization` header:
+All API requests require authentication using an API key in the `X-API-Key` header:
 
 ```http
-Authorization: Bearer your-api-key-here
+X-API-Key: your-api-key-here
 ```
 
 ### Getting Your API Key
@@ -91,7 +91,7 @@ Replace sensitive data with reversible tokens. Returns a mapping to restore orig
 <CodeGroup>
 ```bash cURL
 curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
-  -H "Authorization: Bearer your-api-key-here" \
+  -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Contact John Doe at john@example.com",
@@ -106,7 +106,7 @@ import requests
 response = requests.post(
     "https://api.blindfold.dev/api/public/v1/tokenize",
     headers={
-        "Authorization": "Bearer your-api-key-here",
+        "X-API-Key": "your-api-key-here",
         "Content-Type": "application/json"
     },
     json={
@@ -126,7 +126,7 @@ const response = await fetch(
   {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer your-api-key-here',
+      'X-API-Key': 'your-api-key-here',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -186,7 +186,7 @@ Restore original values from tokens using the mapping from `/tokenize`.
 <CodeGroup>
 ```bash cURL
 curl -X POST https://api.blindfold.dev/api/public/v1/detokenize \
-  -H "Authorization: Bearer your-api-key-here" \
+  -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "AI response for <PERSON_1> at <EMAIL_ADDRESS_1>",
@@ -203,7 +203,7 @@ import requests
 response = requests.post(
     "https://api.blindfold.dev/api/public/v1/detokenize",
     headers={
-        "Authorization": "Bearer your-api-key-here",
+        "X-API-Key": "your-api-key-here",
         "Content-Type": "application/json"
     },
     json={
@@ -225,7 +225,7 @@ const response = await fetch(
   {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer your-api-key-here',
+      'X-API-Key': 'your-api-key-here',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -266,7 +266,7 @@ Partially hide sensitive data (e.g., `****-****-****-1234`).
 <CodeGroup>
 ```bash cURL
 curl -X POST https://api.blindfold.dev/api/public/v1/mask \
-  -H "Authorization: Bearer your-api-key-here" \
+  -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Credit card: 4532-7562-9102-3456",
@@ -282,7 +282,7 @@ import requests
 response = requests.post(
     "https://api.blindfold.dev/api/public/v1/mask",
     headers={
-        "Authorization": "Bearer your-api-key-here",
+        "X-API-Key": "your-api-key-here",
         "Content-Type": "application/json"
     },
     json={
@@ -303,7 +303,7 @@ const response = await fetch(
   {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer your-api-key-here',
+      'X-API-Key': 'your-api-key-here',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -356,7 +356,7 @@ Permanently remove sensitive data.
 <CodeGroup>
 ```bash cURL
 curl -X POST https://api.blindfold.dev/api/public/v1/redact \
-  -H "Authorization: Bearer your-api-key-here" \
+  -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "My SSN is 123-45-6789",
@@ -371,7 +371,7 @@ import requests
 response = requests.post(
     "https://api.blindfold.dev/api/public/v1/redact",
     headers={
-        "Authorization": "Bearer your-api-key-here",
+        "X-API-Key": "your-api-key-here",
         "Content-Type": "application/json"
     },
     json={
@@ -391,7 +391,7 @@ const response = await fetch(
   {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer your-api-key-here',
+      'X-API-Key': 'your-api-key-here',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -417,7 +417,7 @@ console.log(data);
 **Response:**
 ```json
 {
-  "text": "My SSN is <US_SSN>",
+  "text": "My SSN is ",
   "entities_count": 1,
   "detected_entities": [
     {
@@ -440,7 +440,7 @@ Replace data with deterministic hashes.
 <CodeGroup>
 ```bash cURL
 curl -X POST https://api.blindfold.dev/api/public/v1/hash \
-  -H "Authorization: Bearer your-api-key-here" \
+  -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "User john@example.com purchased item",
@@ -456,7 +456,7 @@ import requests
 response = requests.post(
     "https://api.blindfold.dev/api/public/v1/hash",
     headers={
-        "Authorization": "Bearer your-api-key-here",
+        "X-API-Key": "your-api-key-here",
         "Content-Type": "application/json"
     },
     json={
@@ -477,7 +477,7 @@ const response = await fetch(
   {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer your-api-key-here',
+      'X-API-Key': 'your-api-key-here',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -530,7 +530,7 @@ Replace real data with realistic fake data.
 <CodeGroup>
 ```bash cURL
 curl -X POST https://api.blindfold.dev/api/public/v1/synthesize \
-  -H "Authorization: Bearer your-api-key-here" \
+  -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "John lives in New York",
@@ -544,7 +544,7 @@ import requests
 response = requests.post(
     "https://api.blindfold.dev/api/public/v1/synthesize",
     headers={
-        "Authorization": "Bearer your-api-key-here",
+        "X-API-Key": "your-api-key-here",
         "Content-Type": "application/json"
     },
     json={
@@ -563,7 +563,7 @@ const response = await fetch(
   {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer your-api-key-here',
+      'X-API-Key': 'your-api-key-here',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -619,7 +619,7 @@ Encrypt sensitive data using AES encryption.
 <CodeGroup>
 ```bash cURL
 curl -X POST https://api.blindfold.dev/api/public/v1/encrypt \
-  -H "Authorization: Bearer your-api-key-here" \
+  -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Secret: API key is sk-12345",
@@ -633,7 +633,7 @@ import requests
 response = requests.post(
     "https://api.blindfold.dev/api/public/v1/encrypt",
     headers={
-        "Authorization": "Bearer your-api-key-here",
+        "X-API-Key": "your-api-key-here",
         "Content-Type": "application/json"
     },
     json={
@@ -652,7 +652,7 @@ const response = await fetch(
   {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer your-api-key-here',
+      'X-API-Key': 'your-api-key-here',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
