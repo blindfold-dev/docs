@@ -1,0 +1,10 @@
+<svg width="177" height="24" viewBox="0 0 177 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- Crescent moon icon -->
+  <g transform="translate(12, 12)">
+    <circle cx="0" cy="0" r="9" fill="#ffffff"/>
+    <circle cx="4" cy="-1" r="7.5" fill="#000000"/>
+  </g>
+
+  <!-- Text -->
+  <text x="32" y="50%" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="16" font-weight="500" fill="#ffffff">blindfold</text>
+</svg>

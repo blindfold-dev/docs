@@ -1,128 +1,103 @@
 ---
 title: "Introduction"
-description: "Welcome to Blindfold - The Privacy API for AI"
+description: "The Privacy API for AI - Protect PII before sending to AI providers"
 ---
 
 ## What is Blindfold?
 
-Blindfold is a privacy-first infrastructure API that helps you securely protect sensitive data (PII) before sending it to AI models and third-party services. It provides automated detection and protection of over 50 types of personally identifiable information.
+**Blindfold protects sensitive data (PII) before it reaches AI providers like OpenAI or Anthropic.**
 
-### The Problem
-
-When building AI applications, you often need to send user data to large language models (OpenAI, Anthropic, etc.). However, this data may contain sensitive information like:
-
-- Personal names and emails
-- Phone numbers and addresses
-- Credit card numbers and SSNs
-- Medical records and IDs
-- IP addresses and URLs
-
-Sending this data directly to third-party AI providers can create compliance risks (GDPR, HIPAA, EU AI Act) and privacy concerns.
-
-### The Solution
-
-Blindfold sits between your application and AI services, automatically detecting and protecting sensitive data:
-
-1. **Send us your text** with sensitive information
-2. **We return protected text** (tokenized/masked/redacted)
-3. **You send safe text to AI models** without privacy risks
-4. **We restore original data** (if needed) after getting the AI response
-
-## Key Features
-
-<Columns cols={2}>
-  <Card title="Tokenization" icon="shuffle">
-    Replace sensitive data with reversible tokens like `<PERSON_1>`. Perfect for AI interactions where you need to restore original values.
-  </Card>
-  <Card title="Masking" icon="eye-slash">
-    Partially hide data (e.g., `****-****-****-1234`). Useful for displaying data while maintaining privacy.
-  </Card>
-  <Card title="Redaction" icon="eraser">
-    Permanently remove sensitive information. Ideal for complete data removal without the ability to restore.
-  </Card>
-  <Card title="Synthesis" icon="wand-magic-sparkles">
-    Replace real data with realistic fake data using Faker. Great for testing and demos.
-  </Card>
-  <Card title="Hashing" icon="hashtag">
-    Convert data to deterministic hashes. Useful for analytics and matching without exposing original values.
-  </Card>
-  <Card title="Encryption" icon="lock">
-    Encrypt data using AES encryption. Reversible with proper encryption key.
-  </Card>
-</Columns>
-
-## Supported PII Types
-
-Blindfold automatically detects 50+ types of sensitive information, including:
-
-- **Personal**: Names, Email addresses, Phone numbers
-- **Financial**: Credit cards, IBANs, Bank accounts
-- **Government IDs**: SSN, Driver licenses, Passports
-- **Medical**: Medical license numbers, Patient IDs
-- **Technical**: IP addresses, URLs, API keys
-- **Location**: Addresses, GPS coordinates
-
-## Getting Started
-
-<Card
-  title="Quick Start Guide"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Get up and running in 5 minutes with your first API call.
-</Card>
-
-## Choose Your Integration Method
-
-<Columns cols={3}>
-  <Card
-    title="Python SDK"
-    icon="python"
-    href="/sdks/python-sdk"
-  >
-    Official Python SDK with sync and async support.
-  </Card>
-  <Card
-    title="JavaScript SDK"
-    icon="js"
-    href="/sdks/javascript-sdk"
-  >
-    Official JavaScript/TypeScript SDK for Node.js and browsers.
-  </Card>
-  <Card
-    title="REST API"
-    icon="terminal"
-    href="/api-reference/rest-api"
-  >
-    Direct HTTP API access with any language or tool.
-  </Card>
-</Columns>
-
-## Learn by Example
-
-<Card
-  title="See Examples"
-  icon="code"
-  href="/examples"
-  horizontal
->
-  Explore practical examples and common use cases.
-</Card>
+Automatically detect and anonymize 50+ types of personally identifiable information - names, emails, SSNs, credit cards, and more.
 
 ## Why Blindfold?
 
-<Columns cols={2}>
-  <Card title="Developer-Friendly" icon="heart">
-    Simple SDKs and REST API. Get started in minutes with comprehensive documentation.
+**Compliance**: Meet GDPR, HIPAA, and EU AI Act requirements
+**Simple**: One API call to protect all PII
+**Reversible**: Restore original data when needed
+
+## How It Works
+
+```
+Your App → Blindfold → AI Provider
+           (removes PII)
+```
+
+1. Send text with sensitive data
+2. Get back protected text
+3. Send safe text to AI
+4. Restore original data (optional)
+
+## Privacy Methods
+
+<Columns cols={3}>
+  <Card title="Tokenization" icon="shuffle" href="/methods/tokenization">
+    Reversible tokens for AI processing
   </Card>
-  <Card title="Production-Ready" icon="shield-check">
-    Built for scale with async support, error handling, and audit logging.
+  <Card title="Masking" icon="eye-slash" href="/methods/masking">
+    Show last 4 digits (e.g., `***3456`)
   </Card>
-  <Card title="Compliance-First" icon="scale-balanced">
-    Help meet GDPR, HIPAA, and EU AI Act requirements with automated PII detection.
+  <Card title="Redaction" icon="eraser" href="/methods/redaction">
+    Permanent removal
   </Card>
-  <Card title="Multi-Language Support" icon="globe">
-    Detect PII in English, Czech, German, French, Spanish, Italian, Polish, and Slovak.
+  <Card title="Hashing" icon="hashtag" href="/methods/hashing">
+    Consistent IDs for analytics
+  </Card>
+  <Card title="Synthesis" icon="wand-magic-sparkles" href="/methods/synthesis">
+    Fake data for testing
+  </Card>
+  <Card title="Encryption" icon="lock" href="/methods/encryption">
+    AES-256 encryption
   </Card>
 </Columns>
+
+## Detects 50+ PII Types
+
+Names • Emails • Phone Numbers • SSNs • Credit Cards • Bank Accounts • IP Addresses • Medical IDs • Passports • And more...
+
+## Quick Start
+
+<Steps>
+  <Step title="Create Account">
+    Sign up at [app.blindfold.dev](https://app.blindfold.dev)
+  </Step>
+  <Step title="Get API Key">
+    Generate your API key in the dashboard
+  </Step>
+  <Step title="Install SDK">
+    ```bash
+    pip install blindfold-sdk
+    ```
+  </Step>
+  <Step title="Protect Data">
+    ```python
+    from blindfold import Blindfold
+    client = Blindfold(api_key="your-key")
+    result = client.tokenize("John Doe, john@example.com")
+    # Result: "<PERSON_1>, <EMAIL_1>"
+    ```
+  </Step>
+</Steps>
+
+<Card title="Full Quick Start Guide" icon="rocket" href="/quickstart" horizontal>
+  Detailed setup instructions and examples
+</Card>
+
+## Choose Your SDK
+
+<CardGroup cols={3}>
+  <Card title="Python" icon="python" href="/sdks/python-sdk">
+    Sync and async support
+  </Card>
+  <Card title="JavaScript" icon="js" href="/sdks/javascript-sdk">
+    Node.js and browsers
+  </Card>
+  <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
+    Any language
+  </Card>
+</CardGroup>
+
+## Compliance & Legal
+
+<Card title="EU AI Act, GDPR, HIPAA Compliance" icon="scale-balanced" href="/compliance" horizontal>
+  Learn how Blindfold helps you meet regulatory requirements
+</Card>

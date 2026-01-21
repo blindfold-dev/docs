@@ -151,18 +151,13 @@ Choose your preferred integration method and make your first request.
   </Tab>
 </Tabs>
 
-## Understanding the Response
+## Response Format
 
-Every successful API call returns:
-
-- **text**: The anonymized/protected text with sensitive data replaced
-- **mapping**: A dictionary mapping tokens back to original values (for tokenize endpoint)
-- **entities_count**: Number of sensitive entities detected
-- **detected_entities**: Detailed information about each detected entity
-
-<Note>
-  The `mapping` field is only returned by the `/tokenize` endpoint, as it is needed for detokenization. Other methods like `/mask`, `/redact`, and `/encrypt` do not return mappings.
-</Note>
+All responses include:
+- `text` - Protected text
+- `entities_count` - Number of PII items found
+- `detected_entities` - Details about what was found
+- `mapping` - Token mapping (tokenize only)
 
 ## Next Steps
 
@@ -186,57 +181,6 @@ Now that you have made your first API call, explore more features:
   </Card>
 </CardGroup>
 
-## Common Use Cases
-
-<AccordionGroup>
-  <Accordion icon="robot" title="Protecting data before sending to AI models">
-    Tokenize user input before sending to OpenAI, Anthropic, or other LLMs, then detokenize the AI response.
-
-    ```python
-    # Protect user input
-    protected = client.tokenize(user_message)
-
-    # Send to AI (safe text)
-    ai_response = openai.chat.completions.create(
-        messages=[{"role": "user", "content": protected.text}]
-    )
-
-    # Restore original data in response
-    final_response = client.detokenize(
-        ai_response.choices[0].message.content,
-        protected.mapping
-    )
-    ```
-  </Accordion>
-
-  <Accordion icon="database" title="Anonymizing data for analytics">
-    Use hashing to create consistent identifiers without storing real PII.
-
-    ```python
-    # Hash sensitive data for analytics
-    hashed = client.hash(
-        "user@example.com bought product X",
-        hash_type="sha256"
-    )
-    # Result: "ID_a3f8b9... bought product X"
-    ```
-  </Accordion>
-
-  <Accordion icon="eye-slash" title="Displaying partial information">
-    Mask sensitive data for UI display while maintaining usability.
-
-    ```python
-    # Mask credit card for display
-    masked = client.mask(
-        "Card: 4532-7562-9102-3456",
-        masking_char="*",
-        chars_to_show=4,
-        from_end=True
-    )
-    # Result: "Card: ***************3456"
-    ```
-  </Accordion>
-</AccordionGroup>
 
 ## Need Help?
 
