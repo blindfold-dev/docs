@@ -5,20 +5,20 @@ description: "Permanently remove sensitive data from text"
 
 ## What is Redaction?
 
-Redaction is a permanent privacy protection method that completely removes sensitive data from text by replacing it with generic placeholders (e.g., `<PERSON>`, `<EMAIL_ADDRESS>`). Unlike tokenization, redacted data cannot be restored.
+Redaction is a permanent privacy protection method that completely removes sensitive data from text. The detected sensitive information is deleted and cannot be restored.
 
 **Example:**
 ```
 Input:  "My name is John Doe and SSN is 123-45-6789"
-Output: "My name is <PERSON> and SSN is <US_SSN>"
+Output: "My name is  and SSN is "
 ```
 
 ## How It Works
 
 1. **Detection**: Blindfold identifies sensitive entities in your text
-2. **Complete Replacement**: Each entity is replaced with a generic type label
-3. **Permanent Removal**: Original values are discarded and cannot be recovered
-4. **Type Preservation**: The type of data (email, SSN, etc.) is indicated but not the value
+2. **Complete Removal**: Each detected entity is completely removed from the text
+3. **Permanent**: Original values are discarded and cannot be recovered
+4. **Clean Output**: Text flows naturally with sensitive data removed
 
 ## When to Use Redaction
 
@@ -35,7 +35,7 @@ redacted = client.redact(ticket)
 
 # Store safely
 archive_db.save(redacted.text)
-# "Customer <PERSON> (<EMAIL_ADDRESS>) reported an issue with order #12345"
+# "Customer  () reported an issue with order #12345"
 ```
 
 **Why this matters:**
@@ -54,7 +54,7 @@ redacted = client.redact(event)
 
 # Send to analytics
 analytics.track(redacted.text)
-# "User <EMAIL_ADDRESS> completed purchase"
+# "User  completed purchase"
 ```
 
 **Use cases:**
@@ -130,7 +130,7 @@ If users need to recognize their own data, use **Masking**.
 ```python
 # Bad - user can't identify their card
 redacted = client.redact("Card: 4532-7562-9102-3456")
-# Output: "Card: <CREDIT_CARD>"
+# Output: "Card: "
 
 # Good - show last 4 digits
 masked = client.mask("Card: 4532-7562-9102-3456")
@@ -143,8 +143,8 @@ For analytics with user tracking, use **Hashing**.
 
 ```python
 # Bad - can't track same user across events
-redacted1 = client.redact("User: john@example.com")  # <EMAIL_ADDRESS>
-redacted2 = client.redact("User: john@example.com")  # <EMAIL_ADDRESS>
+redacted1 = client.redact("User: john@example.com")  # "User: "
+redacted2 = client.redact("User: jane@example.com")  # "User: "
 # Both look the same, can't distinguish users
 
 # Good - same user gets same hash
@@ -156,16 +156,16 @@ hash2 = client.hash("User: john@example.com")  # ID_a3f8b9... (same)
 
 <CardGroup cols={2}>
   <Card title="Permanent Removal" icon="trash">
-    Data cannot be recovered once redacted
+    Data is completely removed and cannot be recovered
   </Card>
-  <Card title="Type-Aware" icon="tags">
-    Shows entity type (EMAIL, SSN) not value
+  <Card title="Complete Deletion" icon="eraser">
+    Sensitive text is deleted, not replaced
   </Card>
   <Card title="GDPR Compliant" icon="scale-balanced">
     Meets data minimization requirements
   </Card>
   <Card title="50+ Entity Types" icon="list">
-    Redacts all detected PII types
+    Removes all detected PII types
   </Card>
 </CardGroup>
 
@@ -184,17 +184,17 @@ hash2 = client.hash("User: john@example.com")  # ID_a3f8b9... (same)
     )
 
     print(result.text)
-    # "Contact <PERSON> at <EMAIL_ADDRESS> or call <PHONE_NUMBER>"
+    # "Contact  at  or call "
 
     print(f"Redacted {result.entities_count} entities")
     # "Redacted 3 entities"
 
     # Check what was redacted
     for entity in result.detected_entities:
-        print(f"- {entity.entity_type}: {entity.text}")
-    # - PERSON: John Doe
-    # - EMAIL_ADDRESS: john@example.com
-    # - PHONE_NUMBER: +1-555-1234
+        print(f"- {entity.entity_type}: {entity.text} (removed)")
+    # - PERSON: John Doe (removed)
+    # - EMAIL_ADDRESS: john@example.com (removed)
+    # - PHONE_NUMBER: +1-555-1234 (removed)
     ```
   </Tab>
 
@@ -210,18 +210,18 @@ hash2 = client.hash("User: john@example.com")  # ID_a3f8b9... (same)
     );
 
     console.log(result.text);
-    // "Contact <PERSON> at <EMAIL_ADDRESS> or call <PHONE_NUMBER>"
+    // "Contact  at  or call "
 
     console.log(`Redacted ${result.entities_count} entities`);
     // "Redacted 3 entities"
 
     // Check what was redacted
     result.detected_entities.forEach(entity => {
-      console.log(`- ${entity.entity_type}: ${entity.text}`);
+      console.log(`- ${entity.entity_type}: ${entity.text} (removed)`);
     });
-    // - PERSON: John Doe
-    // - EMAIL_ADDRESS: john@example.com
-    // - PHONE_NUMBER: +1-555-1234
+    // - PERSON: John Doe (removed)
+    // - EMAIL_ADDRESS: john@example.com (removed)
+    // - PHONE_NUMBER: +1-555-1234 (removed)
     ```
   </Tab>
 
@@ -236,7 +236,7 @@ hash2 = client.hash("User: john@example.com")  # ID_a3f8b9... (same)
 
     # Response
     {
-      "text": "Contact <PERSON> at <EMAIL_ADDRESS> or call <PHONE_NUMBER>",
+      "text": "Contact  at  or call ",
       "entities_count": 3,
       "detected_entities": [
         {
@@ -278,7 +278,7 @@ result = client.redact(
     "John Doe (SSN: 123-45-6789) paid with card 4532-7562-9102-3456",
     entities=["US_SSN", "CREDIT_CARD"]
 )
-# Output: "John Doe (SSN: <US_SSN>) paid with card <CREDIT_CARD>"
+# Output: "John Doe (SSN: ) paid with card "
 # Name is NOT redacted
 ```
 
@@ -313,7 +313,7 @@ def safe_log(message: str, level: str = "info"):
 
 # Usage
 safe_log("User john@example.com failed to login from 192.168.1.100")
-# Logs: "User <EMAIL_ADDRESS> failed to login from <IP_ADDRESS>"
+# Logs: "User  failed to login from "
 ```
 
 ### Support Ticket Archival
@@ -388,7 +388,7 @@ track_event("user_signup", {
         compliance_log.write(redacted.text)
 
     log_user_action("john@example.com", "password_reset")
-    # Logs: "<EMAIL_ADDRESS> performed password_reset"
+    # Logs: " performed password_reset"
     ```
 
     **Benefits**: Audit trail maintained, no PII storage, GDPR compliant
@@ -412,7 +412,7 @@ track_event("user_signup", {
         "Great service! Contact me at john@example.com",
         5
     )
-    # Stores: "Great service! Contact me at <EMAIL_ADDRESS>"
+    # Stores: "Great service! Contact me at "
     ```
 
     **Benefits**: Feedback preserved, PII removed, safe for analysis
@@ -457,7 +457,7 @@ track_event("user_signup", {
         return public_records
 
     # Original: ["John Doe, john@example.com, +1-555-1234", ...]
-    # Public: ["<PERSON>, <EMAIL_ADDRESS>, <PHONE_NUMBER>", ...]
+    # Public: [", , ", ...]
     ```
 
     **Benefits**: Data useful for research, no privacy violations
@@ -540,9 +540,9 @@ def process_and_store(data):
 <Warning>
 Important redaction considerations:
 - **Permanent**: Redacted data cannot be recovered
-- **Type visibility**: Entity types are visible (e.g., `<EMAIL_ADDRESS>`)
-- **Context preservation**: Surrounding text remains unchanged
-- **Not encryption**: Redaction is removal, not encryption
+- **Complete removal**: Text is completely deleted, leaving gaps
+- **Context flow**: May affect readability with removed text
+- **Not reversible**: Unlike encryption, redaction cannot be undone
 - **Review before production**: Test redaction on sample data first
 </Warning>
 
