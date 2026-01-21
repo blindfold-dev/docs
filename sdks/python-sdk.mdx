@@ -1,0 +1,460 @@
+---
+title: "Python SDK"
+description: "Official Python SDK for Blindfold - Comprehensive Guide"
+---
+
+The official Python SDK for Blindfold provides a simple and powerful way to protect sensitive data in your Python applications. It supports both synchronous and asynchronous operations.
+
+## Installation
+
+Install the SDK using pip:
+
+```bash
+pip install blindfold-sdk
+```
+
+## Initialization
+
+### Basic Setup
+
+```python
+from blindfold import Blindfold
+
+client = Blindfold(
+    api_key="your-api-key-here"
+)
+```
+
+### With Custom Configuration
+
+```python
+from blindfold import Blindfold
+
+client = Blindfold(
+    api_key="your-api-key-here",
+    base_url="https://api.blindfold.dev/api/public/v1",  # Optional: Custom API endpoint
+    user_id="user_123"  # Optional: Track specific user for audit logs
+)
+```
+
+### Context Manager (Recommended)
+
+Use the context manager to ensure proper resource cleanup:
+
+```python
+from blindfold import Blindfold
+
+with Blindfold(api_key="your-api-key-here") as client:
+    response = client.tokenize("Hello John Doe")
+    print(response.text)
+```
+
+## Core Methods
+
+### Tokenize
+
+Replace sensitive data with reversible tokens. Perfect for AI interactions where you need to restore original values later.
+
+```python
+response = client.tokenize(
+    text="Contact John Doe at john@example.com or call +1-555-1234",
+    config={
+        "entities": ["PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER"],  # Optional: Filter specific entities
+        "score_threshold": 0.4  # Optional: Confidence threshold (0.0-1.0)
+    }
+)
+
+print(response.text)
+# "Contact <PERSON_1> at <EMAIL_ADDRESS_1> or call <PHONE_NUMBER_1>"
+
+print(response.mapping)
+# {'<PERSON_1>': 'John Doe', '<EMAIL_ADDRESS_1>': 'john@example.com', '<PHONE_NUMBER_1>': '+1-555-1234'}
+
+print(response.entities_count)
+# 3
+
+for entity in response.detected_entities:
+    print(f"{entity.entity_type}: {entity.text} (confidence: {entity.score:.2f})")
+```
+
+**Parameters:**
+- `text` (str, required): The text to tokenize
+- `config` (dict, optional):
+  - `entities` (list[str]): List of entity types to detect
+  - `score_threshold` (float): Minimum confidence score (0.0-1.0)
+
+**Returns:** `TokenizeResponse` with:
+- `text`: Anonymized text with tokens
+- `mapping`: Dictionary mapping tokens to original values
+- `detected_entities`: List of detected entities with details
+- `entities_count`: Total number of entities found
+
+### Detokenize
+
+Restore original values from tokens.
+
+```python
+original = client.detokenize(
+    text="AI response for <PERSON_1> at <EMAIL_ADDRESS_1>",
+    mapping=response.mapping
+)
+
+print(original.text)
+# "AI response for John Doe at john@example.com"
+
+print(original.replacements_made)
+# 2
+```
+
+**Parameters:**
+- `text` (str, required): Text containing tokens
+- `mapping` (dict, required): Token-to-value mapping from tokenize response
+
+**Returns:** `DetokenizeResponse` with:
+- `text`: Original text with tokens replaced
+- `replacements_made`: Number of token replacements
+
+### Mask
+
+Partially hide sensitive data (e.g., `****-****-****-1234`).
+
+```python
+response = client.mask(
+    text="Credit card: 4532-7562-9102-3456",
+    masking_char="*",
+    chars_to_show=4,
+    from_end=True
+)
+
+print(response.text)
+# "Credit card: ***************3456"
+```
+
+**Parameters:**
+- `text` (str, required): Text to mask
+- `masking_char` (str, optional): Character to use for masking (default: `*`)
+- `chars_to_show` (int, optional): Number of characters to keep visible (default: 4)
+- `from_end` (bool, optional): Show characters from end if True, start if False (default: True)
+
+**Returns:** `MaskResponse` with:
+- `text`: Masked text
+- `detected_entities`: List of detected and masked entities
+- `entities_count`: Number of entities masked
+
+### Redact
+
+Permanently remove sensitive data.
+
+```python
+response = client.redact(
+    text="My SSN is 123-45-6789 and password is secret123"
+)
+
+print(response.text)
+# "My SSN is <US_SSN> and password is <PASSWORD>"
+```
+
+**Parameters:**
+- `text` (str, required): Text to redact
+- `entities` (list[str], optional): Specific entity types to redact
+- `score_threshold` (float, optional): Minimum confidence score
+
+**Returns:** `RedactResponse` with:
+- `text`: Redacted text
+- `detected_entities`: List of redacted entities
+- `entities_count`: Number of entities redacted
+
+### Hash
+
+Replace data with deterministic hashes. Useful for analytics and matching without exposing original values.
+
+```python
+response = client.hash(
+    text="User ID: john@example.com purchased item X",
+    hash_type="sha256",
+    hash_prefix="ID_",
+    hash_length=16
+)
+
+print(response.text)
+# "User ID: ID_a3f8b9c2d4e5f6g7 purchased item X"
+```
+
+**Parameters:**
+- `text` (str, required): Text to hash
+- `hash_type` (str, optional): Hash algorithm - `md5`, `sha1`, `sha224`, `sha256`, `sha384`, `sha512` (default: `sha256`)
+- `hash_prefix` (str, optional): Prefix for hash values (default: `""`)
+- `hash_length` (int, optional): Length of hash to use (default: 16)
+
+**Returns:** `HashResponse` with:
+- `text`: Text with hashed entities
+- `detected_entities`: List of hashed entities
+- `entities_count`: Number of entities hashed
+
+### Synthesize
+
+Replace real data with realistic fake data using Faker.
+
+```python
+response = client.synthesize(
+    text="John lives in New York and works at Microsoft",
+    language="en"
+)
+
+print(response.text)
+# "Michael Smith lives in Boston and works at TechCorp" (example output)
+```
+
+**Parameters:**
+- `text` (str, required): Text to synthesize
+- `language` (str, optional): Language code for fake data generation - `en`, `cs`, `de`, `fr`, `es`, `it`, `pl`, `sk` (default: `en`)
+- `entities` (list[str], optional): Specific entity types to synthesize
+- `score_threshold` (float, optional): Minimum confidence score
+
+**Returns:** `SynthesizeResponse` with:
+- `text`: Text with synthesized data
+- `detected_entities`: List of replaced entities
+- `entities_count`: Number of entities synthesized
+
+### Encrypt
+
+Encrypt sensitive data using AES encryption (reversible with key).
+
+```python
+response = client.encrypt(
+    text="Secret message: API key is sk-12345",
+    encryption_key="your-secure-key-min-16-chars"
+)
+
+print(response.text)
+# "Secret message: gAAAAABh..." (encrypted string)
+```
+
+**Parameters:**
+- `text` (str, required): Text to encrypt
+- `encryption_key` (str, optional): Encryption key (min 16 characters). If not provided, uses tenant default.
+- `entities` (list[str], optional): Specific entity types to encrypt
+- `score_threshold` (float, optional): Minimum confidence score
+
+**Returns:** `EncryptResponse` with:
+- `text`: Text with encrypted entities
+- `detected_entities`: List of encrypted entities
+- `entities_count`: Number of entities encrypted
+
+## Async Support
+
+The SDK fully supports asyncio for non-blocking operations:
+
+```python
+import asyncio
+from blindfold import AsyncBlindfold
+
+async def main():
+    async with AsyncBlindfold(api_key="your-api-key-here") as client:
+        # All methods are available with async/await
+        response = await client.tokenize("Hello John Doe")
+        print(response.text)
+
+        # Concurrent requests
+        results = await asyncio.gather(
+            client.tokenize("Text 1 with john@example.com"),
+            client.tokenize("Text 2 with jane@example.com"),
+            client.mask("Card: 4532-7562-9102-3456")
+        )
+
+asyncio.run(main())
+```
+
+## Supported Entity Types
+
+The SDK automatically detects 50+ types of sensitive information:
+
+### Personal Information
+- `PERSON` - Person names
+- `EMAIL_ADDRESS` - Email addresses
+- `PHONE_NUMBER` - Phone numbers
+- `DATE_TIME` - Dates and times
+
+### Financial Information
+- `CREDIT_CARD` - Credit card numbers
+- `IBAN_CODE` - International Bank Account Numbers
+- `CRYPTO` - Cryptocurrency addresses
+
+### Government IDs
+- `US_SSN` - US Social Security Numbers
+- `US_DRIVER_LICENSE` - US Driver Licenses
+- `US_PASSPORT` - US Passport Numbers
+- `NRP` - National Registry Person (various countries)
+
+### Medical Information
+- `MEDICAL_LICENSE` - Medical license numbers
+- `US_ITIN` - Individual Taxpayer Identification Numbers
+
+### Technical Information
+- `IP_ADDRESS` - IP addresses (IPv4/IPv6)
+- `URL` - URLs and domains
+- `API_KEY` - API keys and tokens
+
+### Location Information
+- `LOCATION` - Cities, addresses, and locations
+- `ADDRESS` - Physical addresses
+
+And many more...
+
+## Error Handling
+
+The SDK provides specific exception types for different error scenarios:
+
+```python
+from blindfold import Blindfold, AuthenticationError, APIError, NetworkError
+
+try:
+    with Blindfold(api_key="invalid-key") as client:
+        response = client.tokenize("Test")
+except AuthenticationError as e:
+    print(f"Invalid API key: {e.message}")
+except APIError as e:
+    print(f"API error ({e.status_code}): {e.message}")
+except NetworkError as e:
+    print(f"Network error: {e.message}")
+except Exception as e:
+    print(f"Unexpected error: {e}")
+```
+
+**Exception Types:**
+- `AuthenticationError` - Invalid or missing API key
+- `APIError` - API validation or processing errors (includes status code)
+- `NetworkError` - Connection issues, timeouts
+- `Exception` - Unexpected errors
+
+## Configuration Options
+
+### Entity Filtering
+
+Filter which types of entities to detect:
+
+```python
+response = client.tokenize(
+    text="Contact John at john@example.com or 555-1234",
+    config={
+        "entities": ["EMAIL_ADDRESS"]  # Only detect emails
+    }
+)
+```
+
+### Confidence Threshold
+
+Set minimum confidence score (0.0-1.0) for entity detection:
+
+```python
+response = client.tokenize(
+    text="Maybe this is an email: test@test",
+    config={
+        "score_threshold": 0.8  # Only high-confidence detections
+    }
+)
+```
+
+Lower threshold = more detections (higher recall, lower precision)
+Higher threshold = fewer detections (lower recall, higher precision)
+
+## Best Practices
+
+### 1. Use Environment Variables for API Keys
+
+```python
+import os
+from blindfold import Blindfold
+
+api_key = os.environ.get("BLINDFOLD_API_KEY")
+client = Blindfold(api_key=api_key)
+```
+
+### 2. Use Context Managers
+
+```python
+# Good - ensures proper cleanup
+with Blindfold(api_key=api_key) as client:
+    response = client.tokenize(text)
+
+# Avoid - requires manual cleanup
+client = Blindfold(api_key=api_key)
+response = client.tokenize(text)
+client.close()
+```
+
+### 3. Handle Errors Gracefully
+
+```python
+try:
+    response = client.tokenize(text)
+except AuthenticationError:
+    # Refresh API key or notify admin
+    pass
+except NetworkError:
+    # Retry with exponential backoff
+    pass
+```
+
+### 4. Store Mappings Securely
+
+When using tokenization, store the mapping securely for later detokenization:
+
+```python
+# Tokenize
+response = client.tokenize(user_input)
+# Store mapping in secure session storage or encrypted database
+session['token_mapping'] = response.mapping
+
+# Later, detokenize
+ai_response = get_ai_response(response.text)
+original = client.detokenize(ai_response, session['token_mapping'])
+```
+
+### 5. Use Async for High-Throughput Applications
+
+```python
+async with AsyncBlindfold(api_key=api_key) as client:
+    # Process multiple requests concurrently
+    tasks = [client.tokenize(text) for text in texts]
+    results = await asyncio.gather(*tasks)
+```
+
+## Complete Example
+
+Here's a complete example integrating Blindfold with OpenAI:
+
+```python
+import os
+from blindfold import Blindfold
+from openai import OpenAI
+
+# Initialize clients
+blindfold = Blindfold(api_key=os.environ["BLINDFOLD_API_KEY"])
+openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+# User input with sensitive data
+user_message = "My name is John Doe and my email is john@example.com"
+
+# 1. Tokenize sensitive data
+protected = blindfold.tokenize(user_message)
+print(f"Protected: {protected.text}")
+
+# 2. Send protected text to OpenAI
+ai_response = openai_client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": protected.text}]
+)
+
+ai_text = ai_response.choices[0].message.content
+
+# 3. Detokenize AI response to restore original data
+final_response = blindfold.detokenize(ai_text, protected.mapping)
+print(f"Final: {final_response.text}")
+```
+
+## Need Help?
+
+- **GitHub Issues**: Report bugs or request features
+- **Email Support**: hello@blindfold.dev
+- **Documentation**: Check out the [API Reference](/api-reference/rest-api) and [Examples](/examples)

@@ -1,0 +1,897 @@
+---
+title: "REST API Reference"
+description: "Complete HTTP API documentation for Blindfold"
+---
+
+The Blindfold REST API provides direct HTTP access to all privacy protection features. Use any programming language or HTTP client to integrate with Blindfold.
+
+## Base URL
+
+```
+https://api.blindfold.dev/api/public/v1
+```
+
+## Authentication
+
+All API requests require authentication using an API key in the `Authorization` header:
+
+```http
+Authorization: Bearer your-api-key-here
+```
+
+### Getting Your API Key
+
+1. Sign up at [app.blindfold.dev](https://app.blindfold.dev)
+2. Navigate to **API Keys** in the dashboard
+3. Click **Create API Key**
+4. Copy and securely store your key
+
+<Warning>
+Keep your API key secure. Never commit it to version control or expose it in client-side code.
+</Warning>
+
+## Request Format
+
+All requests must:
+- Use `Content-Type: application/json`
+- Include the `Authorization` header
+- Send data as JSON in the request body
+
+```http
+POST /api/public/v1/tokenize HTTP/1.1
+Host: api.blindfold.dev
+Authorization: Bearer your-api-key-here
+Content-Type: application/json
+
+{
+  "text": "Your text here"
+}
+```
+
+## Response Format
+
+All successful responses return JSON with:
+- `text`: The processed text
+- `detected_entities`: Array of detected entities (if applicable)
+- `entities_count`: Number of entities detected
+- Additional method-specific fields
+
+### Success Response (200 OK)
+
+```json
+{
+  "text": "Processed text",
+  "entities_count": 2,
+  "detected_entities": [
+    {
+      "entity_type": "EMAIL_ADDRESS",
+      "text": "john@example.com",
+      "start": 12,
+      "end": 28,
+      "score": 1.0
+    }
+  ]
+}
+```
+
+### Error Response (4xx, 5xx)
+
+```json
+{
+  "detail": "Error message describing what went wrong"
+}
+```
+
+## API Endpoints
+
+### POST /tokenize
+
+Replace sensitive data with reversible tokens. Returns a mapping to restore original values.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+  -H "Authorization: Bearer your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Contact John Doe at john@example.com",
+    "entities": ["PERSON", "EMAIL_ADDRESS"],
+    "score_threshold": 0.4
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.blindfold.dev/api/public/v1/tokenize",
+    headers={
+        "Authorization": "Bearer your-api-key-here",
+        "Content-Type": "application/json"
+    },
+    json={
+        "text": "Contact John Doe at john@example.com",
+        "entities": ["PERSON", "EMAIL_ADDRESS"],
+        "score_threshold": 0.4
+    }
+)
+
+data = response.json()
+print(data)
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.blindfold.dev/api/public/v1/tokenize',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer your-api-key-here',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      text: 'Contact John Doe at john@example.com',
+      entities: ['PERSON', 'EMAIL_ADDRESS'],
+      score_threshold: 0.4
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+</CodeGroup>
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | Text to tokenize |
+| `entities` | string[] | No | Filter specific entity types |
+| `score_threshold` | number | No | Minimum confidence (0.0-1.0) |
+
+**Response:**
+```json
+{
+  "text": "Contact <PERSON_1> at <EMAIL_ADDRESS_1>",
+  "mapping": {
+    "<PERSON_1>": "John Doe",
+    "<EMAIL_ADDRESS_1>": "john@example.com"
+  },
+  "entities_count": 2,
+  "detected_entities": [
+    {
+      "entity_type": "PERSON",
+      "text": "John Doe",
+      "start": 8,
+      "end": 16,
+      "score": 0.95
+    },
+    {
+      "entity_type": "EMAIL_ADDRESS",
+      "text": "john@example.com",
+      "start": 20,
+      "end": 36,
+      "score": 1.0
+    }
+  ]
+}
+```
+
+---
+
+### POST /detokenize
+
+Restore original values from tokens using the mapping from `/tokenize`.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.blindfold.dev/api/public/v1/detokenize \
+  -H "Authorization: Bearer your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "AI response for <PERSON_1> at <EMAIL_ADDRESS_1>",
+    "mapping": {
+      "<PERSON_1>": "John Doe",
+      "<EMAIL_ADDRESS_1>": "john@example.com"
+    }
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.blindfold.dev/api/public/v1/detokenize",
+    headers={
+        "Authorization": "Bearer your-api-key-here",
+        "Content-Type": "application/json"
+    },
+    json={
+        "text": "AI response for <PERSON_1> at <EMAIL_ADDRESS_1>",
+        "mapping": {
+            "<PERSON_1>": "John Doe",
+            "<EMAIL_ADDRESS_1>": "john@example.com"
+        }
+    }
+)
+
+data = response.json()
+print(data)
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.blindfold.dev/api/public/v1/detokenize',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer your-api-key-here',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      text: 'AI response for <PERSON_1> at <EMAIL_ADDRESS_1>',
+      mapping: {
+        '<PERSON_1>': 'John Doe',
+        '<EMAIL_ADDRESS_1>': 'john@example.com'
+      }
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+</CodeGroup>
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | Text containing tokens |
+| `mapping` | object | Yes | Token-to-value mapping |
+
+**Response:**
+```json
+{
+  "text": "AI response for John Doe at john@example.com",
+  "replacements_made": 2
+}
+```
+
+---
+
+### POST /mask
+
+Partially hide sensitive data (e.g., `****-****-****-1234`).
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.blindfold.dev/api/public/v1/mask \
+  -H "Authorization: Bearer your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Credit card: 4532-7562-9102-3456",
+    "masking_char": "*",
+    "chars_to_show": 4,
+    "from_end": true
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.blindfold.dev/api/public/v1/mask",
+    headers={
+        "Authorization": "Bearer your-api-key-here",
+        "Content-Type": "application/json"
+    },
+    json={
+        "text": "Credit card: 4532-7562-9102-3456",
+        "masking_char": "*",
+        "chars_to_show": 4,
+        "from_end": True
+    }
+)
+
+data = response.json()
+print(data)
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.blindfold.dev/api/public/v1/mask',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer your-api-key-here',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      text: 'Credit card: 4532-7562-9102-3456',
+      masking_char: '*',
+      chars_to_show: 4,
+      from_end: true
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+</CodeGroup>
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | Text to mask |
+| `masking_char` | string | No | Masking character (default: `*`) |
+| `chars_to_show` | number | No | Characters to show (default: 4) |
+| `from_end` | boolean | No | Show from end (default: true) |
+| `entities` | string[] | No | Filter specific entity types |
+| `score_threshold` | number | No | Minimum confidence (0.0-1.0) |
+
+**Response:**
+```json
+{
+  "text": "Credit card: ***************3456",
+  "entities_count": 1,
+  "detected_entities": [
+    {
+      "entity_type": "CREDIT_CARD",
+      "text": "4532-7562-9102-3456",
+      "start": 13,
+      "end": 32,
+      "score": 1.0
+    }
+  ]
+}
+```
+
+---
+
+### POST /redact
+
+Permanently remove sensitive data.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.blindfold.dev/api/public/v1/redact \
+  -H "Authorization: Bearer your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "My SSN is 123-45-6789",
+    "entities": ["US_SSN"],
+    "score_threshold": 0.5
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.blindfold.dev/api/public/v1/redact",
+    headers={
+        "Authorization": "Bearer your-api-key-here",
+        "Content-Type": "application/json"
+    },
+    json={
+        "text": "My SSN is 123-45-6789",
+        "entities": ["US_SSN"],
+        "score_threshold": 0.5
+    }
+)
+
+data = response.json()
+print(data)
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.blindfold.dev/api/public/v1/redact',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer your-api-key-here',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      text: 'My SSN is 123-45-6789',
+      entities: ['US_SSN'],
+      score_threshold: 0.5
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+</CodeGroup>
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | Text to redact |
+| `entities` | string[] | No | Filter specific entity types |
+| `score_threshold` | number | No | Minimum confidence (0.0-1.0) |
+
+**Response:**
+```json
+{
+  "text": "My SSN is <US_SSN>",
+  "entities_count": 1,
+  "detected_entities": [
+    {
+      "entity_type": "US_SSN",
+      "text": "123-45-6789",
+      "start": 10,
+      "end": 21,
+      "score": 1.0
+    }
+  ]
+}
+```
+
+---
+
+### POST /hash
+
+Replace data with deterministic hashes.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.blindfold.dev/api/public/v1/hash \
+  -H "Authorization: Bearer your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "User john@example.com purchased item",
+    "hash_type": "sha256",
+    "hash_prefix": "ID_",
+    "hash_length": 16
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.blindfold.dev/api/public/v1/hash",
+    headers={
+        "Authorization": "Bearer your-api-key-here",
+        "Content-Type": "application/json"
+    },
+    json={
+        "text": "User john@example.com purchased item",
+        "hash_type": "sha256",
+        "hash_prefix": "ID_",
+        "hash_length": 16
+    }
+)
+
+data = response.json()
+print(data)
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.blindfold.dev/api/public/v1/hash',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer your-api-key-here',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      text: 'User john@example.com purchased item',
+      hash_type: 'sha256',
+      hash_prefix: 'ID_',
+      hash_length: 16
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+</CodeGroup>
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | Text to hash |
+| `hash_type` | string | No | Hash algorithm: `md5`, `sha1`, `sha224`, `sha256`, `sha384`, `sha512` (default: `sha256`) |
+| `hash_prefix` | string | No | Prefix for hashes (default: `""`) |
+| `hash_length` | number | No | Hash length to use (default: 16) |
+| `entities` | string[] | No | Filter specific entity types |
+| `score_threshold` | number | No | Minimum confidence (0.0-1.0) |
+
+**Response:**
+```json
+{
+  "text": "User ID_a3f8b9c2d4e5f6g7 purchased item",
+  "entities_count": 1,
+  "detected_entities": [
+    {
+      "entity_type": "EMAIL_ADDRESS",
+      "text": "john@example.com",
+      "start": 5,
+      "end": 21,
+      "score": 1.0
+    }
+  ]
+}
+```
+
+---
+
+### POST /synthesize
+
+Replace real data with realistic fake data.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.blindfold.dev/api/public/v1/synthesize \
+  -H "Authorization: Bearer your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "John lives in New York",
+    "language": "en"
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.blindfold.dev/api/public/v1/synthesize",
+    headers={
+        "Authorization": "Bearer your-api-key-here",
+        "Content-Type": "application/json"
+    },
+    json={
+        "text": "John lives in New York",
+        "language": "en"
+    }
+)
+
+data = response.json()
+print(data)
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.blindfold.dev/api/public/v1/synthesize',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer your-api-key-here',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      text: 'John lives in New York',
+      language: 'en'
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+</CodeGroup>
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | Text to synthesize |
+| `language` | string | No | Language: `en`, `cs`, `de`, `fr`, `es`, `it`, `pl`, `sk` (default: `en`) |
+| `entities` | string[] | No | Filter specific entity types |
+| `score_threshold` | number | No | Minimum confidence (0.0-1.0) |
+
+**Response:**
+```json
+{
+  "text": "Michael Smith lives in Boston",
+  "entities_count": 2,
+  "detected_entities": [
+    {
+      "entity_type": "PERSON",
+      "text": "John",
+      "start": 0,
+      "end": 4,
+      "score": 0.95
+    },
+    {
+      "entity_type": "LOCATION",
+      "text": "New York",
+      "start": 14,
+      "end": 22,
+      "score": 0.90
+    }
+  ]
+}
+```
+
+---
+
+### POST /encrypt
+
+Encrypt sensitive data using AES encryption.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.blindfold.dev/api/public/v1/encrypt \
+  -H "Authorization: Bearer your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Secret: API key is sk-12345",
+    "encryption_key": "my-secure-encryption-key"
+  }'
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.blindfold.dev/api/public/v1/encrypt",
+    headers={
+        "Authorization": "Bearer your-api-key-here",
+        "Content-Type": "application/json"
+    },
+    json={
+        "text": "Secret: API key is sk-12345",
+        "encryption_key": "my-secure-encryption-key"
+    }
+)
+
+data = response.json()
+print(data)
+```
+
+```javascript JavaScript
+const response = await fetch(
+  'https://api.blindfold.dev/api/public/v1/encrypt',
+  {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer your-api-key-here',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      text: 'Secret: API key is sk-12345',
+      encryption_key: 'my-secure-encryption-key'
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+</CodeGroup>
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | Text to encrypt |
+| `encryption_key` | string | No | Encryption key (min 16 chars) |
+| `entities` | string[] | No | Filter specific entity types |
+| `score_threshold` | number | No | Minimum confidence (0.0-1.0) |
+
+**Response:**
+```json
+{
+  "text": "Secret: gAAAAABh3K7x...",
+  "entities_count": 1,
+  "detected_entities": [
+    {
+      "entity_type": "API_KEY",
+      "text": "sk-12345",
+      "start": 19,
+      "end": 27,
+      "score": 0.85
+    }
+  ]
+}
+```
+
+---
+
+### GET /health
+
+Health check endpoint.
+
+```bash
+curl https://api.blindfold.dev/api/public/v1/health
+```
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "service": "Public API",
+  "version": "v1",
+  "endpoints": [
+    "/v1/tokenize",
+    "/v1/detokenize",
+    "/v1/redact",
+    "/v1/mask",
+    "/v1/synthesize",
+    "/v1/hash",
+    "/v1/encrypt"
+  ]
+}
+```
+
+## Supported Entity Types
+
+All detection endpoints support filtering by entity type. Common entities include:
+
+### Personal Information
+- `PERSON` - Person names
+- `EMAIL_ADDRESS` - Email addresses
+- `PHONE_NUMBER` - Phone numbers
+- `DATE_TIME` - Dates and times
+
+### Financial
+- `CREDIT_CARD` - Credit card numbers
+- `IBAN_CODE` - International Bank Account Numbers
+- `CRYPTO` - Cryptocurrency addresses
+
+### Government IDs
+- `US_SSN` - US Social Security Numbers
+- `US_DRIVER_LICENSE` - US Driver Licenses
+- `US_PASSPORT` - US Passport Numbers
+
+### Medical
+- `MEDICAL_LICENSE` - Medical license numbers
+- `US_ITIN` - Individual Taxpayer IDs
+
+### Technical
+- `IP_ADDRESS` - IP addresses
+- `URL` - URLs and domains
+- `API_KEY` - API keys and tokens
+
+### Location
+- `LOCATION` - Cities and locations
+- `ADDRESS` - Physical addresses
+
+## Rate Limiting
+
+The API has the following rate limits:
+
+- **Free Tier**: 1,000 requests per day
+- **Pro Tier**: 100,000 requests per day
+- **Enterprise**: Custom limits
+
+Rate limit headers are included in responses:
+```http
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 999
+X-RateLimit-Reset: 1640995200
+```
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| 200 | Success |
+| 400 | Bad Request - Invalid parameters |
+| 401 | Unauthorized - Invalid or missing API key |
+| 429 | Too Many Requests - Rate limit exceeded |
+| 500 | Internal Server Error - Server-side issue |
+
+## Best Practices
+
+### 1. Store API Keys Securely
+
+```bash
+# Use environment variables
+export BLINDFOLD_API_KEY="your-api-key-here"
+```
+
+### 2. Handle Rate Limits
+
+Implement exponential backoff for rate limit errors:
+
+```python
+import time
+import requests
+
+def make_request_with_retry(url, data, max_retries=3):
+    for attempt in range(max_retries):
+        response = requests.post(url, json=data, headers=headers)
+
+        if response.status_code == 429:
+            # Rate limited - wait and retry
+            wait_time = 2 ** attempt
+            time.sleep(wait_time)
+            continue
+
+        return response
+
+    raise Exception("Max retries exceeded")
+```
+
+### 3. Validate Responses
+
+Always check the response status and handle errors:
+
+```python
+response = requests.post(url, json=data, headers=headers)
+
+if response.status_code == 200:
+    data = response.json()
+    print(f"Success: {data['text']}")
+elif response.status_code == 401:
+    print("Invalid API key")
+elif response.status_code == 429:
+    print("Rate limit exceeded")
+else:
+    print(f"Error: {response.json()['detail']}")
+```
+
+### 4. Use Connection Pooling
+
+For high-throughput applications, use connection pooling:
+
+```python
+import requests
+
+session = requests.Session()
+# Reuse session for multiple requests
+response = session.post(url, json=data, headers=headers)
+```
+
+## Complete Example
+
+Here's a complete workflow using the REST API:
+
+```python
+import requests
+import os
+
+API_KEY = os.environ.get("BLINDFOLD_API_KEY")
+BASE_URL = "https://api.blindfold.dev/api/public/v1"
+
+headers = {
+    "Authorization": f"Bearer {API_KEY}",
+    "Content-Type": "application/json"
+}
+
+# 1. Tokenize user input
+user_message = "My name is John Doe and email is john@example.com"
+
+tokenize_response = requests.post(
+    f"{BASE_URL}/tokenize",
+    headers=headers,
+    json={"text": user_message}
+)
+
+tokenize_data = tokenize_response.json()
+protected_text = tokenize_data["text"]
+mapping = tokenize_data["mapping"]
+
+print(f"Protected: {protected_text}")
+
+# 2. Send to AI (using protected text)
+# ... AI processing ...
+
+# 3. Detokenize AI response
+ai_response = f"Hello {protected_text.split()[3]}"  # Example AI response
+
+detokenize_response = requests.post(
+    f"{BASE_URL}/detokenize",
+    headers=headers,
+    json={
+        "text": ai_response,
+        "mapping": mapping
+    }
+)
+
+final_text = detokenize_response.json()["text"]
+print(f"Final: {final_text}")
+```
+
+## Need Help?
+
+- **Email Support**: hello@blindfold.dev
+- **SDK Documentation**: [Python SDK](/sdks/python-sdk) | [JavaScript SDK](/sdks/javascript-sdk)
+- **Examples**: [See practical examples](/examples)

@@ -1,97 +1,128 @@
 ---
 title: "Introduction"
-description: "Welcome to the new home for your documentation"
+description: "Welcome to Blindfold - The Privacy API for AI"
 ---
 
-## Setting up
+## What is Blindfold?
 
-Get your documentation site up and running in minutes.
+Blindfold is a privacy-first infrastructure API that helps you securely protect sensitive data (PII) before sending it to AI models and third-party services. It provides automated detection and protection of over 50 types of personally identifiable information.
+
+### The Problem
+
+When building AI applications, you often need to send user data to large language models (OpenAI, Anthropic, etc.). However, this data may contain sensitive information like:
+
+- Personal names and emails
+- Phone numbers and addresses
+- Credit card numbers and SSNs
+- Medical records and IDs
+- IP addresses and URLs
+
+Sending this data directly to third-party AI providers can create compliance risks (GDPR, HIPAA, EU AI Act) and privacy concerns.
+
+### The Solution
+
+Blindfold sits between your application and AI services, automatically detecting and protecting sensitive data:
+
+1. **Send us your text** with sensitive information
+2. **We return protected text** (tokenized/masked/redacted)
+3. **You send safe text to AI models** without privacy risks
+4. **We restore original data** (if needed) after getting the AI response
+
+## Key Features
+
+<Columns cols={2}>
+  <Card title="Tokenization" icon="shuffle">
+    Replace sensitive data with reversible tokens like `<PERSON_1>`. Perfect for AI interactions where you need to restore original values.
+  </Card>
+  <Card title="Masking" icon="eye-slash">
+    Partially hide data (e.g., `****-****-****-1234`). Useful for displaying data while maintaining privacy.
+  </Card>
+  <Card title="Redaction" icon="eraser">
+    Permanently remove sensitive information. Ideal for complete data removal without the ability to restore.
+  </Card>
+  <Card title="Synthesis" icon="wand-magic-sparkles">
+    Replace real data with realistic fake data using Faker. Great for testing and demos.
+  </Card>
+  <Card title="Hashing" icon="hashtag">
+    Convert data to deterministic hashes. Useful for analytics and matching without exposing original values.
+  </Card>
+  <Card title="Encryption" icon="lock">
+    Encrypt data using AES encryption. Reversible with proper encryption key.
+  </Card>
+</Columns>
+
+## Supported PII Types
+
+Blindfold automatically detects 50+ types of sensitive information, including:
+
+- **Personal**: Names, Email addresses, Phone numbers
+- **Financial**: Credit cards, IBANs, Bank accounts
+- **Government IDs**: SSN, Driver licenses, Passports
+- **Medical**: Medical license numbers, Patient IDs
+- **Technical**: IP addresses, URLs, API keys
+- **Location**: Addresses, GPS coordinates
+
+## Getting Started
 
 <Card
-  title="Start here"
+  title="Quick Start Guide"
   icon="rocket"
   href="/quickstart"
   horizontal
 >
-  Follow our three step quickstart guide.
+  Get up and running in 5 minutes with your first API call.
 </Card>
 
-## Make it yours
+## Choose Your Integration Method
 
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
+<Columns cols={3}>
   <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
+    title="Python SDK"
+    icon="python"
+    href="/sdks/python-sdk"
   >
-    Edit your docs locally and preview them in real time.
+    Official Python SDK with sync and async support.
   </Card>
   <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
+    title="JavaScript SDK"
+    icon="js"
+    href="/sdks/javascript-sdk"
   >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+    Official JavaScript/TypeScript SDK for Node.js and browsers.
   </Card>
   <Card
-    title="API documentation"
+    title="REST API"
     icon="terminal"
-    href="/api-reference/introduction"
+    href="/api-reference/rest-api"
   >
-    Auto-generate API documentation from OpenAPI specifications.
+    Direct HTTP API access with any language or tool.
   </Card>
 </Columns>
 
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Need inspiration?
+## Learn by Example
 
 <Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
+  title="See Examples"
+  icon="code"
+  href="/examples"
+  horizontal
 >
-  Browse our showcase of exceptional documentation sites.
+  Explore practical examples and common use cases.
 </Card>
+
+## Why Blindfold?
+
+<Columns cols={2}>
+  <Card title="Developer-Friendly" icon="heart">
+    Simple SDKs and REST API. Get started in minutes with comprehensive documentation.
+  </Card>
+  <Card title="Production-Ready" icon="shield-check">
+    Built for scale with async support, error handling, and audit logging.
+  </Card>
+  <Card title="Compliance-First" icon="scale-balanced">
+    Help meet GDPR, HIPAA, and EU AI Act requirements with automated PII detection.
+  </Card>
+  <Card title="Multi-Language Support" icon="globe">
+    Detect PII in English, Czech, German, French, Spanish, Italian, Polish, and Slovak.
+  </Card>
+</Columns>

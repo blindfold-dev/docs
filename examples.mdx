@@ -1,0 +1,813 @@
+---
+title: "Examples"
+description: "Practical examples and integration patterns for Blindfold"
+---
+
+Learn how to integrate Blindfold into real-world applications with these practical examples.
+
+## AI Chat with Privacy Protection
+
+Protect user data when building AI chatbots with OpenAI, Anthropic, or other LLM providers.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import os
+    from blindfold import Blindfold
+    from openai import OpenAI
+
+    # Initialize clients
+    blindfold = Blindfold(api_key=os.environ["BLINDFOLD_API_KEY"])
+    openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+    def secure_chat(user_message: str) -> str:
+        """Process chat message with privacy protection"""
+
+        # Step 1: Tokenize sensitive data
+        protected = blindfold.tokenize(user_message)
+        print(f"Protected input: {protected.text}")
+        print(f"Detected {protected.entities_count} sensitive entities")
+
+        # Step 2: Send protected text to OpenAI
+        response = openai_client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": protected.text}
+            ]
+        )
+
+        ai_response = response.choices[0].message.content
+
+        # Step 3: Restore original data in AI response
+        final = blindfold.detokenize(ai_response, protected.mapping)
+
+        return final.text
+
+    # Usage
+    user_input = "My name is John Doe, email john@example.com. Help me book a flight."
+    response = secure_chat(user_input)
+    print(f"Response: {response}")
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+    import OpenAI from 'openai';
+
+    // Initialize clients
+    const blindfold = new Blindfold({
+      apiKey: process.env.BLINDFOLD_API_KEY
+    });
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    async function secureChat(userMessage) {
+      // Step 1: Tokenize sensitive data
+      const protected = await blindfold.tokenize(userMessage);
+      console.log(`Protected input: ${protected.text}`);
+      console.log(`Detected ${protected.entities_count} sensitive entities`);
+
+      // Step 2: Send protected text to OpenAI
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant.' },
+          { role: 'user', content: protected.text }
+        ]
+      });
+
+      const aiResponse = response.choices[0].message.content;
+
+      // Step 3: Restore original data in AI response
+      const final = await blindfold.detokenize(aiResponse, protected.mapping);
+
+      return final.text;
+    }
+
+    // Usage
+    const userInput = "My name is John Doe, email john@example.com. Help me book a flight.";
+    const response = await secureChat(userInput);
+    console.log(`Response: ${response}`);
+    ```
+  </Tab>
+</Tabs>
+
+**What's Protected:**
+- Personal names (`John Doe` → `<PERSON_1>`)
+- Email addresses (`john@example.com` → `<EMAIL_ADDRESS_1>`)
+- Any other PII in user messages
+
+**Benefits:**
+- User data never reaches OpenAI in plain text
+- Compliant with privacy regulations
+- Transparent to end users
+
+---
+
+## Customer Support Ticket Anonymization
+
+Anonymize customer support tickets before storing in databases or sending to third-party analytics.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+    import os
+
+    client = Blindfold(api_key=os.environ["BLINDFOLD_API_KEY"])
+
+    def process_support_ticket(ticket_text: str) -> dict:
+        """Anonymize and process support ticket"""
+
+        # Redact sensitive data permanently
+        result = client.redact(ticket_text)
+
+        # Store anonymized ticket
+        ticket_data = {
+            "text": result.text,
+            "pii_detected": result.entities_count,
+            "entity_types": [e.entity_type for e in result.detected_entities]
+        }
+
+        return ticket_data
+
+    # Example ticket
+    ticket = """
+    Customer: Jane Smith
+    Email: jane.smith@email.com
+    Phone: +1-555-9876
+    Issue: Cannot access account after password reset.
+    SSN for verification: 123-45-6789
+    """
+
+    processed = process_support_ticket(ticket)
+    print(f"Anonymized ticket:\n{processed['text']}")
+    print(f"PII types found: {processed['entity_types']}")
+
+    # Output:
+    # Anonymized ticket:
+    # Customer: <PERSON>
+    # Email: <EMAIL_ADDRESS>
+    # Phone: <PHONE_NUMBER>
+    # Issue: Cannot access account after password reset.
+    # SSN for verification: <US_SSN>
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({
+      apiKey: process.env.BLINDFOLD_API_KEY
+    });
+
+    async function processSupportTicket(ticketText) {
+      // Redact sensitive data permanently
+      const result = await client.redact(ticketText);
+
+      // Store anonymized ticket
+      const ticketData = {
+        text: result.text,
+        pii_detected: result.entities_count,
+        entity_types: result.detected_entities.map(e => e.entity_type)
+      };
+
+      return ticketData;
+    }
+
+    // Example ticket
+    const ticket = `
+    Customer: Jane Smith
+    Email: jane.smith@email.com
+    Phone: +1-555-9876
+    Issue: Cannot access account after password reset.
+    SSN for verification: 123-45-6789
+    `;
+
+    const processed = await processSupportTicket(ticket);
+    console.log(`Anonymized ticket:\n${processed.text}`);
+    console.log(`PII types found: ${processed.entity_types}`);
+    ```
+  </Tab>
+</Tabs>
+
+**Use Cases:**
+- Support ticket systems
+- Customer feedback collection
+- Quality assurance reviews
+- Third-party analytics
+
+---
+
+## Displaying Masked Credit Cards
+
+Show partial credit card numbers in user interfaces while protecting full details.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    client = Blindfold(api_key="your-api-key")
+
+    def display_payment_info(payment_text: str) -> str:
+        """Mask payment information for display"""
+
+        result = client.mask(
+            text=payment_text,
+            masking_char="*",
+            chars_to_show=4,
+            from_end=True
+        )
+
+        return result.text
+
+    # Examples
+    card_info = "Card ending in 4532-7562-9102-3456"
+    print(display_payment_info(card_info))
+    # Output: "Card ending in ***************3456"
+
+    multiple_cards = """
+    Primary: 4532-7562-9102-3456
+    Backup: 5425-2334-3010-9903
+    """
+    print(display_payment_info(multiple_cards))
+    # Output:
+    # Primary: ***************3456
+    # Backup: ***************9903
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key' });
+
+    async function displayPaymentInfo(paymentText) {
+      const result = await client.mask(
+        paymentText,
+        {
+          masking_char: '*',
+          chars_to_show: 4,
+          from_end: true
+        }
+      );
+
+      return result.text;
+    }
+
+    // Examples
+    const cardInfo = "Card ending in 4532-7562-9102-3456";
+    console.log(await displayPaymentInfo(cardInfo));
+    // Output: "Card ending in ***************3456"
+
+    const multipleCards = `
+    Primary: 4532-7562-9102-3456
+    Backup: 5425-2334-3010-9903
+    `;
+    console.log(await displayPaymentInfo(multipleCards));
+    // Output:
+    // Primary: ***************3456
+    // Backup: ***************9903
+    ```
+  </Tab>
+</Tabs>
+
+**Benefits:**
+- Users can identify their cards
+- Full numbers stay protected
+- Compliant with PCI-DSS
+
+---
+
+## Analytics with Hashed Identifiers
+
+Create consistent identifiers for analytics without storing actual PII.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+    import json
+
+    client = Blindfold(api_key="your-api-key")
+
+    def track_user_event(user_email: str, event: str) -> dict:
+        """Track user events with hashed identifiers"""
+
+        # Hash email for consistent user ID
+        hashed = client.hash(
+            text=f"User: {user_email}",
+            hash_type="sha256",
+            hash_prefix="user_",
+            hash_length=16
+        )
+
+        # Extract hashed ID
+        user_id = hashed.text.replace("User: ", "")
+
+        # Create analytics event
+        analytics_event = {
+            "user_id": user_id,
+            "event": event,
+            "timestamp": "2024-01-20T10:00:00Z"
+        }
+
+        return analytics_event
+
+    # Track events for same user
+    events = [
+        track_user_event("john@example.com", "page_view"),
+        track_user_event("john@example.com", "button_click"),
+        track_user_event("john@example.com", "purchase")
+    ]
+
+    # All events have same hashed user_id (deterministic)
+    for event in events:
+        print(json.dumps(event, indent=2))
+
+    # Output (same user_id for all):
+    # {
+    #   "user_id": "user_a3f8b9c2d4e5f6g7",
+    #   "event": "page_view",
+    #   ...
+    # }
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key' });
+
+    async function trackUserEvent(userEmail, event) {
+      // Hash email for consistent user ID
+      const hashed = await client.hash(
+        `User: ${userEmail}`,
+        {
+          hash_type: 'sha256',
+          hash_prefix: 'user_',
+          hash_length: 16
+        }
+      );
+
+      // Extract hashed ID
+      const userId = hashed.text.replace('User: ', '');
+
+      // Create analytics event
+      return {
+        user_id: userId,
+        event: event,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    // Track events for same user
+    const events = await Promise.all([
+      trackUserEvent('john@example.com', 'page_view'),
+      trackUserEvent('john@example.com', 'button_click'),
+      trackUserEvent('john@example.com', 'purchase')
+    ]);
+
+    // All events have same hashed user_id (deterministic)
+    events.forEach(event => {
+      console.log(JSON.stringify(event, null, 2));
+    });
+    ```
+  </Tab>
+</Tabs>
+
+**Benefits:**
+- Consistent user tracking
+- No PII in analytics database
+- GDPR-friendly approach
+
+---
+
+## Generating Test Data
+
+Create realistic test data with synthetic PII for development and testing.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    client = Blindfold(api_key="your-api-key")
+
+    def generate_test_data(template: str, language: str = "en") -> list[str]:
+        """Generate multiple test data samples"""
+
+        samples = []
+        for _ in range(5):
+            result = client.synthesize(
+                text=template,
+                language=language
+            )
+            samples.append(result.text)
+
+        return samples
+
+    # Generate test user profiles
+    template = """
+    Name: John Doe
+    Email: john.doe@company.com
+    Phone: +1-555-1234
+    Location: New York
+    Company: TechCorp
+    """
+
+    test_profiles = generate_test_data(template)
+
+    print("Generated Test Profiles:")
+    for i, profile in enumerate(test_profiles, 1):
+        print(f"\n=== Profile {i} ===")
+        print(profile)
+
+    # Output (synthetic data):
+    # === Profile 1 ===
+    # Name: Michael Smith
+    # Email: michael.smith@company.com
+    # Phone: +1-555-9876
+    # Location: Boston
+    # Company: DataSystems
+    #
+    # === Profile 2 ===
+    # Name: Sarah Johnson
+    # Email: sarah.johnson@company.com
+    # ...
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key' });
+
+    async function generateTestData(template, language = 'en', count = 5) {
+      const samples = [];
+
+      for (let i = 0; i < count; i++) {
+        const result = await client.synthesize(template, { language });
+        samples.push(result.text);
+      }
+
+      return samples;
+    }
+
+    // Generate test user profiles
+    const template = `
+    Name: John Doe
+    Email: john.doe@company.com
+    Phone: +1-555-1234
+    Location: New York
+    Company: TechCorp
+    `;
+
+    const testProfiles = await generateTestData(template);
+
+    console.log('Generated Test Profiles:');
+    testProfiles.forEach((profile, i) => {
+      console.log(`\n=== Profile ${i + 1} ===`);
+      console.log(profile);
+    });
+    ```
+  </Tab>
+</Tabs>
+
+**Use Cases:**
+- Development environments
+- Automated testing
+- Demo environments
+- Training datasets
+
+---
+
+## Encrypting Sensitive Configuration
+
+Encrypt sensitive configuration values before storing in databases.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+    import os
+
+    client = Blindfold(api_key=os.environ["BLINDFOLD_API_KEY"])
+
+    # Encryption key (store securely!)
+    ENCRYPTION_KEY = os.environ["ENCRYPTION_KEY"]
+
+    def encrypt_config(config_text: str) -> str:
+        """Encrypt sensitive configuration"""
+
+        result = client.encrypt(
+            text=config_text,
+            encryption_key=ENCRYPTION_KEY
+        )
+
+        return result.text
+
+    def decrypt_config(encrypted_text: str) -> str:
+        """Decrypt configuration (use decrypt endpoint)"""
+        # Note: Implement decrypt endpoint call
+        pass
+
+    # Example: Encrypt API keys before storing
+    config = """
+    database_url: postgresql://user:pass@host/db
+    api_key: sk-1234567890abcdef
+    secret_token: abc123xyz789
+    """
+
+    encrypted = encrypt_config(config)
+    print("Encrypted configuration:")
+    print(encrypted)
+
+    # Store encrypted version in database
+    # Later, decrypt when needed
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({
+      apiKey: process.env.BLINDFOLD_API_KEY
+    });
+
+    const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+
+    async function encryptConfig(configText) {
+      const result = await client.encrypt(
+        configText,
+        { encryption_key: ENCRYPTION_KEY }
+      );
+
+      return result.text;
+    }
+
+    // Example: Encrypt API keys before storing
+    const config = `
+    database_url: postgresql://user:pass@host/db
+    api_key: sk-1234567890abcdef
+    secret_token: abc123xyz789
+    `;
+
+    const encrypted = await encryptConfig(config);
+    console.log('Encrypted configuration:');
+    console.log(encrypted);
+
+    // Store encrypted version in database
+    ```
+  </Tab>
+</Tabs>
+
+**Benefits:**
+- Protect secrets at rest
+- Reversible encryption
+- Centralized key management
+
+---
+
+## Multi-Language Support
+
+Detect PII in multiple languages for international applications.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    client = Blindfold(api_key="your-api-key")
+
+    # Czech example
+    czech_text = "Jmenuji se Jan Novák a můj email je jan@example.cz"
+    result_cs = client.synthesize(czech_text, language="cs")
+    print(f"Czech: {result_cs.text}")
+
+    # German example
+    german_text = "Ich heiße Hans Müller und wohne in Berlin"
+    result_de = client.synthesize(german_text, language="de")
+    print(f"German: {result_de.text}")
+
+    # French example
+    french_text = "Je m'appelle Marie Dupont, email: marie@example.fr"
+    result_fr = client.synthesize(french_text, language="fr")
+    print(f"French: {result_fr.text}")
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key' });
+
+    // Czech example
+    const czechText = "Jmenuji se Jan Novák a můj email je jan@example.cz";
+    const resultCs = await client.synthesize(czechText, { language: 'cs' });
+    console.log(`Czech: ${resultCs.text}`);
+
+    // German example
+    const germanText = "Ich heiße Hans Müller und wohne in Berlin";
+    const resultDe = await client.synthesize(germanText, { language: 'de' });
+    console.log(`German: ${resultDe.text}`);
+
+    // French example
+    const frenchText = "Je m'appelle Marie Dupont, email: marie@example.fr";
+    const resultFr = await client.synthesize(frenchText, { language: 'fr' });
+    console.log(`French: ${resultFr.text}`);
+    ```
+  </Tab>
+</Tabs>
+
+**Supported Languages:**
+- English (`en`)
+- Czech (`cs`)
+- German (`de`)
+- French (`fr`)
+- Spanish (`es`)
+- Italian (`it`)
+- Polish (`pl`)
+- Slovak (`sk`)
+
+---
+
+## Batch Processing
+
+Process multiple texts efficiently in parallel.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import asyncio
+    from blindfold import AsyncBlindfold
+
+    async def process_batch(texts: list[str]) -> list:
+        """Process multiple texts concurrently"""
+
+        async with AsyncBlindfold(api_key="your-api-key") as client:
+            # Process all texts in parallel
+            tasks = [client.tokenize(text) for text in texts]
+            results = await asyncio.gather(*tasks)
+
+            return results
+
+    # Example: Process 100 customer messages
+    messages = [
+        f"Customer {i}: email{i}@example.com"
+        for i in range(100)
+    ]
+
+    results = asyncio.run(process_batch(messages))
+    print(f"Processed {len(results)} messages")
+    print(f"Average entities per message: {sum(r.entities_count for r in results) / len(results):.2f}")
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key' });
+
+    async function processBatch(texts) {
+      // Process all texts in parallel
+      const results = await Promise.all(
+        texts.map(text => client.tokenize(text))
+      );
+
+      return results;
+    }
+
+    // Example: Process 100 customer messages
+    const messages = Array.from(
+      { length: 100 },
+      (_, i) => `Customer ${i}: email${i}@example.com`
+    );
+
+    const results = await processBatch(messages);
+    console.log(`Processed ${results.length} messages`);
+
+    const avgEntities = results.reduce((sum, r) => sum + r.entities_count, 0) / results.length;
+    console.log(`Average entities per message: ${avgEntities.toFixed(2)}`);
+    ```
+  </Tab>
+</Tabs>
+
+**Performance Tips:**
+- Use async/parallel processing for batches
+- Implement rate limiting
+- Use connection pooling
+- Handle errors gracefully
+
+---
+
+## Express.js Middleware
+
+Create middleware to automatically protect routes.
+
+```javascript
+import express from 'express';
+import { Blindfold } from '@blindfold/sdk';
+
+const app = express();
+const client = new Blindfold({ apiKey: process.env.BLINDFOLD_API_KEY });
+
+// Middleware to protect request bodies
+const protectPII = async (req, res, next) => {
+  try {
+    if (req.body && req.body.text) {
+      const protected = await client.tokenize(req.body.text);
+
+      // Store mapping in session for later detokenization
+      req.session.tokenMapping = protected.mapping;
+
+      // Replace text with protected version
+      req.body.text = protected.text;
+      req.body.pii_detected = protected.entities_count;
+    }
+
+    next();
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to protect data' });
+  }
+};
+
+// Apply middleware to specific routes
+app.post('/api/chat', express.json(), protectPII, async (req, res) => {
+  // req.body.text is now protected
+  // Process with AI...
+  res.json({ message: 'Processed securely' });
+});
+
+app.listen(3000);
+```
+
+---
+
+## Best Practices Summary
+
+### 1. Always Use Environment Variables
+```bash
+export BLINDFOLD_API_KEY="your-key-here"
+export ENCRYPTION_KEY="your-encryption-key"
+```
+
+### 2. Handle Errors Gracefully
+```python
+try:
+    result = client.tokenize(text)
+except AuthenticationError:
+    # Handle auth error
+    pass
+except NetworkError:
+    # Retry with exponential backoff
+    pass
+```
+
+### 3. Store Mappings Securely
+- Use encrypted session storage
+- Implement TTL for mappings
+- Clear mappings after use
+
+### 4. Use Appropriate Methods
+- **Tokenize**: When you need to restore data later
+- **Mask**: For UI display
+- **Redact**: For permanent removal
+- **Hash**: For analytics identifiers
+- **Synthesize**: For test data
+
+### 5. Monitor Usage
+- Track API usage in dashboard
+- Set up rate limit alerts
+- Monitor error rates
+
+## Need More Examples?
+
+Can't find what you're looking for? Check out:
+
+<CardGroup cols={2}>
+  <Card title="Python SDK" icon="python" href="/sdks/python-sdk">
+    Detailed Python SDK documentation
+  </Card>
+  <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
+    Complete JavaScript SDK guide
+  </Card>
+  <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
+    HTTP API reference
+  </Card>
+  <Card title="Contact Support" icon="headset" href="mailto:hello@blindfold.dev">
+    Email us for custom integration help
+  </Card>
+</CardGroup>
