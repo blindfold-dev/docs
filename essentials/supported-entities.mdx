@@ -1,0 +1,334 @@
+---
+title: "Supported Entities"
+description: "Complete list of PII entities detected by Blindfold"
+---
+
+Blindfold automatically detects and protects over 50 types of personally identifiable information (PII) across multiple languages and regions.
+
+## Core Entities
+
+<AccordionGroup>
+  <Accordion title="PERSON" icon="user">
+    **Description**: A person's full name.
+
+    **Examples**:
+    - John Doe
+    - Jane Smith
+    - Dr. Michael Johnson
+
+    **Detection Score**: High confidence (0.85+)
+  </Accordion>
+
+  <Accordion title="EMAIL_ADDRESS" icon="envelope">
+    **Description**: An email address.
+
+    **Examples**:
+    - john@example.com
+    - user.name+tag@domain.co.uk
+    - admin@company.org
+
+    **Detection Score**: Very high confidence (0.95+)
+  </Accordion>
+
+  <Accordion title="PHONE_NUMBER" icon="phone">
+    **Description**: A phone number.
+
+    **Examples**:
+    - +1-555-123-4567
+    - (555) 123-4567
+    - +44 20 7946 0958
+
+    **Detection Score**: High confidence (0.80+)
+  </Accordion>
+
+  <Accordion title="CREDIT_CARD" icon="credit-card">
+    **Description**: A credit card number.
+
+    **Examples**:
+    - 4532-7562-9102-3456 (Visa)
+    - 5425-2334-3010-9903 (Mastercard)
+    - 3782-822463-10005 (Amex)
+
+    **Detection Score**: Very high confidence (0.95+)
+
+    <Warning>
+      Credit card detection uses Luhn algorithm validation.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="IP_ADDRESS" icon="network-wired">
+    **Description**: An IPv4 or IPv6 address.
+
+    **Examples**:
+    - 192.168.1.1 (IPv4)
+    - 2001:0db8:85a3:0000:0000:8a2e:0370:7334 (IPv6)
+    - 10.0.0.1 (Private IPv4)
+
+    **Detection Score**: Very high confidence (0.99+)
+  </Accordion>
+
+  <Accordion title="LOCATION" icon="location-dot">
+    **Description**: A physical location such as city, state, or address.
+
+    **Examples**:
+    - New York, NY
+    - 123 Main Street, Boston, MA
+    - Paris, France
+
+    **Detection Score**: Medium to high confidence (0.70+)
+  </Accordion>
+
+  <Accordion title="ORGANIZATION" icon="building">
+    **Description**: A company or organization name.
+
+    **Examples**:
+    - Microsoft Corporation
+    - Harvard University
+    - World Health Organization
+
+    **Detection Score**: Medium confidence (0.70+)
+  </Accordion>
+</AccordionGroup>
+
+## Financial Identifiers
+
+<AccordionGroup>
+  <Accordion title="IBAN_CODE" icon="piggy-bank">
+    **Description**: International Bank Account Number.
+
+    **Examples**:
+    - GB82 WEST 1234 5698 7654 32
+    - DE89 3704 0044 0532 0130 00
+    - FR14 2004 1010 0505 0001 3M02 606
+
+    **Detection Score**: Very high confidence (0.95+)
+
+    **Regions**: Supports IBAN from 70+ countries
+  </Accordion>
+
+  <Accordion title="US_SSN" icon="id-card">
+    **Description**: US Social Security Number.
+
+    **Examples**:
+    - 123-45-6789
+    - 987-65-4320
+
+    **Format**: XXX-XX-XXXX
+
+    **Detection Score**: Very high confidence (0.95+)
+
+    <Warning>
+      Only detects valid US SSN format. Does not validate if SSN is issued.
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+## Healthcare Identifiers
+
+<AccordionGroup>
+  <Accordion title="MEDICAL_LICENSE" icon="briefcase-medical">
+    **Description**: Medical license numbers.
+
+    **Examples**:
+    - DEA registration numbers
+    - NPI (National Provider Identifier)
+    - State medical license numbers
+
+    **Detection Score**: High confidence (0.85+)
+
+    **Compliance**: Critical for HIPAA compliance
+  </Accordion>
+</AccordionGroup>
+
+## Demographic Information
+
+<AccordionGroup>
+  <Accordion title="NRP" icon="globe">
+    **Description**: Nationality, Religious, or Political Group affiliation.
+
+    **Examples**:
+    - American
+    - Buddhist
+    - Republican Party
+    - Muslim
+
+    **Detection Score**: Medium confidence (0.70+)
+
+    <Info>
+      Sensitive under GDPR Article 9 (special categories of personal data).
+    </Info>
+  </Accordion>
+</AccordionGroup>
+
+## Temporal Information
+
+<AccordionGroup>
+  <Accordion title="DATE_TIME" icon="calendar">
+    **Description**: Date and time information.
+
+    **Examples**:
+    - January 15, 2024
+    - 2024-01-15
+    - 15/01/2024
+    - Born on March 3rd, 1990
+
+    **Detection Score**: High confidence (0.85+)
+
+    **Note**: Includes birth dates, which are considered PII
+  </Accordion>
+</AccordionGroup>
+
+## Digital Identifiers
+
+<AccordionGroup>
+  <Accordion title="URL" icon="link">
+    **Description**: Web URLs that may contain personal information.
+
+    **Examples**:
+    - https://example.com/user/john.doe
+    - http://profile.site.com/12345
+
+    **Detection Score**: Very high confidence (0.95+)
+
+    **Note**: Detects URLs that may expose user identifiers
+  </Accordion>
+</AccordionGroup>
+
+## Regional Variants
+
+Blindfold supports country-specific variants of many entity types:
+
+<CardGroup cols={2}>
+  <Card title="UK Entities" icon="flag-uk">
+    - UK_NHS (NHS Number)
+    - UK_NINO (National Insurance Number)
+  </Card>
+
+  <Card title="US Entities" icon="flag-usa">
+    - US_SSN (Social Security Number)
+    - US_DRIVER_LICENSE
+    - US_PASSPORT
+  </Card>
+
+  <Card title="EU Entities" icon="flag-eu">
+    - EU_TAX_ID
+    - Various country-specific IDs
+  </Card>
+
+  <Card title="Asian Entities" icon="earth-asia">
+    - SG_NRIC_FIN (Singapore)
+    - AU_ABN (Australia)
+    - AU_TFN (Australia Tax File Number)
+  </Card>
+</CardGroup>
+
+## Custom Entity Types
+
+You can also define custom entity types for your specific use case:
+
+```python
+from blindfold import Blindfold
+
+client = Blindfold(api_key="your-api-key")
+
+# Detect specific custom patterns
+result = client.tokenize(
+    "Employee ID: EMP-12345",
+    entities=["PERSON", "EMAIL_ADDRESS"],
+    custom_patterns=[
+        {
+            "name": "EMPLOYEE_ID",
+            "pattern": r"EMP-\d{5}",
+            "score": 0.9
+        }
+    ]
+)
+```
+
+## Entity Detection Confidence
+
+All detected entities include a confidence score:
+
+| Score Range | Confidence Level | Action |
+|-------------|------------------|--------|
+| 0.95 - 1.0  | Very High        | Automatically protected |
+| 0.85 - 0.94 | High             | Automatically protected |
+| 0.70 - 0.84 | Medium           | Protected by default |
+| 0.50 - 0.69 | Low              | Requires threshold adjustment |
+| < 0.50      | Very Low         | Not detected by default |
+
+### Adjusting Detection Threshold
+
+You can adjust the confidence threshold:
+
+```python
+# Only detect high-confidence entities
+result = client.tokenize(
+    text="Sample text with PII",
+    score_threshold=0.85  # Only entities with score >= 0.85
+)
+```
+
+## Multi-Language Support
+
+Blindfold supports entity detection in multiple languages:
+
+- **English** (en)
+- **Spanish** (es)
+- **French** (fr)
+- **German** (de)
+- **Italian** (it)
+- **Portuguese** (pt)
+- **Dutch** (nl)
+- **Czech** (cs)
+- And more...
+
+```python
+# Specify language for better detection
+result = client.tokenize(
+    "Jan Novák, email: jan@example.cz",
+    language="cs"  # Czech language
+)
+```
+
+## Entity Filtering
+
+Process only specific entity types:
+
+```python
+# Only protect emails and phone numbers
+result = client.tokenize(
+    "John Doe (john@example.com) called from +1-555-1234",
+    entities=["EMAIL_ADDRESS", "PHONE_NUMBER"]
+)
+# Output: "John Doe (<EMAIL_ADDRESS_1>) called from <PHONE_NUMBER_1>"
+# Note: "John Doe" is NOT tokenized
+```
+
+## Need More Entity Types?
+
+If you need additional entity types for your use case:
+
+<Card title="Request Custom Entities" icon="plus" href="mailto:hello@blindfold.dev" horizontal>
+  Contact us at hello@blindfold.dev to request new entity types or regional variants.
+</Card>
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Tokenization" icon="shuffle" href="/methods/tokenization">
+    Learn about tokenizing detected entities
+  </Card>
+
+  <Card title="Detection Accuracy" icon="bullseye" href="/methods/masking">
+    Understand confidence scores and thresholds
+  </Card>
+
+  <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
+    API reference for entity detection
+  </Card>
+
+  <Card title="Examples" icon="code" href="/examples">
+    See entity detection in action
+  </Card>
+</CardGroup>

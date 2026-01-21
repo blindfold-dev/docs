@@ -96,8 +96,84 @@ Names • Emails • Phone Numbers • SSNs • Credit Cards • Bank Accounts �
   </Card>
 </CardGroup>
 
+## Data Residency & Regional Endpoints
+
+Blindfold supports regional endpoints to meet data residency requirements:
+
+<CardGroup cols={2}>
+  <Card title="US Region (Default)" icon="flag-usa">
+    **Base URL**: `https://api.blindfold.dev`
+
+    Default endpoint for North American customers
+  </Card>
+
+  <Card title="EU Region" icon="flag-eu">
+    **Base URL**: `https://api-eu.blindfold.dev`
+
+    GDPR-compliant EU data residency
+  </Card>
+</CardGroup>
+
+### Using Regional Endpoints
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    # US region (default)
+    client = Blindfold(api_key="your-key")
+
+    # EU region
+    client = Blindfold(
+        api_key="your-key",
+        base_url="https://api-eu.blindfold.dev"
+    )
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    // US region (default)
+    const client = new Blindfold({ apiKey: 'your-key' });
+
+    // EU region
+    const client = new Blindfold({
+      apiKey: 'your-key',
+      baseUrl: 'https://api-eu.blindfold.dev'
+    });
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    # US region (default)
+    curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+      -H "X-API-Key: your-key" \
+      -d '{"text": "Sample text"}'
+
+    # EU region
+    curl -X POST https://api-eu.blindfold.dev/api/public/v1/tokenize \
+      -H "X-API-Key: your-key" \
+      -d '{"text": "Sample text"}'
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  **GDPR Compliance**: For EU customers, we recommend using the EU endpoint to ensure data is processed and stored within the European Union.
+</Info>
+
 ## Compliance & Legal
 
 <Card title="EU AI Act, GDPR, HIPAA Compliance" icon="scale-balanced" href="/compliance" horizontal>
   Learn how Blindfold helps you meet regulatory requirements
+</Card>
+
+## Need Help?
+
+<Card title="Support" icon="headset" href="mailto:support@blindfold.dev" horizontal>
+  For support and questions, contact us at support@blindfold.dev
 </Card>
