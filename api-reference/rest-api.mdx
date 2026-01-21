@@ -34,13 +34,13 @@ Keep your API key secure. Never commit it to version control or expose it in cli
 
 All requests must:
 - Use `Content-Type: application/json`
-- Include the `Authorization` header
+- Include the `X-API-Key` header
 - Send data as JSON in the request body
 
 ```http
 POST /api/public/v1/tokenize HTTP/1.1
 Host: api.blindfold.dev
-Authorization: Bearer your-api-key-here
+X-API-Key: your-api-key-here
 Content-Type: application/json
 
 {
@@ -852,7 +852,7 @@ API_KEY = os.environ.get("BLINDFOLD_API_KEY")
 BASE_URL = "https://api.blindfold.dev/api/public/v1"
 
 headers = {
-    "Authorization": f"Bearer {API_KEY}",
+    "X-API-Key": f"{API_KEY}",
     "Content-Type": "application/json"
 }
 
