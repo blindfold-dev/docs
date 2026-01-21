@@ -241,7 +241,7 @@ client.tokenize("1")  # Random tokens
   <Tab title="cURL">
     ```bash
     curl -X POST https://api.blindfold.dev/api/public/v1/hash \
-      -H "Authorization: Bearer your-api-key" \
+      -H "X-API-Key: your-api-key" \
       -H "Content-Type: application/json" \
       -d '{
         "text": "User john@example.com purchased item",
