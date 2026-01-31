@@ -82,6 +82,46 @@ All successful responses return JSON with:
 }
 ```
 
+## Policy-Based Detection
+
+Blindfold supports **policy-based PII detection** for simplified configuration and compliance. Instead of manually specifying entities and thresholds for each request, use pre-configured policies or create custom ones.
+
+### Available Global Policies
+
+| Policy Name | Description | Threshold | Use Case |
+|-------------|-------------|-----------|----------|
+| `basic` | Minimal PII detection | 0.30 | General purpose, fast detection |
+| `gdpr_eu` | GDPR EU compliant | 0.35 | European data protection compliance |
+| `hipaa_us` | HIPAA compliant | 0.40 | US healthcare data compliance |
+| `pci_dss` | PCI DSS compliant | 0.45 | Payment card industry compliance |
+| `strict` | Maximum detection | 0.25 | Comprehensive PII protection |
+
+### Using Policies in API Calls
+
+All detection endpoints (`/tokenize`, `/mask`, `/redact`, `/hash`, `/encrypt`) support an optional `policy` parameter:
+
+```json
+{
+  "text": "Your text here",
+  "policy": "gdpr_eu"
+}
+```
+
+You can also override policy settings per-request:
+
+```json
+{
+  "text": "Your text here",
+  "policy": "gdpr_eu",
+  "override_threshold": 0.30,
+  "override_entities": ["person", "email address"]
+}
+```
+
+<Info>
+  Using policies simplifies your code and ensures consistent PII detection across your application. Policies can be managed through the dashboard or API.
+</Info>
+
 ## API Endpoints
 
 ### POST /tokenize
@@ -146,8 +186,34 @@ console.log(data);
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `text` | string | Yes | Text to tokenize |
-| `entities` | string[] | No | Filter specific entity types |
-| `score_threshold` | number | No | Minimum confidence (0.0-1.0) |
+| `policy` | string | No | Policy name (e.g., `gdpr_eu`, `hipaa_us`) - uses policy's entities and threshold |
+| `entities` | string[] | No | Filter specific entity types (or use `override_entities` with policy) |
+| `score_threshold` | number | No | Minimum confidence (0.0-1.0) (or use `override_threshold` with policy) |
+| `override_threshold` | number | No | Override policy threshold |
+| `override_entities` | string[] | No | Override policy entities |
+
+**Policy Usage Examples:**
+
+```bash
+# Using a policy
+curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Contact John Doe at john@example.com",
+    "policy": "gdpr_eu"
+  }'
+
+# Using policy with overrides
+curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Patient: John Doe, SSN: 123-45-6789",
+    "policy": "hipaa_us",
+    "override_threshold": 0.30
+  }'
+```
 
 **Response:**
 ```json
@@ -720,38 +786,238 @@ curl https://api.blindfold.dev/api/public/v1/health
 }
 ```
 
+---
+
+## Policy Management Endpoints
+
+Manage detection policies for simplified and consistent PII detection across your organization.
+
+### GET /policies
+
+List all available policies (global and custom).
+
+```bash
+curl -X GET https://api.blindfold.dev/api/policies \
+  -H "X-API-Key: your-api-key-here"
+```
+
+**Response:**
+```json
+{
+  "global_policies": [
+    {
+      "name": "gdpr_eu",
+      "entities": ["person", "email address", "phone number", ...],
+      "threshold": 0.35,
+      "is_system": true,
+      "description": "GDPR EU compliant - Comprehensive PII detection"
+    },
+    {
+      "name": "hipaa_us",
+      "entities": ["person", "social security number", "health insurance number", ...],
+      "threshold": 0.40,
+      "is_system": true,
+      "description": "HIPAA compliant - Healthcare data protection"
+    }
+  ],
+  "custom_policies": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "my_custom_policy",
+      "entities": ["person", "email address"],
+      "threshold": 0.40,
+      "is_system": false,
+      "created_at": "2026-01-25T18:00:00Z"
+    }
+  ],
+  "total": 6
+}
+```
+
+---
+
+### GET /policies/{policy_name}
+
+Get detailed configuration for a specific policy.
+
+```bash
+curl -X GET https://api.blindfold.dev/api/policies/gdpr_eu \
+  -H "X-API-Key: your-api-key-here"
+```
+
+**Response:**
+```json
+{
+  "name": "gdpr_eu",
+  "entities": [
+    "person", "email address", "phone number", "address",
+    "national id number", "passport number", "tax identification number",
+    "bank account number", "iban", "credit card number",
+    "date of birth", "ip address", "health insurance number",
+    "medical condition"
+  ],
+  "threshold": 0.35,
+  "is_system": true,
+  "description": "GDPR EU compliant - Comprehensive PII detection"
+}
+```
+
+---
+
+### POST /policies
+
+Create a custom policy for your organization.
+
+```bash
+curl -X POST https://api.blindfold.dev/api/policies \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "my_custom_policy",
+    "entities": ["person", "email address", "phone number"],
+    "threshold": 0.40,
+    "description": "Custom policy for internal use"
+  }'
+```
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Policy name (1-100 characters, unique) |
+| `entities` | string[] | Yes | List of entity types (min 1) |
+| `threshold` | number | Yes | Detection threshold (0.0-1.0) |
+| `description` | string | No | Policy description (max 100 chars) |
+
+**Response:**
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "tenant_id": 1,
+  "name": "my_custom_policy",
+  "entities": ["person", "email address", "phone number"],
+  "threshold": 0.40,
+  "is_system": false,
+  "description": "Custom policy for internal use",
+  "created_at": "2026-01-25T18:00:00Z",
+  "updated_at": "2026-01-25T18:00:00Z"
+}
+```
+
+<Warning>
+  Custom policy names cannot conflict with global policy names (`basic`, `gdpr_eu`, `hipaa_us`, `pci_dss`, `strict`).
+</Warning>
+
+---
+
+### PUT /policies/{policy_id}
+
+Update an existing custom policy.
+
+```bash
+curl -X PUT https://api.blindfold.dev/api/policies/123e4567-e89b-12d3-a456-426614174000 \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "threshold": 0.45,
+    "description": "Updated policy description"
+  }'
+```
+
+**Request Body:** (all fields optional)
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | New policy name |
+| `entities` | string[] | Updated entity list |
+| `threshold` | number | Updated threshold (0.0-1.0) |
+| `description` | string | Updated description |
+
+---
+
+### DELETE /policies/{policy_id}
+
+Delete a custom policy. Global policies cannot be deleted.
+
+```bash
+curl -X DELETE https://api.blindfold.dev/api/policies/123e4567-e89b-12d3-a456-426614174000 \
+  -H "X-API-Key: your-api-key-here"
+```
+
+**Response:** `204 No Content`
+
+---
+
+### GET /policies/global
+
+List all available global policy names.
+
+```bash
+curl -X GET https://api.blindfold.dev/api/policies/global
+```
+
+**Response:**
+```json
+["basic", "gdpr_eu", "hipaa_us", "pci_dss", "strict"]
+```
+
+---
+
 ## Supported Entity Types
 
-All detection endpoints support filtering by entity type. Common entities include:
+All detection endpoints support filtering by entity type using **natural language names** (lowercase). Blindfold supports 60+ pre-trained entity types:
 
 ### Personal Information
-- `PERSON` - Person names
-- `EMAIL_ADDRESS` - Email addresses
-- `PHONE_NUMBER` - Phone numbers
-- `DATE_TIME` - Dates and times
+- `person` - Person names
+- `email` / `email address` - Email addresses
+- `phone number` / `mobile phone number` - Phone numbers
+- `date of birth` - Birth dates
+- `blood type` - Blood type classification
+
+### Contact Information
+- `address` / `postal code` - Physical addresses and postal codes
+- `landline phone number` - Fixed-line phone numbers
+- `fax number` - Fax numbers
 
 ### Financial
-- `CREDIT_CARD` - Credit card numbers
-- `IBAN_CODE` - International Bank Account Numbers
-- `CRYPTO` - Cryptocurrency addresses
+- `credit card number` - Credit card numbers
+- `credit card brand` - Card issuer (Visa, Mastercard, etc.)
+- `credit card expiration date` - Card expiration dates
+- `cvv` / `cvc` - Card verification codes
+- `bank account number` - Bank account numbers
+- `iban` - International Bank Account Numbers
+- `tax identification number` - Tax IDs
 
 ### Government IDs
-- `US_SSN` - US Social Security Numbers
-- `US_DRIVER_LICENSE` - US Driver Licenses
-- `US_PASSPORT` - US Passport Numbers
+- `social security number` - Social security numbers
+- `passport number` - Passport numbers
+- `driver's license number` - Driver's licenses
+- `national id number` - National ID cards
+- `cpf` - Brazilian individual taxpayer ID
+- `cnpj` - Brazilian company registry
 
-### Medical
-- `MEDICAL_LICENSE` - Medical license numbers
-- `US_ITIN` - Individual Taxpayer IDs
+### Healthcare
+- `health insurance number` - Health insurance IDs
+- `medical condition` - Medical diagnoses
+- `medication` - Medication names
+- `insurance company` - Insurance provider names
 
-### Technical
-- `IP_ADDRESS` - IP addresses
-- `URL` - URLs and domains
-- `API_KEY` - API keys and tokens
+### Digital & Technical
+- `ip address` - IPv4 and IPv6 addresses
+- `username` - User identifiers
+- `social media handle` - Social media usernames
 
-### Location
-- `LOCATION` - Cities and locations
-- `ADDRESS` - Physical addresses
+### Travel & Transactions
+- `flight number` - Airline flight numbers
+- `reservation number` - Booking confirmations
+- `transaction number` - Transaction IDs
+
+### Registration
+- `license plate number` - Vehicle plates
+- `student id number` - Student IDs
+- `serial number` - Product serial numbers
+
+<Info>
+  See the complete list of 60+ entity types in the [Supported Entities](/essentials/supported-entities) documentation.
+</Info>
 
 ## Rate Limiting
 
@@ -840,9 +1106,9 @@ session = requests.Session()
 response = session.post(url, json=data, headers=headers)
 ```
 
-## Complete Example
+## Complete Examples
 
-Here's a complete workflow using the REST API:
+### Example 1: Using Policies for GDPR Compliance
 
 ```python
 import requests
@@ -856,13 +1122,16 @@ headers = {
     "Content-Type": "application/json"
 }
 
-# 1. Tokenize user input
-user_message = "My name is John Doe and email is john@example.com"
+# 1. Tokenize user input using GDPR policy
+user_message = "My name is John Doe, email john@example.com, phone +49 30 12345678"
 
 tokenize_response = requests.post(
     f"{BASE_URL}/tokenize",
     headers=headers,
-    json={"text": user_message}
+    json={
+        "text": user_message,
+        "policy": "gdpr_eu"  # Use GDPR-compliant policy
+    }
 )
 
 tokenize_data = tokenize_response.json()
@@ -870,12 +1139,13 @@ protected_text = tokenize_data["text"]
 mapping = tokenize_data["mapping"]
 
 print(f"Protected: {protected_text}")
+# Output: "My name is <person_1>, email <email_address_1>, phone <phone_number_1>"
 
 # 2. Send to AI (using protected text)
 # ... AI processing ...
 
 # 3. Detokenize AI response
-ai_response = f"Hello {protected_text.split()[3]}"  # Example AI response
+ai_response = f"Thank you {protected_text.split()[3]}!"  # Example AI response
 
 detokenize_response = requests.post(
     f"{BASE_URL}/detokenize",
@@ -888,6 +1158,128 @@ detokenize_response = requests.post(
 
 final_text = detokenize_response.json()["text"]
 print(f"Final: {final_text}")
+# Output: "Thank you John Doe!"
+```
+
+### Example 2: Healthcare Data with HIPAA Policy
+
+```python
+import requests
+import os
+
+API_KEY = os.environ.get("BLINDFOLD_API_KEY")
+BASE_URL = "https://api.blindfold.dev/api/public/v1"
+
+headers = {
+    "X-API-Key": f"{API_KEY}",
+    "Content-Type": "application/json"
+}
+
+# Redact healthcare data using HIPAA policy
+patient_data = """
+Patient: Jane Smith
+DOB: 1985-04-12
+SSN: 123-45-6789
+Health Insurance: ABC123456
+Diagnosis: Type 2 Diabetes
+Medication: Metformin 500mg
+"""
+
+redact_response = requests.post(
+    f"{BASE_URL}/redact",
+    headers=headers,
+    json={
+        "text": patient_data,
+        "policy": "hipaa_us"  # Use HIPAA-compliant policy
+    }
+)
+
+redacted_data = redact_response.json()
+print(f"Redacted data:\n{redacted_data['text']}")
+print(f"Entities found: {redacted_data['entities_count']}")
+```
+
+### Example 3: Custom Policy for Specific Needs
+
+```python
+import requests
+import os
+
+API_KEY = os.environ.get("BLINDFOLD_API_KEY")
+BASE_URL = "https://api.blindfold.dev"
+
+headers = {
+    "X-API-Key": f"{API_KEY}",
+    "Content-Type": "application/json"
+}
+
+# 1. Create a custom policy
+create_policy_response = requests.post(
+    f"{BASE_URL}/api/policies",
+    headers=headers,
+    json={
+        "name": "internal_hr_policy",
+        "entities": [
+            "person",
+            "email address",
+            "social security number",
+            "date of birth",
+            "phone number"
+        ],
+        "threshold": 0.45,
+        "description": "HR department policy for employee data"
+    }
+)
+
+policy = create_policy_response.json()
+print(f"Created policy: {policy['name']}")
+
+# 2. Use the custom policy
+employee_data = "Employee: John Doe, SSN: 123-45-6789, DOB: 1990-05-15"
+
+tokenize_response = requests.post(
+    f"{BASE_URL}/api/public/v1/tokenize",
+    headers=headers,
+    json={
+        "text": employee_data,
+        "policy": "internal_hr_policy"  # Use custom policy
+    }
+)
+
+protected_data = tokenize_response.json()
+print(f"Protected: {protected_data['text']}")
+```
+
+### Example 4: Policy Override for Testing
+
+```python
+import requests
+import os
+
+API_KEY = os.environ.get("BLINDFOLD_API_KEY")
+BASE_URL = "https://api.blindfold.dev/api/public/v1"
+
+headers = {
+    "X-API-Key": f"{API_KEY}",
+    "Content-Type": "application/json"
+}
+
+text = "Contact: John Doe, john@example.com, +1-555-1234"
+
+# Use GDPR policy but lower threshold for testing
+tokenize_response = requests.post(
+    f"{BASE_URL}/tokenize",
+    headers=headers,
+    json={
+        "text": text,
+        "policy": "gdpr_eu",
+        "override_threshold": 0.25  # Lower threshold to detect more entities
+    }
+)
+
+result = tokenize_response.json()
+print(f"Detected {result['entities_count']} entities")
+print(f"Protected: {result['text']}")
 ```
 
 ## Need Help?

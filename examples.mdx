@@ -579,9 +579,11 @@ Encrypt sensitive configuration values before storing in databases.
 
 ---
 
-## Multi-Language Support
+## Multi-Language Support & Custom Entities
 
-Detect PII in multiple languages for international applications.
+Blindfold automatically detects PII across 6+ languages and supports custom entity types for industry-specific data.
+
+### Automatic Multilingual Detection
 
 <Tabs>
   <Tab title="Python">
@@ -590,20 +592,30 @@ Detect PII in multiple languages for international applications.
 
     client = Blindfold(api_key="your-api-key")
 
-    # Czech example
-    czech_text = "Jmenuji se Jan Novák a můj email je jan@example.cz"
-    result_cs = client.synthesize(czech_text, language="cs")
-    print(f"Czech: {result_cs.text}")
+    # Automatic language detection - no configuration needed
+    # Spanish example
+    spanish_text = "Mi nombre es María García, email: maria@ejemplo.es, teléfono: +34 912 345 678"
+    result_es = client.tokenize(spanish_text)
+    print(f"Spanish: {result_es.text}")
+    # Output: "Mi nombre es <PERSON_1>, email: <EMAIL_ADDRESS_1>, teléfono: <PHONE_NUMBER_1>"
 
     # German example
-    german_text = "Ich heiße Hans Müller und wohne in Berlin"
-    result_de = client.synthesize(german_text, language="de")
+    german_text = "Ich heiße Hans Müller, E-Mail: hans@beispiel.de, wohne in Berlin"
+    result_de = client.tokenize(german_text)
     print(f"German: {result_de.text}")
+    # Output: "Ich heiße <PERSON_1>, E-Mail: <EMAIL_ADDRESS_1>, wohne in <LOCATION_1>"
 
     # French example
-    french_text = "Je m'appelle Marie Dupont, email: marie@example.fr"
-    result_fr = client.synthesize(french_text, language="fr")
+    french_text = "Je m'appelle Marie Dupont, email: marie@exemple.fr, tél: +33 1 42 86 82 00"
+    result_fr = client.tokenize(french_text)
     print(f"French: {result_fr.text}")
+    # Output: "Je m'appelle <PERSON_1>, email: <EMAIL_ADDRESS_1>, tél: <PHONE_NUMBER_1>"
+
+    # Mixed languages in one request
+    mixed_text = "Contact: John Doe (john@example.com), Client: María García (maria@ejemplo.es)"
+    result_mixed = client.tokenize(mixed_text)
+    print(f"Mixed: {result_mixed.text}")
+    # Automatically detects entities in both English and Spanish
     ```
   </Tab>
 
@@ -613,33 +625,118 @@ Detect PII in multiple languages for international applications.
 
     const client = new Blindfold({ apiKey: 'your-api-key' });
 
-    // Czech example
-    const czechText = "Jmenuji se Jan Novák a můj email je jan@example.cz";
-    const resultCs = await client.synthesize(czechText, { language: 'cs' });
-    console.log(`Czech: ${resultCs.text}`);
+    // Automatic language detection - no configuration needed
+    // Spanish example
+    const spanishText = "Mi nombre es María García, email: maria@ejemplo.es, teléfono: +34 912 345 678";
+    const resultEs = await client.tokenize(spanishText);
+    console.log(`Spanish: ${resultEs.text}`);
 
     // German example
-    const germanText = "Ich heiße Hans Müller und wohne in Berlin";
-    const resultDe = await client.synthesize(germanText, { language: 'de' });
+    const germanText = "Ich heiße Hans Müller, E-Mail: hans@beispiel.de, wohne in Berlin";
+    const resultDe = await client.tokenize(germanText);
     console.log(`German: ${resultDe.text}`);
 
     // French example
-    const frenchText = "Je m'appelle Marie Dupont, email: marie@example.fr";
-    const resultFr = await client.synthesize(frenchText, { language: 'fr' });
+    const frenchText = "Je m'appelle Marie Dupont, email: marie@exemple.fr, tél: +33 1 42 86 82 00";
+    const resultFr = await client.tokenize(frenchText);
     console.log(`French: ${resultFr.text}`);
+
+    // Mixed languages in one request
+    const mixedText = "Contact: John Doe (john@example.com), Client: María García (maria@ejemplo.es)";
+    const resultMixed = await client.tokenize(mixedText);
+    console.log(`Mixed: ${resultMixed.text}`);
     ```
   </Tab>
 </Tabs>
 
-**Supported Languages:**
-- English (`en`)
-- Czech (`cs`)
-- German (`de`)
-- French (`fr`)
-- Spanish (`es`)
-- Italian (`it`)
-- Polish (`pl`)
-- Slovak (`sk`)
+**Native Language Support (Tier 1 - Highest Accuracy):**
+- 🇺🇸 English, 🇩🇪 German, 🇫🇷 French, 🇪🇸 Spanish, 🇮🇹 Italian, 🇵🇹 Portuguese, 🇳🇱 Dutch, 🇵🇱 Polish, 🇷🇺 Russian
+
+**Zero-Shot Support (Tier 2 - High Accuracy):**
+- 🇨🇿 Czech, 🇸🇰 Slovak, 🇩🇰 Danish, 🇸🇪 Swedish, 🇳🇴 Norwegian, 🇷🇴 Romanian
+
+**Key Features:**
+- Automatic detection - no language parameter needed
+- Mix multiple languages in the same request
+- Works on 15+ languages without configuration
+
+### Custom Entity Detection
+
+Define custom entities for industry-specific identifiers using zero-shot learning.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    client = Blindfold(api_key="your-api-key")
+
+    # E-commerce example with custom entities
+    order_text = "Order #ORD-2024-XYZ for customer CUST-456, SKU: PROD-789-BLU"
+    result = client.tokenize(
+        order_text,
+        entities=["order number", "customer id", "product sku"]
+    )
+    print(result.text)
+    # Output: "Order #<CUSTOM_1> for customer <CUSTOM_2>, SKU: <CUSTOM_3>"
+
+    # Healthcare example with custom entities
+    medical_text = "Patient admitted to Ward 5B, Doctor ID: DOC-123, Procedure Code: PROC-456"
+    result = client.tokenize(
+        medical_text,
+        entities=["ward number", "doctor identifier", "procedure code"]
+    )
+    print(result.text)
+
+    # Mix standard and custom entities
+    mixed_text = "Customer John Doe (ID: CUST-789) ordered item SKU-456 on 2024-01-15"
+    result = client.tokenize(
+        mixed_text,
+        entities=["PERSON", "EMAIL_ADDRESS", "customer id", "product sku", "DATE_TIME"]
+    )
+    print(result.text)
+    # Detects both standard PII (PERSON, DATE_TIME) and custom entities (customer id, product sku)
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key' });
+
+    // E-commerce example with custom entities
+    const orderText = "Order #ORD-2024-XYZ for customer CUST-456, SKU: PROD-789-BLU";
+    const result = await client.tokenize(
+      orderText,
+      { entities: ["order number", "customer id", "product sku"] }
+    );
+    console.log(result.text);
+
+    // Healthcare example with custom entities
+    const medicalText = "Patient admitted to Ward 5B, Doctor ID: DOC-123, Procedure Code: PROC-456";
+    const result2 = await client.tokenize(
+      medicalText,
+      { entities: ["ward number", "doctor identifier", "procedure code"] }
+    );
+    console.log(result2.text);
+
+    // Mix standard and custom entities
+    const mixedText = "Customer John Doe (ID: CUST-789) ordered item SKU-456 on 2024-01-15";
+    const result3 = await client.tokenize(
+      mixedText,
+      { entities: ["PERSON", "EMAIL_ADDRESS", "customer id", "product sku", "DATE_TIME"] }
+    );
+    console.log(result3.text);
+    ```
+  </Tab>
+</Tabs>
+
+**Custom Entity Benefits:**
+- No training required - describe entities in natural language
+- Works across any industry or domain
+- Combine with 40+ pre-trained entity types
+- Zero-shot detection adapts to your use case
 
 ---
 
