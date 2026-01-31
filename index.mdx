@@ -7,25 +7,38 @@ description: "The Privacy API for AI - Protect PII before sending to AI provider
 
 **Blindfold protects sensitive data (PII) before it reaches AI providers like OpenAI or Anthropic.**
 
-Automatically detect and anonymize 60+ types of personally identifiable information across multiple languages - names, emails, SSNs, credit cards, passports, medical records, and more. Plus, define custom entity types specific to your use case using natural language.
+Automatically detect and anonymize 60+ types of personally identifiable information - names, emails, SSNs, credit cards, medical records, and more. Works across 15+ languages with zero configuration.
 
-## Why Blindfold?
+## Why Use Blindfold?
 
-**Compliance**: Meet GDPR, HIPAA, and EU AI Act requirements
-**Simple**: One API call to protect all PII
-**Reversible**: Restore original data when needed
+<CardGroup cols={3}>
+  <Card title="Compliant" icon="scale-balanced">
+    Meet GDPR, HIPAA, and EU AI Act requirements
+  </Card>
+  <Card title="Simple" icon="wand-magic-sparkles">
+    One API call protects all PII
+  </Card>
+  <Card title="Reversible" icon="rotate">
+    Restore original data when needed
+  </Card>
+</CardGroup>
 
 ## How It Works
 
-```
-Your App → Blindfold → AI Provider
-           (removes PII)
-```
-
-1. Send text with sensitive data
-2. Get back protected text
-3. Send safe text to AI
-4. Restore original data (optional)
+<Steps>
+  <Step title="Send text with PII">
+    Your application sends user data to Blindfold
+  </Step>
+  <Step title="Get protected text">
+    PII is replaced with tokens like `<person_1>`, `<email_1>`
+  </Step>
+  <Step title="Send to AI safely">
+    Protected text goes to OpenAI/Anthropic without exposing PII
+  </Step>
+  <Step title="Restore original (optional)">
+    Convert AI response back to original data
+  </Step>
+</Steps>
 
 ## Privacy Methods
 
@@ -50,109 +63,89 @@ Your App → Blindfold → AI Provider
   </Card>
 </Columns>
 
-## Advanced Detection Capabilities
+## What Can Blindfold Protect?
 
-**60+ Pre-trained Entities**: Names • Emails • Phone Numbers • SSNs • Credit Cards • Bank Accounts • IP Addresses • Medical Records • Passports • License Plates • IBANs • And 50+ more...
-
-**Multilingual Support**: Native support for 9 languages (English, German, French, Spanish, Italian, Portuguese, Dutch, Polish, Russian) plus zero-shot detection for 6+ additional languages - no configuration needed
-
-**Custom Entities**: Define your own entity types using zero-shot detection for industry-specific data using natural language descriptions
-
-## Quick Start
-
-<Steps>
-  <Step title="Create Account">
-    Sign up at [app.blindfold.dev](https://app.blindfold.dev)
-  </Step>
-  <Step title="Get API Key">
-    Generate your API key in the dashboard
-  </Step>
-  <Step title="Install SDK">
-    ```bash
-    pip install blindfold-sdk
-    ```
-  </Step>
-  <Step title="Protect Data">
-    ```python
-    from blindfold import Blindfold
-    client = Blindfold(api_key="your-key")
-    result = client.tokenize("John Doe, john@example.com")
-    # Result: "<PERSON_1>, <EMAIL_1>"
-    ```
-  </Step>
-</Steps>
-
-<Card title="Full Quick Start Guide" icon="rocket" href="/quickstart" horizontal>
-  Detailed setup instructions and examples
-</Card>
-
-## Choose Your SDK
-
-<CardGroup cols={3}>
-  <Card title="Python" icon="python" href="/sdks/python-sdk">
-    Sync and async support
+<CardGroup cols={2}>
+  <Card title="60+ Entity Types" icon="shield-check" href="/essentials/supported-entities">
+    Names, emails, SSNs, credit cards, medical records, passports, and more
   </Card>
-  <Card title="JavaScript" icon="js" href="/sdks/javascript-sdk">
-    Node.js and browsers
+  <Card title="15+ Languages" icon="globe" href="/essentials/supported-languages">
+    English, Spanish, German, French, Italian, and 10+ more
   </Card>
-  <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
-    Any language
+  <Card title="Custom Entities" icon="wand-sparkles" href="/essentials/supported-entities#custom-entity-types">
+    Define your own using natural language descriptions
+  </Card>
+  <Card title="Policy-Based" icon="file-shield" href="/api-reference/rest-api#policy-based-detection">
+    Pre-configured for GDPR, HIPAA, PCI DSS compliance
   </Card>
 </CardGroup>
 
-## Data Residency & Regional Endpoints
+## Start in 5 Minutes
 
-Blindfold is designed to meet data residency requirements for different regions.
-
-<Card title="EU Region" icon="flag-eu">
-  **Base URL**: `https://api.blindfold.dev`
-
-  GDPR-compliant EU data residency
-</Card>
-
-<Info>
-  **Coming Soon**: US region endpoint will be available in future releases to support North American data residency requirements.
-</Info>
-
-### Using the API
-
-<Tabs>
-  <Tab title="Python">
-    ```python
-    from blindfold import Blindfold
-
-    # EU region
-    client = Blindfold(api_key="your-key")
-    ```
-  </Tab>
-
-  <Tab title="JavaScript">
-    ```javascript
-    import { Blindfold } from '@blindfold/sdk';
-
-    // EU region
-    const client = new Blindfold({ apiKey: 'your-key' });
-    ```
-  </Tab>
-
-  <Tab title="cURL">
+<CardGroup cols={3}>
+  <Card title="Python" icon="python" href="/quickstart">
     ```bash
-    # EU region
-    curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
-      -H "X-API-Key: your-key" \
-      -d '{"text": "Sample text"}'
+    pip install blindfold-sdk
     ```
-  </Tab>
-</Tabs>
+  </Card>
+  <Card title="JavaScript" icon="js" href="/quickstart">
+    ```bash
+    npm install @blindfold/sdk
+    ```
+  </Card>
+  <Card title="REST API" icon="terminal" href="/quickstart">
+    ```bash
+    curl https://api.blindfold.dev
+    ```
+  </Card>
+</CardGroup>
 
-## Compliance & Legal
-
-<Card title="EU AI Act, GDPR, HIPAA Compliance" icon="scale-balanced" href="/compliance" horizontal>
-  Learn how Blindfold helps you meet regulatory requirements
+<Card title="5-Minute Quickstart" icon="bolt" href="/quickstart" horizontal>
+  Get started with a working example in under 5 minutes
 </Card>
+
+## Popular Use Cases
+
+<CardGroup cols={2}>
+  <Card title="AI Chatbots" icon="robot">
+    Protect user data before sending to OpenAI, Anthropic, or other LLMs
+  </Card>
+  <Card title="Customer Support" icon="headset">
+    Anonymize tickets and conversations while maintaining context
+  </Card>
+  <Card title="Healthcare" icon="heart-pulse">
+    HIPAA-compliant handling of patient data in AI applications
+  </Card>
+  <Card title="Financial Services" icon="building-columns">
+    PCI DSS and regulatory compliance for payment data
+  </Card>
+</CardGroup>
+
+## Documentation
+
+<CardGroup cols={3}>
+  <Card title="Python SDK" icon="python" href="/sdks/python-sdk">
+    Complete guide with async support
+  </Card>
+  <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
+    Node.js and browser support
+  </Card>
+  <Card title="REST API" icon="code" href="/api-reference/rest-api">
+    Use with any programming language
+  </Card>
+  <Card title="Supported Entities" icon="list" href="/essentials/supported-entities">
+    60+ entity types detected
+  </Card>
+  <Card title="Languages" icon="language" href="/essentials/supported-languages">
+    15+ supported languages
+  </Card>
+  <Card title="Examples" icon="book" href="/examples">
+    Real-world code examples
+  </Card>
+</CardGroup>
 
 ## Need Help?
 
-<Card title="Support" icon="headset" href="mailto:support@blindfold.dev" horizontal>
-  For support and questions, contact us at support@blindfold.dev
+<Card title="Get Support" icon="circle-question" href="mailto:hello@blindfold.dev" horizontal>
+  Questions? Contact us at **hello@blindfold.dev**
 </Card>

@@ -1,9 +1,9 @@
 ---
-title: "Quick Start"
-description: "Get started with Blindfold in 5 minutes"
+title: "Quickstart"
+description: "Start protecting PII in under 5 minutes"
 ---
 
-Get your first API call working in minutes. Follow these three simple steps to start protecting sensitive data.
+Get your first API call working in under 5 minutes. This guide shows you the fastest path from zero to protecting sensitive data.
 
 ## Step 1: Create an Account
 
@@ -274,42 +274,63 @@ All responses include:
 - `detected_entities` - Details about what was found
 - `mapping` - Token mapping (tokenize only)
 
-## Advanced Features
+## Use Policies for Easy Compliance
 
-### Multilingual Detection
+Instead of specifying entities manually, use pre-configured compliance policies:
 
-Blindfold automatically detects PII across multiple languages without any configuration. Native support for 9 languages plus zero-shot detection for 6+ more:
+<Tabs>
+  <Tab title="Python">
+    ```python
+    # GDPR compliance (European data)
+    response = client.tokenize(
+        "Contact: John Doe, john@example.com, +49 30 12345",
+        policy="gdpr_eu"
+    )
 
-```python
-# Mix multiple languages in one request
-response = client.tokenize(
-    "Contact: John Doe, Email: john@example.com, Teléfono: +34 912 345 678"
-)
-# Automatically detects entities in English and Spanish
+    # HIPAA compliance (Healthcare data)
+    response = client.tokenize(
+        "Patient: Jane Smith, SSN: 123-45-6789",
+        policy="hipaa_us"
+    )
+    ```
+  </Tab>
 
-# Works with many European languages
-response = client.tokenize(
-    "Nome: Paolo Rossi, E-Mail: paolo@esempio.it, Osoba: Jan Novák"
-)
-# Detects Italian and Czech automatically
-```
+  <Tab title="JavaScript">
+    ```javascript
+    // GDPR compliance (European data)
+    const response = await client.tokenize(
+      "Contact: John Doe, john@example.com, +49 30 12345",
+      { policy: "gdpr_eu" }
+    );
 
-### Custom Entity Detection
+    // HIPAA compliance (Healthcare data)
+    const response2 = await client.tokenize(
+      "Patient: Jane Smith, SSN: 123-45-6789",
+      { policy: "hipaa_us" }
+    );
+    ```
+  </Tab>
 
-Define your own entity types for industry-specific data:
+  <Tab title="cURL">
+    ```bash
+    # GDPR compliance
+    curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+      -H "X-API-Key: your-api-key-here" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "Contact: John Doe, john@example.com",
+        "policy": "gdpr_eu"
+      }'
+    ```
+  </Tab>
+</Tabs>
 
-```python
-# Detect custom entities using zero-shot learning
-response = client.tokenize(
-    "Order #ORD-2024-XYZ for customer ID CUST-456",
-    entities=["order number", "customer identifier"]
-)
-# Detects custom entity types without any training
-```
-
-<Tip>
-  See [Supported Entities](/essentials/supported-entities) for complete details on multilingual support and custom entity detection.
-</Tip>
+**Available Policies:**
+- `basic` - Names, emails, phones
+- `gdpr_eu` - GDPR compliance
+- `hipaa_us` - Healthcare compliance
+- `pci_dss` - Payment card compliance
+- `strict` - Maximum protection
 
 ## Next Steps
 
