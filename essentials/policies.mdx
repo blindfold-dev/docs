@@ -1,0 +1,539 @@
+---
+title: "Policy Management"
+description: "Pre-configured and custom policies for consistent PII detection across your organization"
+---
+
+Policies are pre-configured detection rules that combine entity types and confidence thresholds into reusable configurations. They simplify PII detection and ensure consistency across your organization.
+
+<Info>
+  **Why use policies?** Instead of specifying entities and thresholds in every API call, use a policy name. This ensures consistent detection rules across your entire application and makes compliance easier.
+</Info>
+
+## Understanding Policies
+
+A policy defines:
+- **Entity Types**: Which types of sensitive data to detect (e.g., person, email, SSN)
+- **Detection Threshold**: Minimum confidence level (0.0-1.0) for detections
+- **Use Case**: The compliance framework or business need it addresses
+
+### Policy Benefits
+
+<CardGroup cols={2}>
+  <Card title="Consistency" icon="check-double">
+    Same detection rules across all applications and teams
+  </Card>
+  <Card title="Compliance" icon="scale-balanced">
+    Pre-configured for GDPR, HIPAA, PCI DSS standards
+  </Card>
+  <Card title="Simplicity" icon="wand-magic-sparkles">
+    One parameter instead of listing 15+ entity types
+  </Card>
+  <Card title="Maintainability" icon="wrench">
+    Update policy once, apply everywhere instantly
+  </Card>
+</CardGroup>
+
+## Global Policies
+
+Blindfold provides 5 pre-configured global policies for common use cases and compliance frameworks.
+
+### Available Global Policies
+
+<AccordionGroup>
+  <Accordion title="basic - General Purpose PII" icon="shield">
+    **Best for:** General applications, basic privacy protection
+
+    **Threshold:** 0.30 (more permissive, catches more)
+
+    **Entity Types (3):**
+    - Person names
+    - Email addresses
+    - Phone numbers
+
+    **Use when:** You need simple, fast PII detection without regulatory requirements.
+
+    ```python
+    # Quick start with basic protection
+    result = client.tokenize(
+        text="Contact John at john@example.com",
+        policy="basic"
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="gdpr_eu - GDPR Compliance" icon="globe">
+    **Best for:** European data protection, Article 4(1) personal data
+
+    **Threshold:** 0.35 (balanced)
+
+    **Entity Types (15+):**
+    - Person, Email, Phone Number, Address
+    - National ID Number, Passport Number
+    - Tax ID, Bank Account, IBAN, Credit Card
+    - Date of Birth, IP Address
+    - Health Insurance Number, Medical Condition
+
+    **Compliance:** GDPR Article 4(1) - "Personal Data"
+
+    **Use when:** Processing EU citizen data or operating in the European market.
+
+    ```python
+    # GDPR-compliant detection
+    result = client.tokenize(
+        text="Customer: Maria Schmidt, Email: maria@example.de",
+        policy="gdpr_eu"
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="hipaa_us - Healthcare Compliance" icon="heart-pulse">
+    **Best for:** US healthcare, HIPAA Protected Health Information (PHI)
+
+    **Threshold:** 0.40 (stricter, fewer false positives)
+
+    **Entity Types (11+):**
+    - Person, Email, Phone Number
+    - Social Security Number
+    - Health Insurance Number, Medical Condition
+    - Medication, Insurance Company
+    - Date of Birth, Address
+
+    **Compliance:** HIPAA 45 CFR § 164.514(b) - "Protected Health Information"
+
+    **Use when:** Handling patient data, healthcare records, or medical information.
+
+    ```python
+    # HIPAA-compliant detection
+    result = client.tokenize(
+        text="Patient: John Doe, SSN: 123-45-6789, Diagnosis: Type 2 Diabetes",
+        policy="hipaa_us"
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="pci_dss - Payment Card Security" icon="credit-card">
+    **Best for:** Payment processing, cardholder data protection
+
+    **Threshold:** 0.45 (strict, high confidence)
+
+    **Entity Types (8+):**
+    - Credit Card Number, Credit Card Brand
+    - Credit Card Expiration Date, CVV/CVC
+    - Bank Account Number, IBAN
+    - Person, Email
+
+    **Compliance:** PCI DSS Requirement 3 - "Protect Stored Cardholder Data"
+
+    **Use when:** Processing payments, storing transaction data, or handling credit cards.
+
+    ```python
+    # PCI DSS-compliant detection
+    result = client.tokenize(
+        text="Card: 4532-7562-9102-3456, CVV: 123, Exp: 12/25",
+        policy="pci_dss"
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="strict - Maximum Protection" icon="shield-check">
+    **Best for:** High-security environments, comprehensive PII protection
+
+    **Threshold:** 0.25 (most permissive, maximum detection)
+
+    **Entity Types (60+):**
+    - All personal identifiers (Person, Email, Phone)
+    - All government IDs (SSN, Passport, Driver's License, National ID)
+    - All financial data (Credit Cards, Bank Accounts, IBAN, Tax ID)
+    - All healthcare data (Medical Conditions, Medications, Health Insurance)
+    - All digital identifiers (IP Address, Username, Social Media)
+    - All travel data (Flight Numbers, Reservation Numbers)
+    - All additional types (License Plates, Student IDs, Serial Numbers)
+
+    **Use when:** Maximum security is required, regulatory compliance is critical, or handling highly sensitive data.
+
+    ```python
+    # Maximum protection
+    result = client.tokenize(
+        text="Comprehensive data protection for all PII types",
+        policy="strict"
+    )
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Policy Comparison
+
+| Policy | Entities | Threshold | Speed | Use Case |
+|--------|----------|-----------|-------|----------|
+| `basic` | 3 | 0.30 | ⚡⚡⚡ Fastest | General apps |
+| `gdpr_eu` | 15+ | 0.35 | ⚡⚡ Fast | EU data protection |
+| `hipaa_us` | 11+ | 0.40 | ⚡⚡ Fast | US healthcare |
+| `pci_dss` | 8+ | 0.45 | ⚡⚡⚡ Very Fast | Payment processing |
+| `strict` | 60+ | 0.25 | ⚡ Moderate | Maximum security |
+
+## Custom Policies
+
+Create custom policies tailored to your specific business needs through the **Blindfold Dashboard**.
+
+### When to Create Custom Policies
+
+<CardGroup cols={2}>
+  <Card title="Industry-Specific Needs" icon="building">
+    Your industry requires specific entity types not covered by global policies
+  </Card>
+  <Card title="Custom Thresholds" icon="sliders">
+    You need different confidence levels than global policies
+  </Card>
+  <Card title="Subset Detection" icon="filter">
+    Only need a few specific entity types from a larger policy
+  </Card>
+  <Card title="Team Standards" icon="users">
+    Enforce consistent detection rules across development teams
+  </Card>
+</CardGroup>
+
+### Creating a Custom Policy
+
+Custom policies are created and managed through the **Blindfold Dashboard**:
+
+<Steps>
+  <Step title="Access Dashboard">
+    Navigate to [app.blindfold.dev](https://app.blindfold.dev) and sign in
+  </Step>
+
+  <Step title="Go to Policies">
+    Click on **"Policy Configuration"** in the left sidebar
+  </Step>
+
+  <Step title="Create Policy">
+    Click **"Create Custom Policy"** button
+  </Step>
+
+  <Step title="Configure Settings">
+    - **Name**: Choose a unique policy name (e.g., `internal_hr_policy`)
+    - **Description**: Optional description of the policy's purpose
+    - **Entity Types**: Select which PII types to detect
+    - **Threshold**: Set confidence level (0.0-1.0)
+  </Step>
+
+  <Step title="Save and Use">
+    Save the policy and use it immediately in your API calls
+  </Step>
+</Steps>
+
+### Custom Policy Examples
+
+<CodeGroup>
+```python Python - HR Department
+# Custom policy for employee data
+result = client.tokenize(
+    text="Employee: John Doe, SSN: 123-45-6789, DOB: 1990-05-15",
+    policy="internal_hr_policy"  # Custom policy created in dashboard
+)
+```
+
+```python Python - Customer Support
+# Custom policy for support tickets
+result = client.tokenize(
+    text="Ticket #12345: Customer john@example.com needs help",
+    policy="support_ticket_policy"  # Only detects emails and phone numbers
+)
+```
+
+```python Python - Financial Reporting
+# Custom policy for financial reports
+result = client.tokenize(
+    text="Account: 1234-5678-9012, Transaction: $5,000",
+    policy="finance_reporting_policy"  # Bank accounts and transaction IDs
+)
+```
+
+```javascript JavaScript - Marketing
+// Custom policy for marketing data
+const result = await client.tokenize(
+  "Campaign leads: john@example.com, mary@company.com",
+  { policy: "marketing_leads_policy" }  // Only emails and names
+);
+```
+</CodeGroup>
+
+## Using Policies in API Calls
+
+### With SDKs
+
+Policies work seamlessly with all Blindfold SDKs:
+
+<CodeGroup>
+```python Python SDK
+from blindfold import Blindfold
+
+client = Blindfold(api_key="your-api-key")
+
+# Use global policy
+result = client.tokenize(
+    text="Patient data...",
+    policy="hipaa_us"
+)
+
+# Use custom policy
+result = client.tokenize(
+    text="Employee data...",
+    policy="my_custom_policy"
+)
+```
+
+```javascript JavaScript SDK
+import { Blindfold } from '@blindfold/sdk';
+
+const client = new Blindfold({ apiKey: 'your-api-key' });
+
+// Use global policy
+const result = await client.tokenize(
+  "Patient data...",
+  { policy: "hipaa_us" }
+);
+
+// Use custom policy
+const result = await client.tokenize(
+  "Employee data...",
+  { policy: "my_custom_policy" }
+);
+```
+</CodeGroup>
+
+### With REST API
+
+Policies work with all privacy method endpoints:
+
+<CodeGroup>
+```bash Tokenize
+curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Contact John at john@example.com",
+    "policy": "gdpr_eu"
+  }'
+```
+
+```bash Mask
+curl -X POST https://api.blindfold.dev/api/public/v1/mask \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Card: 4532-7562-9102-3456",
+    "policy": "pci_dss",
+    "chars_to_show": 4
+  }'
+```
+
+```bash Redact
+curl -X POST https://api.blindfold.dev/api/public/v1/redact \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "SSN: 123-45-6789",
+    "policy": "hipaa_us"
+  }'
+```
+</CodeGroup>
+
+## Best Practices
+
+### 1. Choose the Right Policy
+
+<Steps>
+  <Step title="Identify Requirements">
+    Determine compliance needs (GDPR, HIPAA, PCI DSS) and data types
+  </Step>
+
+  <Step title="Start with Global">
+    Use global policies when they match your requirements
+  </Step>
+
+  <Step title="Customize When Needed">
+    Create custom policies for specific business needs
+  </Step>
+</Steps>
+
+### 2. Policy Naming Conventions
+
+For custom policies, use clear, descriptive names:
+
+<CodeGroup>
+```text ✅ Good Names
+internal_hr_policy
+customer_support_pii
+finance_reporting_data
+marketing_contact_info
+legal_document_redaction
+```
+
+```text ❌ Bad Names
+policy1
+temp
+test
+my_policy
+custom
+```
+</CodeGroup>
+
+### 3. Document Your Policies
+
+For each custom policy, document:
+- **Purpose**: Why the policy exists
+- **Entity Types**: What it detects
+- **Threshold**: Confidence level and reasoning
+- **Use Cases**: Where it should be used
+- **Owner**: Team or person responsible
+
+### 4. Regular Review
+
+<Card title="Policy Maintenance Checklist" icon="list-check">
+  - **Quarterly**: Review policy effectiveness
+  - **After incidents**: Update based on false positives/negatives
+  - **Compliance changes**: Adjust when regulations update
+  - **New features**: Update when new entity types are available
+</Card>
+
+## Policy vs. Manual Configuration
+
+### When to Use Policies
+
+✅ **Use policies when:**
+- You need consistent detection across multiple applications
+- You're subject to compliance regulations (GDPR, HIPAA, PCI DSS)
+- Multiple teams use the same detection rules
+- You want simplified API calls
+- You need centralized management
+
+### When to Use Manual Configuration
+
+✅ **Use manual configuration (`entities` + `score_threshold`) when:**
+- One-off or experimental detection
+- Testing different entity combinations
+- Highly specialized single-use cases
+- You need maximum flexibility
+
+<CodeGroup>
+```python Policy (Recommended)
+# Consistent, maintainable, compliant
+result = client.tokenize(
+    text="Your text",
+    policy="gdpr_eu"  # One parameter, 15+ entities
+)
+```
+
+```python Manual Configuration
+# Flexible but requires maintenance
+result = client.tokenize(
+    text="Your text",
+    entities=[
+        "person", "email address", "phone number",
+        "address", "national id number", "passport number",
+        "tax identification number", "bank account number",
+        "iban", "credit card number", "date of birth",
+        "ip address", "health insurance number",
+        "medical condition", "social security number"
+    ],
+    score_threshold=0.35
+)
+```
+</CodeGroup>
+
+## Compliance Mapping
+
+### GDPR (General Data Protection Regulation)
+
+**Policy:** `gdpr_eu`
+
+**Article 4(1) - Personal Data:** Any information relating to an identified or identifiable natural person.
+
+**Covered by Blindfold:**
+- Names, contact details (email, phone, address)
+- Identification numbers (national ID, passport, tax ID)
+- Financial data (bank accounts, credit cards)
+- Health data (medical conditions, health insurance)
+- Online identifiers (IP addresses)
+
+### HIPAA (Health Insurance Portability and Accountability Act)
+
+**Policy:** `hipaa_us`
+
+**45 CFR § 164.514(b) - Protected Health Information (PHI):**
+
+**18 HIPAA Identifiers Covered:**
+1. Names ✅
+2. Geographic subdivisions ✅ (Address)
+3. Dates (birth) ✅
+4. Phone numbers ✅
+5. Email addresses ✅
+6. Social Security Numbers ✅
+7. Medical record numbers ✅
+8. Health plan numbers ✅ (Health Insurance Number)
+9. Account numbers ✅ (Bank Account)
+10. Certificate/license numbers ✅
+11-18. Additional identifiers ✅
+
+### PCI DSS (Payment Card Industry Data Security Standard)
+
+**Policy:** `pci_dss`
+
+**Requirement 3 - Protect Stored Cardholder Data:**
+
+**Primary Account Number (PAN) Protection:**
+- Credit card numbers ✅
+- CVV/CVC codes ✅
+- Expiration dates ✅
+- Cardholder names ✅
+- Bank account numbers ✅
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Can I modify global policies?" icon="question">
+    No, global policies are fixed to ensure compliance standards. However, you can create a custom policy based on a global policy and modify it to your needs.
+  </Accordion>
+
+  <Accordion title="How many custom policies can I create?" icon="question">
+    No limit. Create as many custom policies as your organization needs.
+  </Accordion>
+
+  <Accordion title="Can I share policies across tenants?" icon="question">
+    No, custom policies are tenant-specific. Each organization manages their own policies. Global policies are available to all tenants.
+  </Accordion>
+
+  <Accordion title="What happens if I delete a custom policy that's in use?" icon="question">
+    API calls using the deleted policy will fail with a 404 error. Ensure you update your applications before deleting a policy.
+  </Accordion>
+
+  <Accordion title="Can I version my policies?" icon="question">
+    Not directly, but you can create new policies with version numbers in the name (e.g., `hr_policy_v1`, `hr_policy_v2`) and migrate gradually.
+  </Accordion>
+
+  <Accordion title="How do I know which policy to use?" icon="question">
+    - **GDPR compliance?** → `gdpr_eu`
+    - **Healthcare data?** → `hipaa_us`
+    - **Payment processing?** → `pci_dss`
+    - **General apps?** → `basic`
+    - **Maximum security?** → `strict`
+    - **Custom needs?** → Create custom policy
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create Your First Policy" icon="plus" href="https://app.blindfold.dev">
+    Sign in to the dashboard and create a custom policy
+  </Card>
+  <Card title="View All Entity Types" icon="list" href="/essentials/supported-entities">
+    Browse 60+ entity types available for policies
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/rest-api">
+    Learn how to use policies in API calls
+  </Card>
+  <Card title="Best Practices" icon="star" href="/best-practices">
+    Policy optimization and security tips
+  </Card>
+</CardGroup>

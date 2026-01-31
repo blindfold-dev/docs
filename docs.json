@@ -25,6 +25,7 @@
           {
             "group": "Essentials",
             "pages": [
+              "essentials/policies",
               "essentials/supported-languages",
               "essentials/supported-entities",
               "essentials/error-handling"
@@ -78,12 +79,6 @@
     "dark": "/logo/dark.svg"
   },
   "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:support@blindfold.dev"
-      }
-    ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
