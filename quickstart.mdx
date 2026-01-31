@@ -274,6 +274,43 @@ All responses include:
 - `detected_entities` - Details about what was found
 - `mapping` - Token mapping (tokenize only)
 
+## Advanced Features
+
+### Multilingual Detection
+
+Blindfold automatically detects PII across multiple languages without any configuration. Native support for 9 languages plus zero-shot detection for 6+ more:
+
+```python
+# Mix multiple languages in one request
+response = client.tokenize(
+    "Contact: John Doe, Email: john@example.com, Teléfono: +34 912 345 678"
+)
+# Automatically detects entities in English and Spanish
+
+# Works with many European languages
+response = client.tokenize(
+    "Nome: Paolo Rossi, E-Mail: paolo@esempio.it, Osoba: Jan Novák"
+)
+# Detects Italian and Czech automatically
+```
+
+### Custom Entity Detection
+
+Define your own entity types for industry-specific data:
+
+```python
+# Detect custom entities using zero-shot learning
+response = client.tokenize(
+    "Order #ORD-2024-XYZ for customer ID CUST-456",
+    entities=["order number", "customer identifier"]
+)
+# Detects custom entity types without any training
+```
+
+<Tip>
+  See [Supported Entities](/essentials/supported-entities) for complete details on multilingual support and custom entity detection.
+</Tip>
+
 ## Next Steps
 
 Now that you have made your first API call, explore more features:
