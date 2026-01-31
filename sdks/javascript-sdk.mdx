@@ -81,28 +81,10 @@ const response = await client.tokenize(
   "Contact John Doe at john@example.com",
   { policy: "gdpr_eu" }  // GDPR-compliant detection
 );
-
-// Override policy settings for specific needs
-const response2 = await client.tokenize(
-  "Patient: John Doe, SSN: 123-45-6789",
-  {
-    policy: "hipaa_us",
-    override_threshold: 0.30  // Lower threshold for testing
-  }
-);
-
-// Override entities while keeping policy threshold
-const response3 = await client.tokenize(
-  "Custom data processing",
-  {
-    policy: "gdpr_eu",
-    override_entities: ["person", "email address"]  // Only detect these
-  }
-);
 ```
 
 <Info>
-  Policies simplify your code and ensure consistent PII detection across your application. Create custom policies through the dashboard or API.
+  Policies simplify your code and ensure consistent PII detection across your application. You can manage policies through the dashboard.
 </Info>
 
 ## Core Methods
@@ -147,8 +129,6 @@ response.detected_entities.forEach(entity => {
   - `policy` (string): Policy name (e.g., `gdpr_eu`, `hipaa_us`)
   - `entities` (string[]): Array of entity types to detect (use natural language names like `"person"`, `"email address"`)
   - `score_threshold` (number): Minimum confidence score (0.0-1.0)
-  - `override_threshold` (number): Override policy threshold
-  - `override_entities` (string[]): Override policy entities
 
 **Returns:** `TokenizeResponse` with:
 - `text`: Anonymized text with tokens
