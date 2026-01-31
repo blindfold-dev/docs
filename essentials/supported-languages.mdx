@@ -1,0 +1,133 @@
+---
+title: "Supported Languages"
+description: "Languages supported by Blindfold's PII detection engine"
+---
+
+Blindfold's AI-powered detection engine supports PII detection across multiple languages with varying levels of performance.
+
+## Native Language Support (Highest Accuracy)
+
+These languages have been specifically trained for PII detection and provide the best accuracy:
+
+<CardGroup cols={3}>
+  <Card title="English" icon="flag-usa">
+    Primary language with highest accuracy
+  </Card>
+  <Card title="German" icon="flag">
+    Full support, excellent accuracy
+  </Card>
+  <Card title="French" icon="flag">
+    Full support, excellent accuracy
+  </Card>
+  <Card title="Spanish" icon="flag">
+    Full support, excellent accuracy
+  </Card>
+  <Card title="Italian" icon="flag">
+    Full support, excellent accuracy
+  </Card>
+  <Card title="Portuguese" icon="flag">
+    Full support, excellent accuracy
+  </Card>
+  <Card title="Dutch" icon="flag">
+    Full support, excellent accuracy
+  </Card>
+  <Card title="Polish" icon="flag">
+    Full support, excellent accuracy
+  </Card>
+  <Card title="Russian" icon="flag">
+    Strong support, good accuracy
+  </Card>
+</CardGroup>
+
+## Zero-Shot Language Support (High Accuracy)
+
+These languages work through our multilingual detection engine without specific training, achieving excellent results:
+
+<CardGroup cols={3}>
+  <Card title="Czech" icon="flag">
+    Works great (similar to Polish/Russian)
+  </Card>
+  <Card title="Slovak" icon="flag">
+    Strong performance
+  </Card>
+  <Card title="Danish" icon="flag">
+    Good performance
+  </Card>
+  <Card title="Swedish" icon="flag">
+    Good performance
+  </Card>
+  <Card title="Norwegian" icon="flag">
+    Good performance
+  </Card>
+  <Card title="Romanian" icon="flag">
+    Good performance
+  </Card>
+</CardGroup>
+
+## Experimental Support
+
+These languages are supported but may require additional validation for production use:
+
+- **Chinese** - Supported, but PII patterns differ significantly
+- **Japanese** - Supported, but PII patterns differ significantly
+- **Arabic** - Supported with testing recommended
+
+## Automatic Language Detection
+
+The detection engine automatically identifies the language - no configuration needed.
+
+```python
+# Mix multiple languages in one request
+response = client.tokenize(
+    "Contact: John Doe, Email: john@example.com, Teléfono: +34 912 345 678"
+)
+# Automatically detects entities in both English and Spanish
+```
+
+```javascript
+// Works seamlessly across languages
+const response = await client.tokenize(
+  "Nome: Paolo Rossi, E-Mail: paolo@esempio.it, Osoba: Jan Novák"
+);
+// Detects Italian and Czech automatically
+```
+
+<Tip>
+  For best results, use one of the **Native Language Support** languages. Zero-shot languages work well but may have slightly lower confidence scores for complex entity types.
+</Tip>
+
+## Language-Specific Examples
+
+### European Mix
+```python
+text = """
+Cliente: María García (España)
+Email: maria@ejemplo.es
+Kunde: Hans Müller (Deutschland)
+E-Mail: hans@beispiel.de
+Client: Jean Dupont (France)
+Courriel: jean@exemple.fr
+"""
+
+response = client.tokenize(text, policy="gdpr_eu")
+# Detects PII across Spanish, German, and French
+```
+
+### Slavic Languages
+```python
+text = """
+Osoba: Jan Novák (Česko)
+E-mail: jan@priklad.cz
+Osoba: Piotr Kowalski (Polska)
+E-mail: piotr@przyklad.pl
+"""
+
+response = client.tokenize(text, policy="gdpr_eu")
+# Works with Czech and Polish
+```
+
+## Need Help?
+
+If you're working with a language not listed here or experiencing issues:
+- **Email**: hello@blindfold.dev
+- **Documentation**: Check our [examples](/examples) for multilingual use cases
