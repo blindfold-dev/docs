@@ -18,6 +18,7 @@
             "pages": [
               "index",
               "quickstart",
+              "getting-started",
               "compliance"
             ]
           },
@@ -50,7 +51,9 @@
           {
             "group": "Guides",
             "pages": [
-              "examples"
+              "best-practices",
+              "examples",
+              "faq"
             ]
           }
         ]
