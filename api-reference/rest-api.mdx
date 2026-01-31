@@ -124,6 +124,48 @@ You can also override policy settings per-request:
 
 ## API Endpoints
 
+<CardGroup cols={2}>
+  <Card title="Privacy Methods" icon="shield-check" href="#privacy-method-endpoints">
+    Tokenize, mask, redact, hash, encrypt, synthesize
+  </Card>
+  <Card title="Policy Management" icon="cog" href="#policy-management-endpoints">
+    Create and manage detection policies
+  </Card>
+  <Card title="Utilities" icon="wrench" href="#utility-endpoints">
+    Detokenization and health checks
+  </Card>
+  <Card title="Best Practices" icon="star" href="#best-practices">
+    Security, rate limiting, examples
+  </Card>
+</CardGroup>
+
+---
+
+## Privacy Method Endpoints
+
+These endpoints apply different privacy-preserving transformations to your text.
+
+### Method Comparison
+
+Choose the right privacy method for your use case:
+
+| Method | Reversible | Output Example | Best For |
+|--------|-----------|----------------|----------|
+| [Tokenize](#post-tokenize) | ✅ Yes | `<person_1>` | AI processing, chatbots |
+| [Mask](#post-mask) | ❌ No | `***3456` | Display to users |
+| [Redact](#post-redact) | ❌ No | `` (removed) | Permanent removal, logs |
+| [Hash](#post-hash) | ❌ No | `ID_a3f8b9` | Analytics, deduplication |
+| [Encrypt](#post-encrypt) | ✅ Yes | `gAAAAABh...` | Secure storage |
+| [Synthesize](#post-synthesize) | ❌ No | `Jane Smith` (fake) | Testing, demos |
+
+<Tip>
+  **For AI applications:** Use **tokenize** + **detokenize** to protect PII while maintaining context for the AI model.
+
+  **For compliance:** Use policies like `gdpr_eu`, `hipaa_us`, or `pci_dss` to automatically apply the correct entity types and thresholds.
+</Tip>
+
+---
+
 ### POST /tokenize
 
 Replace sensitive data with reversible tokens. Returns a mapping to restore original values.
@@ -253,9 +295,15 @@ curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
 
 ---
 
+## Utility Endpoints
+
+These endpoints provide utility functions and service information.
+
 ### POST /detokenize
 
 Restore original values from tokens using the mapping from `/tokenize`.
+
+**Use with:** `/tokenize` endpoint to complete the privacy-preserving workflow.
 
 <CodeGroup>
 ```bash cURL
@@ -848,11 +896,13 @@ curl https://api.blindfold.dev/api/public/v1/health
 }
 ```
 
----
-
 ## Policy Management Endpoints
 
 Manage detection policies for simplified and consistent PII detection across your organization.
+
+<Info>
+  Policies allow you to define reusable configurations that combine entity types and detection thresholds. Use global policies for compliance (GDPR, HIPAA, PCI DSS) or create custom policies for your specific needs.
+</Info>
 
 ### GET /policies
 
@@ -1021,11 +1071,15 @@ curl -X GET https://api.blindfold.dev/api/policies/global
 ["basic", "gdpr_eu", "hipaa_us", "pci_dss", "strict"]
 ```
 
----
-
 ## Supported Entity Types
 
-All detection endpoints support filtering by entity type using **natural language names** (lowercase). Blindfold supports 60+ pre-trained entity types:
+All detection endpoints support filtering by entity type using **natural language names** (lowercase). Blindfold supports 60+ pre-trained entity types.
+
+<Card title="View All Entities" icon="list" href="/essentials/supported-entities" horizontal>
+  See the complete list of 60+ entity types organized by category
+</Card>
+
+### Quick Reference
 
 ### Personal Information
 - `person` - Person names
@@ -1170,7 +1224,24 @@ response = session.post(url, json=data, headers=headers)
 
 ## Complete Examples
 
-### Example 1: Using Policies for GDPR Compliance
+Real-world integration patterns using the Blindfold REST API.
+
+<CardGroup cols={2}>
+  <Card title="AI Integration" icon="robot">
+    Complete tokenize → AI → detokenize workflow
+  </Card>
+  <Card title="Compliance" icon="scale-balanced">
+    GDPR, HIPAA, PCI DSS policy usage
+  </Card>
+  <Card title="Custom Policies" icon="gear">
+    Creating and managing custom policies
+  </Card>
+  <Card title="Policy Overrides" icon="sliders">
+    Fine-tuning detection thresholds
+  </Card>
+</CardGroup>
+
+### Example 1: AI Integration with GDPR Compliance
 
 ```python
 import requests

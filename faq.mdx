@@ -1,0 +1,423 @@
+---
+title: "FAQ"
+description: "Frequently Asked Questions about Blindfold"
+---
+
+## General Questions
+
+<AccordionGroup>
+  <Accordion title="What happens to my data when I use Blindfold?" icon="shield-check">
+    **Your data never leaves your control.**
+
+    - Text is processed in real-time and not stored
+    - PII mappings are returned to you (not stored by us)
+    - No training on your data
+    - EU data residency (GDPR compliant)
+    - SOC 2 compliant infrastructure
+
+    **Data flow:**
+    1. You send text → 2. We detect PII → 3. Return protected text → 4. Data deleted
+
+    We only store metadata (request counts, API usage) for billing purposes.
+  </Accordion>
+
+  <Accordion title="How accurate is the PII detection?" icon="bullseye">
+    **Very high accuracy across 60+ entity types:**
+
+    - **Email addresses**: ~99% accuracy
+    - **Phone numbers**: ~95% accuracy
+    - **Names**: ~90-95% accuracy (varies by language)
+    - **Credit cards**: ~98% accuracy (with Luhn validation)
+    - **Medical records**: ~92% accuracy
+
+    Detection uses GLiNER, a state-of-the-art AI model trained specifically for PII detection.
+
+    **Tip**: Use `policy="strict"` for maximum detection or adjust `override_threshold` for your needs.
+  </Accordion>
+
+  <Accordion title="What languages are supported?" icon="globe">
+    **15+ languages with automatic detection:**
+
+    **Native Support (Highest Accuracy):**
+    - English, German, French, Spanish, Italian, Portuguese, Dutch, Polish, Russian
+
+    **Zero-Shot Support (High Accuracy):**
+    - Czech, Slovak, Danish, Swedish, Norwegian, Romanian
+
+    **Experimental:**
+    - Chinese, Japanese, Arabic
+
+    No configuration needed - the engine automatically detects the language.
+
+    <Card title="See All Languages" icon="language" href="/essentials/supported-languages" horizontal>
+      Complete language support details
+    </Card>
+  </Accordion>
+
+  <Accordion title="Can I detect custom entity types?" icon="wand-sparkles">
+    **Yes! Use zero-shot detection with natural language descriptions:**
+
+    ```python
+    # Detect custom entities
+    result = client.tokenize(
+        "Order #ORD-2024-XYZ, SKU: PROD-789",
+        entities=["order number", "product sku"]
+    )
+    ```
+
+    **No training required** - just describe what you want to detect in plain English:
+    - `"order number"`, `"booking reference"`, `"employee id"`
+    - `"internal code"`, `"project name"`, `"case number"`
+    - Industry-specific identifiers
+
+    Mix custom entities with standard ones for complete protection.
+  </Accordion>
+
+  <Accordion title="What's the difference between policies?" icon="shield-halved">
+    **Policies are pre-configured entity sets for compliance:**
+
+    | Policy | Entity Count | Use Case |
+    |--------|-------------|----------|
+    | `basic` | 3 types | General PII (names, emails, phones) |
+    | `gdpr_eu` | 15+ types | European data protection |
+    | `hipaa_us` | 11+ types | US healthcare compliance |
+    | `pci_dss` | 8+ types | Payment card industry |
+    | `strict` | 60+ types | Maximum protection |
+
+    **Use policies instead of listing entities manually:**
+    ```python
+    # ✅ Easy with policy
+    result = client.tokenize(text, policy="gdpr_eu")
+
+    # ❌ Manual (harder to maintain)
+    result = client.tokenize(text, entities=["person", "email", ...15 more])
+    ```
+  </Accordion>
+
+  <Accordion title="How do I handle false positives?" icon="filter">
+    **Several strategies to reduce false positives:**
+
+    **1. Increase Detection Threshold**
+    ```python
+    # Only detect high-confidence matches
+    result = client.tokenize(
+        text,
+        policy="gdpr_eu",
+        override_threshold=0.80  # Default is 0.35
+    )
+    ```
+
+    **2. Filter Specific Entity Types**
+    ```python
+    # Only detect specific entities
+    result = client.tokenize(
+        text,
+        entities=["email address", "phone number"]  # Skip names
+    )
+    ```
+
+    **3. Post-Process Results**
+    ```python
+    # Review detected entities before using
+    for entity in result.detected_entities:
+        if entity.score < 0.70:
+            # Skip low-confidence detections
+            continue
+    ```
+
+    **4. Use Allowlists**
+    ```python
+    # Skip known safe values (implement client-side)
+    safe_values = ["John Doe", "support@company.com"]
+    if original_value not in safe_values:
+        # Apply protection
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Technical Questions
+
+<AccordionGroup>
+  <Accordion title="What's the API rate limit?" icon="gauge">
+    **Rate limits by plan:**
+
+    - **Free Tier**: 1,000 requests/day
+    - **Pro Tier**: 100,000 requests/day
+    - **Enterprise**: Custom limits
+
+    **Headers included in every response:**
+    ```http
+    X-RateLimit-Limit: 1000
+    X-RateLimit-Remaining: 999
+    X-RateLimit-Reset: 1640995200
+    ```
+
+    **Handling rate limits:**
+    ```python
+    import time
+
+    try:
+        result = client.tokenize(text)
+    except APIError as e:
+        if e.status_code == 429:
+            # Rate limited - wait and retry
+            time.sleep(60)
+            result = client.tokenize(text)
+    ```
+
+    Contact us for higher limits: hello@blindfold.dev
+  </Accordion>
+
+  <Accordion title="Can I use Blindfold in the browser?" icon="browser">
+    **Not recommended - API keys should stay server-side.**
+
+    **❌ Bad (API key exposed):**
+    ```javascript
+    // Client-side code - NEVER do this
+    const client = new Blindfold({ apiKey: 'sk-...' });
+    ```
+
+    **✅ Good (Server-side API route):**
+    ```javascript
+    // Client
+    fetch('/api/protect', {
+      method: 'POST',
+      body: JSON.stringify({ text: userInput })
+    });
+
+    // Server (Next.js API route)
+    import { Blindfold } from '@blindfold/sdk';
+
+    export async function POST(req) {
+      const client = new Blindfold({
+        apiKey: process.env.BLINDFOLD_API_KEY  // Server-side only
+      });
+
+      const { text } = await req.json();
+      const result = await client.tokenize(text);
+
+      return Response.json(result);
+    }
+    ```
+
+    Use edge functions, serverless functions, or backend API routes.
+  </Accordion>
+
+  <Accordion title="How do I restore tokenized data?" icon="rotate-left">
+    **Use the mapping returned from tokenize():**
+
+    ```python
+    # Step 1: Tokenize
+    protected = client.tokenize("John Doe, john@example.com")
+
+    print(protected.text)
+    # "< person_1>, <email_address_1>"
+
+    print(protected.mapping)
+    # {"<person_1>": "John Doe", "<email_address_1>": "john@example.com"}
+
+    # Step 2: Send protected text to AI
+    ai_response = send_to_ai(protected.text)
+
+    # Step 3: Detokenize AI response
+    original = client.detokenize(
+        text=ai_response,
+        mapping=protected.mapping
+    )
+
+    print(original.text)
+    # "Hello John Doe, I received your message at john@example.com"
+    ```
+
+    **Important:**
+    - Store `mapping` securely (Redis, encrypted DB, session)
+    - Set expiration (e.g., 24 hours)
+    - Without mapping, data cannot be restored
+  </Accordion>
+
+  <Accordion title="What's the difference between tokenize, mask, and redact?" icon="table">
+    **Choose the right method for your use case:**
+
+    | Method | Reversible | Example | Use Case |
+    |--------|-----------|---------|----------|
+    | **Tokenize** | ✅ Yes | `<person_1>` | AI processing, chatbots |
+    | **Mask** | ❌ No | `***3456` | Display to users |
+    | **Redact** | ❌ No | `` (removed) | Permanent removal |
+    | **Hash** | ❌ No | `ID_a3f8b9` | Analytics, matching |
+    | **Encrypt** | ✅ Yes | `gAAAAABh...` | Secure storage |
+    | **Synthesize** | ❌ No | `Jane Smith` (fake) | Testing, demos |
+
+    **Example workflows:**
+
+    ```python
+    # AI Chatbot → Use tokenize (reversible)
+    protected = client.tokenize(user_input)
+    ai_response = send_to_ai(protected.text)
+    final = client.detokenize(ai_response, protected.mapping)
+
+    # Display to User → Use mask (show last 4)
+    masked = client.mask("Card: 4532-7562-9102-3456")
+    # "Card: ***************3456"
+
+    # Audit Logs → Use redact (permanent)
+    logged = client.redact("User SSN: 123-45-6789")
+    # "User SSN: "
+
+    # Analytics → Use hash (consistent IDs)
+    hashed = client.hash("user@example.com")
+    # "ID_a3f8b9c2d4e5f6g7" (always same for same input)
+    ```
+  </Accordion>
+
+  <Accordion title="Does Blindfold work with all AI providers?" icon="robot">
+    **Yes! Blindfold is provider-agnostic:**
+
+    - ✅ OpenAI (GPT-4, GPT-3.5)
+    - ✅ Anthropic (Claude)
+    - ✅ Google (Gemini, PaLM)
+    - ✅ Cohere
+    - ✅ Hugging Face models
+    - ✅ Self-hosted models
+    - ✅ Any LLM API
+
+    **Works with any text-based AI service:**
+    ```python
+    # Protect before sending to ANY AI
+    protected = blindfold.tokenize(user_input, policy="gdpr_eu")
+
+    # Send to your AI provider
+    ai_response = your_ai_provider.chat(protected.text)
+
+    # Restore original data
+    final = blindfold.detokenize(ai_response, protected.mapping)
+    ```
+  </Accordion>
+
+  <Accordion title="Can I use Blindfold offline?" icon="wifi-slash">
+    **No - Blindfold is a cloud API service.**
+
+    **Why cloud-based:**
+    - ✅ Always up-to-date detection models
+    - ✅ No installation or maintenance
+    - ✅ Scales automatically
+    - ✅ Regular accuracy improvements
+
+    **For offline needs:**
+    - Contact us about enterprise self-hosted options
+    - Email: hello@blindfold.dev
+  </Accordion>
+</AccordionGroup>
+
+## Compliance & Privacy
+
+<AccordionGroup>
+  <Accordion title="Is Blindfold GDPR compliant?" icon="scale-balanced">
+    **Yes, Blindfold is GDPR compliant:**
+
+    - ✅ EU data residency (servers in EU)
+    - ✅ No data storage (real-time processing)
+    - ✅ Data Processing Agreement (DPA) available
+    - ✅ Regular security audits
+    - ✅ SOC 2 Type II certified
+
+    **Using Blindfold helps YOU be GDPR compliant:**
+    - Prevents PII from reaching third-party AI providers
+    - Meets "data minimization" requirements
+    - Supports "right to be forgotten"
+    - Enables lawful AI processing
+
+    Contact us for DPA: hello@blindfold.dev
+  </Accordion>
+
+  <Accordion title="Does Blindfold support HIPAA compliance?" icon="hospital">
+    **Yes, for healthcare applications:**
+
+    - ✅ Use `policy="hipaa_us"` for healthcare data
+    - ✅ Detects PHI (Protected Health Information)
+    - ✅ Business Associate Agreement (BAA) available
+    - ✅ SOC 2 compliant infrastructure
+    - ✅ Encrypted data transmission
+
+    **Protected entities:**
+    - Names, SSN, medical record numbers
+    - Health insurance IDs
+    - Medical conditions, medications
+    - Dates of birth
+
+    ```python
+    # HIPAA-compliant processing
+    result = client.tokenize(
+        patient_data,
+        policy="hipaa_us"
+    )
+    ```
+
+    Contact us for BAA: hello@blindfold.dev
+  </Accordion>
+
+  <Accordion title="Can I get a custom Data Processing Agreement (DPA)?" icon="file-contract">
+    **Yes, DPAs are available for all paid plans.**
+
+    **What's included:**
+    - Data processing terms
+    - Security measures
+    - Subprocessor list
+    - Your rights and obligations
+    - Incident response procedures
+
+    **To request a DPA:**
+    - Email: hello@blindfold.dev
+    - Subject: "DPA Request"
+    - Include: Company name, plan tier
+
+    Standard DPAs provided within 2 business days.
+  </Accordion>
+</AccordionGroup>
+
+## Pricing & Plans
+
+<AccordionGroup>
+  <Accordion title="Is there a free tier?" icon="gift">
+    **Yes! Free tier includes:**
+
+    - ✅ 1,000 API requests per day
+    - ✅ All 60+ entity types
+    - ✅ All 5 global policies
+    - ✅ Multilingual support
+    - ✅ Email support
+
+    **Perfect for:**
+    - Testing and development
+    - Proof of concepts
+    - Small projects
+    - Personal use
+
+    <Card title="Sign Up Free" icon="rocket" href="https://app.blindfold.dev" horizontal>
+      Get started in 5 minutes
+    </Card>
+  </Accordion>
+
+  <Accordion title="How is usage calculated?" icon="calculator">
+    **1 API request = 1 call to any endpoint:**
+
+    - `/tokenize` → 1 request
+    - `/detokenize` → 1 request
+    - `/mask` → 1 request
+    - `/redact` → 1 request
+    - Policy management → Free (no quota)
+
+    **Text length doesn't matter:**
+    - 10 words = 1 request
+    - 10,000 words = 1 request
+
+    **Batch processing:**
+    - 3 separate calls = 3 requests
+    - Consider batching similar text together
+  </Accordion>
+</AccordionGroup>
+
+## Still Have Questions?
+
+<Card title="Contact Support" icon="headset" href="mailto:hello@blindfold.dev" horizontal>
+  Email us at **hello@blindfold.dev** - we typically respond within 24 hours
+</Card>

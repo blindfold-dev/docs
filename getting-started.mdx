@@ -1,0 +1,474 @@
+---
+title: "Getting Started"
+description: "Complete guide to integrating Blindfold with your AI application"
+---
+
+This guide walks you through integrating Blindfold with an AI application from start to finish. By the end, you'll have a working chatbot that protects user PII before sending data to OpenAI.
+
+**Estimated time:** 15-20 minutes
+
+## What You'll Build
+
+A privacy-preserving AI chatbot that:
+1. Accepts user input with sensitive data
+2. Detects and tokenizes PII automatically
+3. Sends protected text to OpenAI
+4. Restores original data in the response
+5. Handles errors gracefully
+
+## Prerequisites
+
+- Python 3.8+ or Node.js 16+ installed
+- OpenAI API key ([get one here](https://platform.openai.com/api-keys))
+- Blindfold API key ([sign up](https://app.blindfold.dev))
+
+## Step 1: Install Dependencies
+
+<Tabs>
+  <Tab title="Python">
+    ```bash
+    pip install blindfold-sdk openai python-dotenv
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```bash
+    npm install @blindfold/sdk openai dotenv
+    ```
+  </Tab>
+</Tabs>
+
+## Step 2: Set Up Environment Variables
+
+Create a `.env` file in your project root:
+
+```bash
+# .env
+BLINDFOLD_API_KEY=your_blindfold_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+<Warning>
+  Never commit `.env` files to version control. Add `.env` to your `.gitignore` file.
+</Warning>
+
+## Step 3: Create the Privacy-Preserving Chatbot
+
+<Tabs>
+  <Tab title="Python">
+    Create `privacy_chatbot.py`:
+
+    ```python
+    import os
+    from blindfold import Blindfold
+    from openai import OpenAI
+    from dotenv import load_dotenv
+
+    # Load environment variables
+    load_dotenv()
+
+    # Initialize clients
+    blindfold = Blindfold(api_key=os.getenv("BLINDFOLD_API_KEY"))
+    openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    def chat_with_privacy(user_message: str) -> str:
+        """
+        Process user message with PII protection
+        """
+        print(f"\n👤 User: {user_message}")
+
+        # Step 1: Tokenize sensitive data using GDPR policy
+        try:
+            protected = blindfold.tokenize(
+                text=user_message,
+                policy="gdpr_eu"  # GDPR-compliant detection
+            )
+
+            print(f"🔒 Protected: {protected.text}")
+            print(f"🏷️  Detected {protected.entities_count} PII items")
+
+        except Exception as e:
+            print(f"❌ Error tokenizing: {e}")
+            return "Sorry, I couldn't process your message securely."
+
+        # Step 2: Send protected text to OpenAI
+        try:
+            completion = openai_client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": protected.text}
+                ]
+            )
+
+            ai_response = completion.choices[0].message.content
+            print(f"🤖 AI (protected): {ai_response}")
+
+        except Exception as e:
+            print(f"❌ Error calling OpenAI: {e}")
+            return "Sorry, I encountered an error with the AI service."
+
+        # Step 3: Restore original data in response
+        try:
+            final_response = blindfold.detokenize(
+                text=ai_response,
+                mapping=protected.mapping
+            )
+
+            print(f"✅ Final response: {final_response.text}")
+            return final_response.text
+
+        except Exception as e:
+            print(f"❌ Error detokenizing: {e}")
+            # If detokenization fails, return protected response
+            return ai_response
+
+    # Example usage
+    if __name__ == "__main__":
+        # Test with sensitive data
+        messages = [
+            "My name is John Doe and my email is john@example.com",
+            "I live at 123 Main Street, Boston, MA 02101",
+            "My phone number is +1-555-123-4567"
+        ]
+
+        for message in messages:
+            response = chat_with_privacy(message)
+            print("-" * 80)
+    ```
+
+    Run it:
+    ```bash
+    python privacy_chatbot.py
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    Create `privacy-chatbot.js`:
+
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+    import OpenAI from 'openai';
+    import dotenv from 'dotenv';
+
+    // Load environment variables
+    dotenv.config();
+
+    // Initialize clients
+    const blindfold = new Blindfold({
+      apiKey: process.env.BLINDFOLD_API_KEY
+    });
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    async function chatWithPrivacy(userMessage) {
+      console.log(`\n👤 User: ${userMessage}`);
+
+      // Step 1: Tokenize sensitive data using GDPR policy
+      let protected;
+      try {
+        protected = await blindfold.tokenize(userMessage, {
+          policy: "gdpr_eu"  // GDPR-compliant detection
+        });
+
+        console.log(`🔒 Protected: ${protected.text}`);
+        console.log(`🏷️  Detected ${protected.entities_count} PII items`);
+
+      } catch (error) {
+        console.error(`❌ Error tokenizing: ${error.message}`);
+        return "Sorry, I couldn't process your message securely.";
+      }
+
+      // Step 2: Send protected text to OpenAI
+      let aiResponse;
+      try {
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4",
+          messages: [
+            { role: "system", content: "You are a helpful assistant." },
+            { role: "user", content: protected.text }
+          ]
+        });
+
+        aiResponse = completion.choices[0].message.content;
+        console.log(`🤖 AI (protected): ${aiResponse}`);
+
+      } catch (error) {
+        console.error(`❌ Error calling OpenAI: ${error.message}`);
+        return "Sorry, I encountered an error with the AI service.";
+      }
+
+      // Step 3: Restore original data in response
+      try {
+        const finalResponse = await blindfold.detokenize(
+          aiResponse,
+          protected.mapping
+        );
+
+        console.log(`✅ Final response: ${finalResponse.text}`);
+        return finalResponse.text;
+
+      } catch (error) {
+        console.error(`❌ Error detokenizing: ${error.message}`);
+        // If detokenization fails, return protected response
+        return aiResponse;
+      }
+    }
+
+    // Example usage
+    async function main() {
+      const messages = [
+        "My name is John Doe and my email is john@example.com",
+        "I live at 123 Main Street, Boston, MA 02101",
+        "My phone number is +1-555-123-4567"
+      ];
+
+      for (const message of messages) {
+        await chatWithPrivacy(message);
+        console.log("-".repeat(80));
+      }
+    }
+
+    main().catch(console.error);
+    ```
+
+    Run it:
+    ```bash
+    node privacy-chatbot.js
+    ```
+  </Tab>
+</Tabs>
+
+## Step 4: Understanding the Output
+
+When you run the chatbot, you'll see:
+
+```
+👤 User: My name is John Doe and my email is john@example.com
+🔒 Protected: My name is <person_1> and my email is <email_address_1>
+🏷️  Detected 2 PII items
+🤖 AI (protected): Hello <person_1>! I received your email at <email_address_1>.
+✅ Final response: Hello John Doe! I received your email at john@example.com.
+```
+
+**What happened:**
+1. ✅ PII detected and tokenized
+2. ✅ OpenAI never saw real names or emails
+3. ✅ User receives personalized response
+4. ✅ GDPR compliance maintained
+
+## Step 5: Add Different Privacy Methods
+
+### Masking (Show Last 4 Digits)
+
+```python
+# Python
+result = blindfold.mask(
+    "Credit card: 4532-7562-9102-3456",
+    policy="pci_dss"
+)
+# Output: "Credit card: ***************3456"
+```
+
+```javascript
+// JavaScript
+const result = await blindfold.mask(
+  "Credit card: 4532-7562-9102-3456",
+  { policy: "pci_dss" }
+);
+// Output: "Credit card: ***************3456"
+```
+
+### Redaction (Permanent Removal)
+
+```python
+# Python
+result = blindfold.redact(
+    "Patient: Jane Smith, SSN: 123-45-6789",
+    policy="hipaa_us"
+)
+# Output: "Patient: , SSN: "
+```
+
+```javascript
+// JavaScript
+const result = await blindfold.redact(
+  "Patient: Jane Smith, SSN: 123-45-6789",
+  { policy: "hipaa_us" }
+);
+// Output: "Patient: , SSN: "
+```
+
+## Step 6: Production Best Practices
+
+### Store Mappings Securely
+
+<Tabs>
+  <Tab title="Python (Redis)">
+    ```python
+    import redis
+    import json
+
+    redis_client = redis.Redis(host='localhost', port=6379)
+
+    # After tokenizing
+    protected = blindfold.tokenize(user_message, policy="gdpr_eu")
+
+    # Store mapping with expiration (24 hours)
+    session_id = "user_session_123"
+    redis_client.setex(
+        f"mapping:{session_id}",
+        86400,  # 24 hours
+        json.dumps(protected.mapping)
+    )
+
+    # Later, retrieve for detokenization
+    mapping = json.loads(redis_client.get(f"mapping:{session_id}"))
+    original = blindfold.detokenize(ai_response, mapping)
+    ```
+  </Tab>
+
+  <Tab title="JavaScript (Redis)">
+    ```javascript
+    import { createClient } from 'redis';
+
+    const redis = createClient();
+    await redis.connect();
+
+    // After tokenizing
+    const protected = await blindfold.tokenize(userMessage, {
+      policy: "gdpr_eu"
+    });
+
+    // Store mapping with expiration (24 hours)
+    const sessionId = "user_session_123";
+    await redis.setEx(
+      `mapping:${sessionId}`,
+      86400,  // 24 hours
+      JSON.stringify(protected.mapping)
+    );
+
+    // Later, retrieve for detokenization
+    const mapping = JSON.parse(await redis.get(`mapping:${sessionId}`));
+    const original = await blindfold.detokenize(aiResponse, mapping);
+    ```
+  </Tab>
+</Tabs>
+
+### Handle Errors Gracefully
+
+```python
+# Python
+from blindfold import Blindfold, AuthenticationError, APIError
+
+try:
+    result = blindfold.tokenize(text, policy="gdpr_eu")
+except AuthenticationError:
+    # Invalid API key - notify admin
+    logger.error("Blindfold API key is invalid")
+    return "Service temporarily unavailable"
+except APIError as e:
+    # API error with status code
+    logger.error(f"Blindfold API error ({e.status_code}): {e.message}")
+    return "Unable to process request securely"
+except Exception as e:
+    # Unexpected error
+    logger.error(f"Unexpected error: {e}")
+    return "An error occurred"
+```
+
+```javascript
+// JavaScript
+import { Blindfold, AuthenticationError, APIError } from '@blindfold/sdk';
+
+try {
+  const result = await blindfold.tokenize(text, { policy: "gdpr_eu" });
+} catch (error) {
+  if (error instanceof AuthenticationError) {
+    // Invalid API key - notify admin
+    logger.error("Blindfold API key is invalid");
+    return "Service temporarily unavailable";
+  } else if (error instanceof APIError) {
+    // API error with status code
+    logger.error(`Blindfold API error (${error.statusCode}): ${error.message}`);
+    return "Unable to process request securely";
+  } else {
+    // Unexpected error
+    logger.error(`Unexpected error: ${error.message}`);
+    return "An error occurred";
+  }
+}
+```
+
+### Use Async for Better Performance
+
+```python
+# Python
+import asyncio
+from blindfold import AsyncBlindfold
+
+async def process_batch(messages):
+    async with AsyncBlindfold(api_key=api_key) as client:
+        # Process multiple messages concurrently
+        tasks = [
+            client.tokenize(msg, policy="gdpr_eu")
+            for msg in messages
+        ]
+        results = await asyncio.gather(*tasks)
+        return results
+```
+
+```javascript
+// JavaScript
+async function processBatch(messages) {
+  // Process multiple messages concurrently
+  const promises = messages.map(msg =>
+    blindfold.tokenize(msg, { policy: "gdpr_eu" })
+  );
+
+  const results = await Promise.all(promises);
+  return results;
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Supported Entities" icon="list" href="/essentials/supported-entities">
+    See all 60+ entity types
+  </Card>
+  <Card title="Policies" icon="shield-check" href="/api-reference/rest-api#policy-based-detection">
+    Learn about GDPR, HIPAA, PCI DSS policies
+  </Card>
+  <Card title="Best Practices" icon="star" href="/best-practices">
+    Production deployment tips
+  </Card>
+  <Card title="Examples" icon="code" href="/examples">
+    More integration examples
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### "Invalid API key" error
+- Check your `.env` file has the correct API key
+- Verify the API key in your dashboard
+- Ensure `load_dotenv()` (Python) or `dotenv.config()` (JavaScript) is called
+
+### Entities not detected
+- Try lowering the threshold: `override_threshold=0.25`
+- Use `policy="strict"` for maximum detection
+- Check if text is in a supported language
+
+### Performance is slow
+- Use async methods for concurrent requests
+- Batch multiple tokenize calls together
+- Consider caching results for duplicate text
+
+## Get Help
+
+<Card title="Support" icon="circle-question" href="mailto:hello@blindfold.dev" horizontal>
+  Questions? Contact **hello@blindfold.dev**
+</Card>

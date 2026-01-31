@@ -1,645 +1,183 @@
 ---
 title: "Supported Entities"
-description: "Complete list of PII entities detected by Blindfold"
+description: "60+ PII entity types detected by Blindfold"
 ---
 
-Blindfold automatically detects and protects 60+ pre-trained types of personally identifiable information (PII) across multiple languages. Our detection engine uses flexible, natural language entity names rather than strict uppercase labels. Additionally, you can define custom entity types specific to your use case using zero-shot detection.
-
-## Personal Identifiers
-
-<AccordionGroup>
-  <Accordion title="person" icon="user">
-    **Description**: A person's full name, nickname, or any name-based identifier.
-
-    **Examples**:
-    - John Doe
-    - Jane Smith
-    - Dr. Michael Johnson
-    - María García
-
-    **Detection**: Natural language entity name
-  </Accordion>
-
-  <Accordion title="date of birth" icon="calendar">
-    **Description**: Date of birth or birth date information.
-
-    **Examples**:
-    - January 15, 1990
-    - 1990-01-15
-    - Born on March 3rd, 1985
-
-    **Note**: Considered sensitive PII under most regulations
-  </Accordion>
-
-  <Accordion title="blood type" icon="droplet">
-    **Description**: Blood type classification.
-
-    **Examples**:
-    - A+
-    - O-
-    - AB+
-
-    **Compliance**: Protected health information (PHI)
-  </Accordion>
-</AccordionGroup>
-
-## Contact Information
-
-<AccordionGroup>
-  <Accordion title="email / email address" icon="envelope">
-    **Description**: Email addresses in any format.
-
-    **Examples**:
-    - john@example.com
-    - user.name+tag@domain.co.uk
-    - admin@company.org
-
-    **Detection**: High accuracy across all formats
-  </Accordion>
-
-  <Accordion title="phone number / mobile phone number" icon="phone">
-    **Description**: Mobile phone numbers in international or local formats.
-
-    **Examples**:
-    - +1-555-123-4567
-    - (555) 123-4567
-    - +34 912 345 678
-
-    **Supported**: International formats from 100+ countries
-  </Accordion>
-
-  <Accordion title="landline phone number" icon="phone-office">
-    **Description**: Fixed-line telephone numbers.
-
-    **Examples**:
-    - +1-212-555-0100
-    - (02) 1234 5678
-  </Accordion>
-
-  <Accordion title="fax number" icon="fax">
-    **Description**: Fax machine numbers.
-
-    **Examples**:
-    - +1-555-123-4568
-    - Fax: (212) 555-0199
-  </Accordion>
-
-  <Accordion title="address / postal code" icon="location-dot">
-    **Description**: Physical addresses and postal/ZIP codes.
-
-    **Examples**:
-    - 123 Main Street, Boston, MA 02101
-    - Rua Augusta 123, São Paulo
-    - 10115 (German postal code)
-
-    **Includes**: Street addresses, postal codes, ZIP codes
-  </Accordion>
-</AccordionGroup>
-
-## Financial Information
-
-<AccordionGroup>
-  <Accordion title="credit card number" icon="credit-card">
-    **Description**: Credit card numbers for all major card brands.
-
-    **Examples**:
-    - 4532-7562-9102-3456 (Visa)
-    - 5425-2334-3010-9903 (Mastercard)
-    - 3782-822463-10005 (Amex)
-
-    **Validation**: Uses Luhn algorithm
-  </Accordion>
-
-  <Accordion title="credit card brand" icon="credit-card">
-    **Description**: Credit card brand or issuer name.
-
-    **Examples**:
-    - Visa
-    - Mastercard
-    - American Express
-  </Accordion>
-
-  <Accordion title="credit card expiration date" icon="calendar-days">
-    **Description**: Credit card expiration date.
-
-    **Examples**:
-    - 12/25
-    - 01/2026
-  </Accordion>
-
-  <Accordion title="cvv / cvc" icon="lock">
-    **Description**: Card verification value/code.
-
-    **Examples**:
-    - 123
-    - 4567 (Amex)
-
-    **Note**: CVV and CVC are detected separately
-  </Accordion>
-
-  <Accordion title="bank account number" icon="building-columns">
-    **Description**: Bank account numbers.
-
-    **Examples**:
-    - 1234567890
-    - Account: 98765432
-  </Accordion>
-
-  <Accordion title="iban" icon="piggy-bank">
-    **Description**: International Bank Account Number.
-
-    **Examples**:
-    - GB82 WEST 1234 5698 7654 32
-    - DE89 3704 0044 0532 0130 00
-    - FR14 2004 1010 0505 0001 3M02 606
-
-    **Coverage**: 70+ countries
-  </Accordion>
-
-  <Accordion title="tax identification number" icon="receipt">
-    **Description**: Tax ID numbers (TIN, EIN, etc.).
-
-    **Examples**:
-    - 12-3456789 (US EIN)
-    - Tax ID: 987654321
-  </Accordion>
-</AccordionGroup>
-
-## Government-Issued IDs
-
-<AccordionGroup>
-  <Accordion title="social security number / social_security_number" icon="id-card">
-    **Description**: Social security numbers (primarily US SSN).
-
-    **Examples**:
-    - 123-45-6789
-    - SSN: 987-65-4320
-
-    **Format**: XXX-XX-XXXX (US format)
-  </Accordion>
-
-  <Accordion title="passport number / passport_number" icon="passport">
-    **Description**: Passport identification numbers.
-
-    **Examples**:
-    - A12345678
-    - P1234567890
-
-    **International**: Supports multiple country formats
-  </Accordion>
-
-  <Accordion title="passport expiration date" icon="calendar-xmark">
-    **Description**: Passport expiration date.
-
-    **Examples**:
-    - Expires: 01/15/2030
-    - Valid until: 2028-12-31
-  </Accordion>
-
-  <Accordion title="driver's license number" icon="id-card-clip">
-    **Description**: Driver's license numbers.
-
-    **Examples**:
-    - D1234567
-    - DL: A123-456-78-901-0
-  </Accordion>
-
-  <Accordion title="national id number / identity card number" icon="address-card">
-    **Description**: National identity card numbers.
-
-    **Examples**:
-    - DNI: 12345678A (Spain)
-    - National ID: 123456789
-
-    **Coverage**: Multiple countries
-  </Accordion>
-
-  <Accordion title="identity document number" icon="file-lines">
-    **Description**: General identity document numbers.
-
-    **Examples**:
-    - ID: A1234567
-    - Document #: 98765432
-  </Accordion>
-
-  <Accordion title="cpf" icon="id-badge">
-    **Description**: Brazilian individual taxpayer registry (CPF).
-
-    **Examples**:
-    - 123.456.789-10
-    - CPF: 98765432100
-
-    **Region**: Brazil
-  </Accordion>
-
-  <Accordion title="cnpj" icon="building">
-    **Description**: Brazilian company registry (CNPJ).
-
-    **Examples**:
-    - 12.345.678/0001-90
-
-    **Region**: Brazil
-  </Accordion>
-
-  <Accordion title="birth certificate number" icon="certificate">
-    **Description**: Birth certificate identification numbers.
-
-    **Examples**:
-    - BC: 123456789
-    - Birth Cert #: A-12345
-  </Accordion>
-
-  <Accordion title="visa number" icon="plane">
-    **Description**: Visa identification numbers.
-
-    **Examples**:
-    - Visa #: 1234567890
-    - V-A12345678
-  </Accordion>
-</AccordionGroup>
-
-## Healthcare Information
-
-<AccordionGroup>
-  <Accordion title="health insurance id number / health insurance number" icon="briefcase-medical">
-    **Description**: Health insurance member ID or policy numbers.
-
-    **Examples**:
-    - Member ID: ABC123456789
-    - Policy: H-987654321
-
-    **Compliance**: Protected under HIPAA (US), GDPR (EU)
-  </Accordion>
-
-  <Accordion title="national health insurance number" icon="shield-heart">
-    **Description**: National health insurance identification.
-
-    **Examples**:
-    - NHS Number: 123 456 7890 (UK)
-    - Health Card: 1234567890
-  </Accordion>
-
-  <Accordion title="medical condition" icon="stethoscope">
-    **Description**: Medical diagnoses, conditions, or health status.
-
-    **Examples**:
-    - Type 2 Diabetes
-    - Hypertension
-    - Diagnosed with asthma
-
-    **Compliance**: Highly sensitive PHI
-  </Accordion>
-
-  <Accordion title="medication" icon="pills">
-    **Description**: Medication names and prescriptions.
-
-    **Examples**:
-    - Metformin 500mg
-    - Prescribed Lisinopril
-    - Taking aspirin daily
-
-    **Compliance**: Protected health information
-  </Accordion>
-
-  <Accordion title="insurance number" icon="file-medical">
-    **Description**: General insurance policy numbers.
-
-    **Examples**:
-    - Policy: INS-123456789
-    - Insurance #: A1B2C3D4
-  </Accordion>
-
-  <Accordion title="insurance company" icon="hospital">
-    **Description**: Insurance provider or company name.
-
-    **Examples**:
-    - Blue Cross Blue Shield
-    - UnitedHealthcare
-    - Aetna
-  </Accordion>
-</AccordionGroup>
-
-## Organization & Business
-
-<AccordionGroup>
-  <Accordion title="organization" icon="building">
-    **Description**: Company, organization, or institution names.
-
-    **Examples**:
-    - Microsoft Corporation
-    - Harvard University
-    - World Health Organization
-    - Acme Corp
-  </Accordion>
-</AccordionGroup>
-
-## Digital & Technical
-
-<AccordionGroup>
-  <Accordion title="ip address" icon="network-wired">
-    **Description**: IPv4 and IPv6 addresses.
-
-    **Examples**:
-    - 192.168.1.1 (IPv4)
-    - 2001:0db8:85a3::8a2e:0370:7334 (IPv6)
-
-    **Coverage**: Public and private IP ranges
-  </Accordion>
-
-  <Accordion title="username" icon="user-tag">
-    **Description**: Usernames and login identifiers.
-
-    **Examples**:
-    - @john_doe
-    - user123
-    - admin.user
-  </Accordion>
-
-  <Accordion title="social media handle" icon="hashtag">
-    **Description**: Social media usernames and handles.
-
-    **Examples**:
-    - @username
-    - twitter.com/handle
-    - @company_official
-  </Accordion>
-
-  <Accordion title="digital signature" icon="signature">
-    **Description**: Digital signature identifiers.
-
-    **Examples**:
-    - Signature: 0x1234abcd
-    - Digital sig: A1B2C3D4
-  </Accordion>
-</AccordionGroup>
-
-## Transaction & Travel
-
-<AccordionGroup>
-  <Accordion title="transaction number" icon="receipt">
-    **Description**: Transaction or confirmation numbers.
-
-    **Examples**:
-    - Transaction #: TXN-123456789
-    - Confirmation: CNF-ABC123
-  </Accordion>
-
-  <Accordion title="reservation number" icon="ticket">
-    **Description**: Booking or reservation confirmation codes.
-
-    **Examples**:
-    - Reservation: ABC123
-    - Booking ref: R-123456
-  </Accordion>
-
-  <Accordion title="flight number" icon="plane-departure">
-    **Description**: Airline flight numbers.
-
-    **Examples**:
-    - AA 1234
-    - Flight: BA456
-  </Accordion>
-
-  <Accordion title="train ticket number" icon="train">
-    **Description**: Train ticket or booking numbers.
-
-    **Examples**:
-    - Ticket: TRN-123456
-    - Seat: A-12, Train 789
-  </Accordion>
-</AccordionGroup>
-
-## Registration & Serial Numbers
-
-<AccordionGroup>
-  <Accordion title="registration number" icon="clipboard-list">
-    **Description**: General registration or enrollment numbers.
-
-    **Examples**:
-    - Registration: REG-123456
-    - Enrollment #: E-789012
-  </Accordion>
-
-  <Accordion title="student id number" icon="graduation-cap">
-    **Description**: Student identification numbers.
-
-    **Examples**:
-    - Student ID: 123456789
-    - SID: A12345678
-  </Accordion>
-
-  <Accordion title="license plate number" icon="car">
-    **Description**: Vehicle license plate numbers.
-
-    **Examples**:
-    - ABC-1234
-    - License: XYZ 789
-  </Accordion>
-
-  <Accordion title="vehicle registration number" icon="id-card">
-    **Description**: Vehicle registration identification.
-
-    **Examples**:
-    - VIN: 1HGBH41JXMN109186
-    - Registration: VR-123456
-  </Accordion>
-
-  <Accordion title="serial number" icon="barcode">
-    **Description**: Product or device serial numbers.
-
-    **Examples**:
-    - S/N: ABC123456789
-    - Serial: 1234-5678-90AB
-  </Accordion>
-</AccordionGroup>
-
-## Entity Detection Confidence
-
-All detected entities include a confidence score:
-
-| Score Range | Confidence Level | Action |
-|-------------|------------------|--------|
-| 0.95 - 1.0  | Very High        | Automatically protected |
-| 0.85 - 0.94 | High             | Automatically protected |
-| 0.70 - 0.84 | Medium           | Protected by default |
-| 0.50 - 0.69 | Low              | Requires threshold adjustment |
-| < 0.50      | Very Low         | Not detected by default |
-
-### Adjusting Detection Threshold
-
-You can adjust the confidence threshold:
-
-```python
-# Only detect high-confidence entities
-result = client.tokenize(
-    text="Sample text with PII",
-    score_threshold=0.85  # Only entities with score >= 0.85
-)
-```
-
-## Multi-Language Support
-
-Blindfold supports entity detection across **multiple languages** with varying levels of performance. Our advanced detection engine automatically recognizes PII regardless of the language used in your text - no configuration needed.
-
-### Native Language Support (Highest Accuracy)
-
-These languages have been specifically trained for PII detection and provide the best results:
-
-- 🇺🇸 **English** - Primary language, highest accuracy
-- 🇩🇪 **German** - Full support with excellent accuracy
-- 🇫🇷 **French** - Full support with excellent accuracy
-- 🇪🇸 **Spanish** - Full support with excellent accuracy
-- 🇮🇹 **Italian** - Full support with excellent accuracy
-- 🇵🇹 **Portuguese** - Full support with excellent accuracy
-- 🇳🇱 **Dutch** - Full support with excellent accuracy
-- 🇵🇱 **Polish** - Full support with excellent accuracy
-- 🇷🇺 **Russian** - Strong support with good accuracy
-
-### Zero-Shot Language Support (High Accuracy)
-
-These languages work through our multilingual detection engine without specific training, achieving excellent results:
-
-- 🇨🇿 **Czech** - Works great due to structural similarity to Polish/Russian
-- 🇸🇰 **Slovak** - Strong performance
-- 🇩🇰 **Danish** - Good performance
-- 🇸🇪 **Swedish** - Good performance
-- 🇳🇴 **Norwegian** - Good performance
-- 🇷🇴 **Romanian** - Good performance
-
-### Experimental Support
-
-These languages are supported but may require additional validation for production use:
-
-- 🇨🇳 **Chinese** - Supported, but PII patterns differ significantly
-- 🇯🇵 **Japanese** - Supported, but PII patterns differ significantly
-- 🇸🇦 **Arabic** - Supported with testing recommended
+Blindfold automatically detects 60+ types of personally identifiable information (PII) across multiple languages using **natural language entity names** (lowercase).
 
 <Info>
-  **Automatic Language Detection**: Mix multiple languages in the same request without any configuration. The model automatically detects and processes PII in all supported languages.
+  Use entity names in plain English like `"person"`, `"email address"`, `"credit card number"` - no need for uppercase labels.
 </Info>
 
+## Quick Reference
+
+### Personal Information
+
+| Entity Name | Examples | Notes |
+|-------------|----------|-------|
+| `person` | John Doe, María García | Full names, nicknames |
+| `email` / `email address` | john@example.com | All email formats |
+| `phone number` / `mobile phone number` | +1-555-1234, +34 912 345 678 | International formats |
+| `landline phone number` | +1-212-555-0100 | Fixed-line numbers |
+| `fax number` | Fax: (212) 555-0199 | Fax machine numbers |
+| `address` / `postal code` | 123 Main St, Boston, MA 02101 | Street addresses, ZIP codes |
+| `date of birth` | 1990-01-15, January 15, 1990 | Birth dates |
+| `blood type` | A+, O-, AB+ | Blood classification |
+
+### Financial Information
+
+| Entity Name | Examples | Notes |
+|-------------|----------|-------|
+| `credit card number` | 4532-7562-9102-3456 | All major card brands |
+| `credit card brand` | Visa, Mastercard, Amex | Card issuer names |
+| `credit card expiration date` | 12/25, 01/2026 | Card expiry dates |
+| `cvv` / `cvc` | 123, 4567 | Card verification codes |
+| `bank account number` | Account: 98765432 | Bank account numbers |
+| `iban` | GB82 WEST 1234 5698 7654 32 | International bank accounts (70+ countries) |
+| `tax identification number` | Tax ID: 987654321 | Tax IDs, EIN, etc. |
+
+### Government-Issued IDs
+
+| Entity Name | Examples | Notes |
+|-------------|----------|-------|
+| `social security number` | 123-45-6789 | SSN (US format) |
+| `passport number` | A12345678, P1234567890 | International passports |
+| `passport expiration date` | Expires: 01/15/2030 | Passport expiry |
+| `driver's license number` | DL: A123-456-78-901-0 | Driver's licenses |
+| `national id number` / `identity card number` | DNI: 12345678A | National ID cards |
+| `identity document number` | ID: A1234567 | General identity documents |
+| `cpf` | 123.456.789-10 | Brazilian taxpayer ID |
+| `cnpj` | 12.345.678/0001-90 | Brazilian company registry |
+| `birth certificate number` | BC: 123456789 | Birth certificates |
+| `visa number` | Visa #: 1234567890 | Visa identification |
+
+### Healthcare Information
+
+| Entity Name | Examples | Notes |
+|-------------|----------|-------|
+| `health insurance number` / `health insurance id number` | Member ID: ABC123456789 | Health insurance IDs |
+| `national health insurance number` | NHS: 123 456 7890 (UK) | National health IDs |
+| `medical condition` | Type 2 Diabetes, Hypertension | Medical diagnoses |
+| `medication` | Metformin 500mg, Lisinopril | Medication names |
+| `insurance number` | Policy: INS-123456789 | General insurance |
+| `insurance company` | Blue Cross Blue Shield, Aetna | Insurance providers |
+
+### Digital & Technical
+
+| Entity Name | Examples | Notes |
+|-------------|----------|-------|
+| `ip address` | 192.168.1.1, 2001:0db8::1 | IPv4 and IPv6 |
+| `username` | @john_doe, user123 | Login identifiers |
+| `social media handle` | @username, @company_official | Social media usernames |
+| `digital signature` | Signature: 0x1234abcd | Digital signature IDs |
+
+### Travel & Transactions
+
+| Entity Name | Examples | Notes |
+|-------------|----------|-------|
+| `transaction number` | TXN-123456789 | Transaction IDs |
+| `reservation number` | Booking ref: R-123456 | Booking confirmations |
+| `flight number` | AA 1234, Flight: BA456 | Airline flight numbers |
+| `train ticket number` | Ticket: TRN-123456 | Train bookings |
+
+### Registration & Serial Numbers
+
+| Entity Name | Examples | Notes |
+|-------------|----------|-------|
+| `registration number` | Registration: REG-123456 | General registrations |
+| `student id number` | Student ID: 123456789 | Student IDs |
+| `license plate number` | ABC-1234, XYZ 789 | Vehicle license plates |
+| `vehicle registration number` | VIN: 1HGBH41JXMN109186 | Vehicle registration |
+| `serial number` | S/N: ABC123456789 | Product serial numbers |
+
+### Organization
+
+| Entity Name | Examples | Notes |
+|-------------|----------|-------|
+| `organization` | Microsoft Corporation, Harvard University | Company/organization names |
+
+## Usage Examples
+
+### Detect Specific Entities
+
 ```python
-# Multi-language detection works automatically
+# Detect only emails and phone numbers
 result = client.tokenize(
-    "John Doe, email: john@example.com, teléfono: +34 912 345 678"
-)
-# Detects entities in both English and Spanish
-
-# Handles mixed languages seamlessly
-result = client.tokenize(
-    "Cliente: María García, E-Mail: maria@beispiel.de, Telefon: +49 30 12345678"
-)
-# Detects entities in Spanish, German, and recognizes international phone formats
-
-# European languages
-result = client.tokenize(
-    "Osoba: Jan Novák, e-mail: jan@priklad.cz, Nome: Paolo Rossi, email: paolo@esempio.it"
-)
-# Works with Czech, Italian, and mixed European languages
-```
-
-<Tip>
-  For the best results, use one of the **Native Language Support** languages. Zero-shot languages work well but may have slightly lower confidence scores for complex entity types.
-</Tip>
-
-## Entity Filtering
-
-Process only specific entity types using natural language entity names:
-
-```python
-# Only protect emails and phone numbers
-result = client.tokenize(
-    "John Doe (john@example.com) called from +1-555-1234",
+    "Contact: John Doe, john@example.com, +1-555-1234",
     entities=["email address", "phone number"]
 )
-# Output: "John Doe (<email_address_1>) called from <phone_number_1>"
-# Note: "John Doe" is NOT tokenized because "person" was not included
-
-# Mix entity types
-result = client.tokenize(
-    "Patient: Sarah Jenkins, DOB: 1985-04-12, Medication: Metformin 500mg",
-    entities=["person", "date of birth", "medication"]
-)
-# Output: "Patient: <person_1>, DOB: <date_of_birth_1>, Medication: <medication_1>"
-
-# Financial data only
-result = client.tokenize(
-    "Card: 4532-7562-9102-3456, CVV: 123, Expires: 12/25",
-    entities=["credit card number", "cvv", "credit card expiration date"]
-)
-# Output: "Card: <credit_card_number_1>, CVV: <cvv_1>, Expires: <credit_card_expiration_date_1>"
+# Output: "Contact: John Doe, <email_address_1>, <phone_number_1>"
 ```
 
-## Custom Entity Types
+### Use Policies (Recommended)
 
-Blindfold supports **custom entity detection** beyond the 60+ pre-trained types. Define your own entity types specific to your industry or use case using natural language descriptions.
-
-<Note>
-  Our detection engine uses zero-shot learning, allowing you to specify custom entity labels without any training or configuration. Just describe what you want to detect in plain English!
-</Note>
+Instead of listing entities, use pre-configured policies:
 
 ```python
-# Detect custom entities specific to your domain
+# GDPR compliance (detects 15+ entity types)
 result = client.tokenize(
-    "Booking ref: BK-2024-XYZ, Work ID: WRK-456",
-    entities=["booking reference", "work identifier", "internal code"]
+    "Contact: John Doe, john@example.com, +49 30 12345",
+    policy="gdpr_eu"
 )
 
-# Industry-specific entities
+# Healthcare compliance (detects 11+ entity types)
 result = client.tokenize(
-    "Patient admitted to Ward 5B, assigned Doctor ID: DOC-789",
-    entities=["ward number", "doctor identifier"]
-)
-
-# E-commerce entities
-result = client.tokenize(
-    "Order #12345, SKU: PROD-ABC-789, Tracking: 1Z999AA10123456784",
-    entities=["order number", "product sku", "tracking number"]
+    "Patient: Jane Smith, SSN: 123-45-6789",
+    policy="hipaa_us"
 )
 ```
 
-### How Custom Entities Work
+**Available Policies:**
+- `basic` - Names, emails, phones (3 types)
+- `gdpr_eu` - GDPR compliance (15+ types)
+- `hipaa_us` - Healthcare compliance (11+ types)
+- `pci_dss` - Payment cards (8+ types)
+- `strict` - All entity types (60+)
 
-1. **Flexible Labels**: Describe entities in natural language (e.g., "employee ID", "project code", "customer reference")
-2. **No Training Required**: The model understands entity types on-the-fly using zero-shot detection
-3. **Combine with Pre-trained**: Mix custom entities with standard PII types in the same request
-4. **Industry Adaptable**: Works across healthcare, finance, legal, HR, and custom domains
+## Custom Entities
+
+Define your own entity types using natural language:
 
 ```python
-# Mix standard and custom entities
+# E-commerce custom entities
 result = client.tokenize(
-    "Customer John Doe (ID: CUST-123) purchased item SKU-789 on 2024-01-15",
-    entities=["person", "email address", "customer id", "product sku", "date of birth"]
+    "Order #ORD-2024-XYZ, SKU: PROD-789-BLU",
+    entities=["order number", "product sku"]
 )
-# Detects: person name, any email (if present), customer ID, product SKU, and dates
 
-# Healthcare example mixing standard and custom
+# Healthcare custom entities
 result = client.tokenize(
-    "Patient: Mary Smith, DOB: 1980-05-15, Ward: 3A, Attending: Dr. Johnson (ID: DOC-456)",
-    entities=["person", "date of birth", "ward number", "doctor identifier"]
+    "Patient in Ward 5B, Procedure Code: PROC-456",
+    entities=["ward number", "procedure code"]
+)
+
+# Mix standard and custom
+result = client.tokenize(
+    "Customer John Doe (ID: CUST-789) ordered SKU-456",
+    entities=["person", "customer id", "product sku"]
 )
 ```
 
 <Tip>
-  Custom entity detection is particularly useful for industry-specific identifiers, internal codes, or proprietary data formats that aren't covered by the 60+ standard entity types.
+  Custom entities work with **zero-shot learning** - no training required. Just describe what you want to detect in plain English.
 </Tip>
 
-## See Also
+## Multilingual Support
 
-<CardGroup cols={2}>
-  <Card title="Tokenization" icon="shuffle" href="/methods/tokenization">
-    Learn about tokenizing detected entities
-  </Card>
+All entities work across 15+ languages automatically:
 
-  <Card title="Detection Accuracy" icon="bullseye" href="/methods/masking">
-    Understand confidence scores and thresholds
-  </Card>
+```python
+# Detects entities in multiple languages
+result = client.tokenize(
+    "Cliente: María García, Email: maria@ejemplo.es, Telefon: +49 30 12345"
+)
+# Detects Spanish and German entities automatically
+```
 
-  <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
-    API reference for entity detection
-  </Card>
+<Card title="See All Supported Languages" icon="globe" href="/essentials/supported-languages" horizontal>
+  Native support for 9 languages plus zero-shot detection for 6+ more
+</Card>
 
-  <Card title="Examples" icon="code" href="/examples">
-    See entity detection in action
-  </Card>
-</CardGroup>
+## Need More Entity Types?
+
+Contact us at **hello@blindfold.dev** to request additional entity types or discuss your specific use case.
