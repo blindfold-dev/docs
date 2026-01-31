@@ -32,7 +32,7 @@ description: "Frequently Asked Questions about Blindfold"
 
     Detection uses GLiNER, a state-of-the-art AI model trained specifically for PII detection.
 
-    **Tip**: Use `policy="strict"` for maximum detection or adjust `override_threshold` for your needs.
+    **Tip**: Use `policy="strict"` for maximum detection or adjust `score_threshold` for your needs.
   </Accordion>
 
   <Accordion title="What languages are supported?" icon="globe">
@@ -102,8 +102,8 @@ description: "Frequently Asked Questions about Blindfold"
     # Only detect high-confidence matches
     result = client.tokenize(
         text,
-        policy="gdpr_eu",
-        override_threshold=0.80  # Default is 0.35
+        entities=["person", "email address"],
+        score_threshold=0.80  # Higher threshold for fewer false positives
     )
     ```
 

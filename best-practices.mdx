@@ -542,21 +542,21 @@ result2 = client.tokenize("john@example.com", policy="basic")
 Higher thresholds = faster processing, fewer detections.
 
 ```python
-# Default threshold (0.35) - balanced
+# Using GDPR policy (threshold: 0.35)
 result = client.tokenize(text, policy="gdpr_eu")
 
-# Higher threshold (0.60) - faster, fewer false positives
+# Using custom entities and threshold for specific needs
 result = client.tokenize(
     text,
-    policy="gdpr_eu",
-    override_threshold=0.60
+    entities=["person", "email address", "phone number"],
+    score_threshold=0.60  # Higher threshold for fewer false positives
 )
 
-# Lower threshold (0.25) - slower, catches more edge cases
+# Lower threshold to catch more edge cases
 result = client.tokenize(
     text,
-    policy="gdpr_eu",
-    override_threshold=0.25
+    entities=["person", "email address", "phone number"],
+    score_threshold=0.25
 )
 ```
 
