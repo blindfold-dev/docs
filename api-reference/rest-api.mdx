@@ -129,18 +129,28 @@ You can also override policy settings per-request:
 Replace sensitive data with reversible tokens. Returns a mapping to restore original values.
 
 <CodeGroup>
-```bash cURL
+```bash cURL (with policy)
 curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
   -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Contact John Doe at john@example.com",
-    "entities": ["PERSON", "EMAIL_ADDRESS"],
+    "policy": "gdpr_eu"
+  }'
+```
+
+```bash cURL (manual config)
+curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Contact John Doe at john@example.com",
+    "entities": ["person", "email address"],
     "score_threshold": 0.4
   }'
 ```
 
-```python Python
+```python Python (with policy)
 import requests
 
 response = requests.post(
@@ -151,8 +161,7 @@ response = requests.post(
     },
     json={
         "text": "Contact John Doe at john@example.com",
-        "entities": ["PERSON", "EMAIL_ADDRESS"],
-        "score_threshold": 0.4
+        "policy": "gdpr_eu"  # Use GDPR policy
     }
 )
 
@@ -160,7 +169,7 @@ data = response.json()
 print(data)
 ```
 
-```javascript JavaScript
+```javascript JavaScript (with policy)
 const response = await fetch(
   'https://api.blindfold.dev/api/public/v1/tokenize',
   {
@@ -171,8 +180,7 @@ const response = await fetch(
     },
     body: JSON.stringify({
       text: 'Contact John Doe at john@example.com',
-      entities: ['PERSON', 'EMAIL_ADDRESS'],
-      score_threshold: 0.4
+      policy: 'gdpr_eu'  // Use GDPR policy
     })
   }
 );
@@ -330,19 +338,33 @@ console.log(data);
 Partially hide sensitive data (e.g., `****-****-****-1234`).
 
 <CodeGroup>
-```bash cURL
+```bash cURL (with policy)
 curl -X POST https://api.blindfold.dev/api/public/v1/mask \
   -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Credit card: 4532-7562-9102-3456",
+    "policy": "pci_dss",
     "masking_char": "*",
     "chars_to_show": 4,
     "from_end": true
   }'
 ```
 
-```python Python
+```bash cURL (manual config)
+curl -X POST https://api.blindfold.dev/api/public/v1/mask \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Credit card: 4532-7562-9102-3456",
+    "entities": ["credit card number"],
+    "masking_char": "*",
+    "chars_to_show": 4,
+    "from_end": true
+  }'
+```
+
+```python Python (with policy)
 import requests
 
 response = requests.post(
@@ -353,6 +375,7 @@ response = requests.post(
     },
     json={
         "text": "Credit card: 4532-7562-9102-3456",
+        "policy": "pci_dss",  # PCI DSS policy for payment cards
         "masking_char": "*",
         "chars_to_show": 4,
         "from_end": True
@@ -363,7 +386,7 @@ data = response.json()
 print(data)
 ```
 
-```javascript JavaScript
+```javascript JavaScript (with policy)
 const response = await fetch(
   'https://api.blindfold.dev/api/public/v1/mask',
   {
@@ -374,6 +397,7 @@ const response = await fetch(
     },
     body: JSON.stringify({
       text: 'Credit card: 4532-7562-9102-3456',
+      policy: 'pci_dss',  // PCI DSS policy for payment cards
       masking_char: '*',
       chars_to_show: 4,
       from_end: true
@@ -420,18 +444,28 @@ console.log(data);
 Permanently remove sensitive data.
 
 <CodeGroup>
-```bash cURL
+```bash cURL (with policy)
+curl -X POST https://api.blindfold.dev/api/public/v1/redact \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Patient: Jane Smith, SSN: 123-45-6789, DOB: 1985-04-12",
+    "policy": "hipaa_us"
+  }'
+```
+
+```bash cURL (manual config)
 curl -X POST https://api.blindfold.dev/api/public/v1/redact \
   -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "My SSN is 123-45-6789",
-    "entities": ["US_SSN"],
+    "entities": ["social security number"],
     "score_threshold": 0.5
   }'
 ```
 
-```python Python
+```python Python (with policy)
 import requests
 
 response = requests.post(
@@ -441,9 +475,8 @@ response = requests.post(
         "Content-Type": "application/json"
     },
     json={
-        "text": "My SSN is 123-45-6789",
-        "entities": ["US_SSN"],
-        "score_threshold": 0.5
+        "text": "Patient: Jane Smith, SSN: 123-45-6789, DOB: 1985-04-12",
+        "policy": "hipaa_us"  # HIPAA policy for healthcare data
     }
 )
 
@@ -451,7 +484,7 @@ data = response.json()
 print(data)
 ```
 
-```javascript JavaScript
+```javascript JavaScript (with policy)
 const response = await fetch(
   'https://api.blindfold.dev/api/public/v1/redact',
   {
@@ -461,9 +494,8 @@ const response = await fetch(
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      text: 'My SSN is 123-45-6789',
-      entities: ['US_SSN'],
-      score_threshold: 0.5
+      text: 'Patient: Jane Smith, SSN: 123-45-6789, DOB: 1985-04-12',
+      policy: 'hipaa_us'  // HIPAA policy for healthcare data
     })
   }
 );
@@ -504,19 +536,33 @@ console.log(data);
 Replace data with deterministic hashes.
 
 <CodeGroup>
-```bash cURL
+```bash cURL (with policy)
 curl -X POST https://api.blindfold.dev/api/public/v1/hash \
   -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "User john@example.com purchased item",
+    "policy": "basic",
     "hash_type": "sha256",
     "hash_prefix": "ID_",
     "hash_length": 16
   }'
 ```
 
-```python Python
+```bash cURL (manual config)
+curl -X POST https://api.blindfold.dev/api/public/v1/hash \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "User john@example.com purchased item",
+    "entities": ["email address"],
+    "hash_type": "sha256",
+    "hash_prefix": "ID_",
+    "hash_length": 16
+  }'
+```
+
+```python Python (with policy)
 import requests
 
 response = requests.post(
@@ -527,6 +573,7 @@ response = requests.post(
     },
     json={
         "text": "User john@example.com purchased item",
+        "policy": "basic",  # Basic policy for common PII
         "hash_type": "sha256",
         "hash_prefix": "ID_",
         "hash_length": 16
@@ -537,7 +584,7 @@ data = response.json()
 print(data)
 ```
 
-```javascript JavaScript
+```javascript JavaScript (with policy)
 const response = await fetch(
   'https://api.blindfold.dev/api/public/v1/hash',
   {
@@ -548,6 +595,7 @@ const response = await fetch(
     },
     body: JSON.stringify({
       text: 'User john@example.com purchased item',
+      policy: 'basic',  // Basic policy for common PII
       hash_type: 'sha256',
       hash_prefix: 'ID_',
       hash_length: 16
@@ -683,17 +731,29 @@ console.log(data);
 Encrypt sensitive data using AES encryption.
 
 <CodeGroup>
-```bash cURL
+```bash cURL (with policy)
+curl -X POST https://api.blindfold.dev/api/public/v1/encrypt \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Secret: API key is sk-12345, Password: myPass123",
+    "policy": "strict",
+    "encryption_key": "my-secure-encryption-key"
+  }'
+```
+
+```bash cURL (manual config)
 curl -X POST https://api.blindfold.dev/api/public/v1/encrypt \
   -H "X-API-Key: your-api-key-here" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Secret: API key is sk-12345",
+    "entities": ["username", "password"],
     "encryption_key": "my-secure-encryption-key"
   }'
 ```
 
-```python Python
+```python Python (with policy)
 import requests
 
 response = requests.post(
@@ -703,7 +763,8 @@ response = requests.post(
         "Content-Type": "application/json"
     },
     json={
-        "text": "Secret: API key is sk-12345",
+        "text": "Secret: API key is sk-12345, Password: myPass123",
+        "policy": "strict",  # Strict policy for maximum detection
         "encryption_key": "my-secure-encryption-key"
     }
 )
@@ -712,7 +773,7 @@ data = response.json()
 print(data)
 ```
 
-```javascript JavaScript
+```javascript JavaScript (with policy)
 const response = await fetch(
   'https://api.blindfold.dev/api/public/v1/encrypt',
   {
@@ -722,7 +783,8 @@ const response = await fetch(
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      text: 'Secret: API key is sk-12345',
+      text: 'Secret: API key is sk-12345, Password: myPass123',
+      policy: 'strict',  // Strict policy for maximum detection
       encryption_key: 'my-secure-encryption-key'
     })
   }

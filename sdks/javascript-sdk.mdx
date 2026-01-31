@@ -61,6 +61,50 @@ const client = new Blindfold({
 });
 ```
 
+## Policy-Based Detection
+
+Blindfold supports **policy-based PII detection** for simplified configuration and compliance. Use pre-configured policies instead of manually specifying entities and thresholds.
+
+### Available Global Policies
+
+- **`basic`** - Minimal PII detection (threshold: 0.30) - Fast, general purpose
+- **`gdpr_eu`** - GDPR EU compliant (threshold: 0.35) - European data protection
+- **`hipaa_us`** - HIPAA compliant (threshold: 0.40) - US healthcare compliance
+- **`pci_dss`** - PCI DSS compliant (threshold: 0.45) - Payment card industry
+- **`strict`** - Maximum detection (threshold: 0.25) - Comprehensive protection
+
+### Using Policies
+
+```typescript
+// Use a policy instead of specifying entities
+const response = await client.tokenize(
+  "Contact John Doe at john@example.com",
+  { policy: "gdpr_eu" }  // GDPR-compliant detection
+);
+
+// Override policy settings for specific needs
+const response2 = await client.tokenize(
+  "Patient: John Doe, SSN: 123-45-6789",
+  {
+    policy: "hipaa_us",
+    override_threshold: 0.30  // Lower threshold for testing
+  }
+);
+
+// Override entities while keeping policy threshold
+const response3 = await client.tokenize(
+  "Custom data processing",
+  {
+    policy: "gdpr_eu",
+    override_entities: ["person", "email address"]  // Only detect these
+  }
+);
+```
+
+<Info>
+  Policies simplify your code and ensure consistent PII detection across your application. Create custom policies through the dashboard or API.
+</Info>
+
 ## Core Methods
 
 ### Tokenize
@@ -68,19 +112,26 @@ const client = new Blindfold({
 Replace sensitive data with reversible tokens. Perfect for AI interactions where you need to restore original values later.
 
 ```typescript
+// Method 1: Using a policy (recommended)
+const response = await client.tokenize(
+  "Contact John Doe at john@example.com or call +1-555-1234",
+  { policy: "gdpr_eu" }
+);
+
+// Method 2: Manual configuration
 const response = await client.tokenize(
   "Contact John Doe at john@example.com or call +1-555-1234",
   {
-    entities: ['PERSON', 'EMAIL_ADDRESS', 'PHONE_NUMBER'],  // Optional: Filter specific entities
+    entities: ['person', 'email address', 'phone number'],  // Natural language entity names
     score_threshold: 0.4  // Optional: Confidence threshold (0.0-1.0)
   }
 );
 
 console.log(response.text);
-// "Contact <PERSON_1> at <EMAIL_ADDRESS_1> or call <PHONE_NUMBER_1>"
+// "Contact <person_1> at <email_address_1> or call <phone_number_1>"
 
 console.log(response.mapping);
-// {'<PERSON_1>': 'John Doe', '<EMAIL_ADDRESS_1>': 'john@example.com', '<PHONE_NUMBER_1>': '+1-555-1234'}
+// {'<person_1>': 'John Doe', '<email_address_1>': 'john@example.com', '<phone_number_1>': '+1-555-1234'}
 
 console.log(response.entities_count);
 // 3
@@ -93,8 +144,11 @@ response.detected_entities.forEach(entity => {
 **Parameters:**
 - `text` (string, required): The text to tokenize
 - `config` (object, optional):
-  - `entities` (string[]): Array of entity types to detect
+  - `policy` (string): Policy name (e.g., `gdpr_eu`, `hipaa_us`)
+  - `entities` (string[]): Array of entity types to detect (use natural language names like `"person"`, `"email address"`)
   - `score_threshold` (number): Minimum confidence score (0.0-1.0)
+  - `override_threshold` (number): Override policy threshold
+  - `override_entities` (string[]): Override policy entities
 
 **Returns:** `TokenizeResponse` with:
 - `text`: Anonymized text with tokens
@@ -295,41 +349,131 @@ response.detected_entities.forEach((entity: DetectedEntity) => {
 });
 ```
 
+## Policy Management
+
+Manage custom policies for your organization.
+
+### List Policies
+
+```typescript
+// List all available policies
+const policies = await client.listPolicies();
+
+policies.global_policies.forEach(policy => {
+  console.log(`${policy.name}: ${policy.description}`);
+});
+
+policies.custom_policies.forEach(policy => {
+  console.log(`Custom: ${policy.name} (threshold: ${policy.threshold})`);
+});
+```
+
+### Get Policy Details
+
+```typescript
+// Get specific policy configuration
+const policy = await client.getPolicy("gdpr_eu");
+console.log(`Entities: ${policy.entities}`);
+console.log(`Threshold: ${policy.threshold}`);
+```
+
+### Create Custom Policy
+
+```typescript
+// Create a custom policy
+const customPolicy = await client.createPolicy({
+  name: "internal_hr_policy",
+  entities: [
+    "person",
+    "email address",
+    "social security number",
+    "date of birth",
+    "phone number"
+  ],
+  threshold: 0.45,
+  description: "HR department policy for employee data"
+});
+
+console.log(`Created policy: ${customPolicy.id}`);
+
+// Use the custom policy
+const response = await client.tokenize(
+  "Employee: John Doe, SSN: 123-45-6789",
+  { policy: "internal_hr_policy" }
+);
+```
+
+### Update Custom Policy
+
+```typescript
+// Update an existing custom policy
+const updatedPolicy = await client.updatePolicy(
+  "123e4567-e89b-12d3-a456-426614174000",
+  {
+    threshold: 0.50,
+    description: "Updated HR policy with stricter threshold"
+  }
+);
+```
+
+### Delete Custom Policy
+
+```typescript
+// Delete a custom policy (cannot delete global policies)
+await client.deletePolicy("123e4567-e89b-12d3-a456-426614174000");
+```
+
 ## Supported Entity Types
 
-The SDK automatically detects 50+ types of sensitive information:
+The SDK automatically detects 60+ types of sensitive information using **natural language names** (lowercase):
 
 ### Personal Information
-- `PERSON` - Person names
-- `EMAIL_ADDRESS` - Email addresses
-- `PHONE_NUMBER` - Phone numbers
-- `DATE_TIME` - Dates and times
+- `person` - Person names
+- `email` / `email address` - Email addresses
+- `phone number` / `mobile phone number` - Phone numbers
+- `date of birth` - Birth dates
+- `blood type` - Blood type classification
 
 ### Financial Information
-- `CREDIT_CARD` - Credit card numbers
-- `IBAN_CODE` - International Bank Account Numbers
-- `CRYPTO` - Cryptocurrency addresses
+- `credit card number` - Credit card numbers
+- `credit card brand` - Card issuers (Visa, Mastercard, etc.)
+- `cvv` / `cvc` - Card verification codes
+- `iban` - International Bank Account Numbers
+- `bank account number` - Bank accounts
+- `tax identification number` - Tax IDs
 
 ### Government IDs
-- `US_SSN` - US Social Security Numbers
-- `US_DRIVER_LICENSE` - US Driver Licenses
-- `US_PASSPORT` - US Passport Numbers
-- `NRP` - National Registry Person (various countries)
+- `social security number` - Social security numbers
+- `passport number` - Passport numbers
+- `driver's license number` - Driver's licenses
+- `national id number` - National ID cards
+- `cpf` - Brazilian individual taxpayer ID
+- `cnpj` - Brazilian company registry
 
-### Medical Information
-- `MEDICAL_LICENSE` - Medical license numbers
-- `US_ITIN` - Individual Taxpayer Identification Numbers
+### Healthcare Information
+- `health insurance number` - Health insurance IDs
+- `medical condition` - Medical diagnoses
+- `medication` - Medication names
+- `insurance company` - Insurance providers
 
 ### Technical Information
-- `IP_ADDRESS` - IP addresses (IPv4/IPv6)
-- `URL` - URLs and domains
-- `API_KEY` - API keys and tokens
+- `ip address` - IP addresses (IPv4/IPv6)
+- `username` - User identifiers
+- `social media handle` - Social media usernames
 
-### Location Information
-- `LOCATION` - Cities, addresses, and locations
-- `ADDRESS` - Physical addresses
+### Travel & Transactions
+- `flight number` - Airline flight numbers
+- `reservation number` - Booking confirmations
+- `transaction number` - Transaction IDs
 
-And many more...
+### Registration
+- `license plate number` - Vehicle plates
+- `student id number` - Student IDs
+- `serial number` - Product serial numbers
+
+<Info>
+  See the complete list of 60+ entity types in the [Supported Entities](/essentials/supported-entities) documentation.
+</Info>
 
 ## Error Handling
 
@@ -567,9 +711,9 @@ export function useBlindfold() {
 }
 ```
 
-## Complete Example
+## Complete Examples
 
-Here's a complete example integrating Blindfold with OpenAI in Node.js:
+### Example 1: OpenAI Integration with GDPR Policy
 
 ```typescript
 import { Blindfold } from '@blindfold/sdk';
@@ -585,9 +729,12 @@ const openai = new OpenAI({
 });
 
 async function chatWithPrivacy(userMessage: string): Promise<string> {
-  // 1. Tokenize sensitive data
-  const protected = await blindfold.tokenize(userMessage);
+  // 1. Tokenize sensitive data using GDPR policy
+  const protected = await blindfold.tokenize(userMessage, {
+    policy: "gdpr_eu"  // GDPR-compliant detection
+  });
   console.log(`Protected: ${protected.text}`);
+  // Output: "My name is <person_1>, email <email_address_1>, phone <phone_number_1>"
 
   // 2. Send protected text to OpenAI
   const completion = await openai.chat.completions.create({
@@ -605,9 +752,125 @@ async function chatWithPrivacy(userMessage: string): Promise<string> {
 }
 
 // Usage
-chatWithPrivacy("My name is John Doe and my email is john@example.com")
+chatWithPrivacy("My name is John Doe, email john@example.com, phone +49 30 12345678")
   .then(response => console.log(response))
   .catch(error => console.error(error));
+```
+
+### Example 2: Healthcare Data with HIPAA Policy
+
+```typescript
+import { Blindfold } from '@blindfold/sdk';
+
+const client = new Blindfold({
+  apiKey: process.env.BLINDFOLD_API_KEY!
+});
+
+async function processPatientData() {
+  // Patient data with sensitive information
+  const patientData = `
+Patient: Jane Smith
+DOB: 1985-04-12
+SSN: 123-45-6789
+Health Insurance: ABC123456
+Diagnosis: Type 2 Diabetes
+Medication: Metformin 500mg
+  `;
+
+  // Redact using HIPAA policy
+  const redacted = await client.redact(patientData, {
+    policy: "hipaa_us"  // HIPAA-compliant redaction
+  });
+
+  console.log(`Redacted data:\n${redacted.text}`);
+  console.log(`Protected ${redacted.entities_count} entities`);
+}
+
+processPatientData();
+```
+
+### Example 3: Custom Policy for Internal Use
+
+```typescript
+import { Blindfold } from '@blindfold/sdk';
+
+const client = new Blindfold({
+  apiKey: process.env.BLINDFOLD_API_KEY!
+});
+
+async function setupHRPolicy() {
+  // Create a custom policy for HR department
+  const hrPolicy = await client.createPolicy({
+    name: "hr_employee_data",
+    entities: [
+      "person",
+      "email address",
+      "social security number",
+      "date of birth",
+      "phone number",
+      "address"
+    ],
+    threshold: 0.45,
+    description: "HR department employee data protection"
+  });
+
+  console.log(`Created policy: ${hrPolicy.name}`);
+
+  // Use the custom policy
+  const employeeData = "Employee: John Doe, SSN: 123-45-6789, DOB: 1990-05-15, Phone: +1-555-1234";
+
+  const protected = await client.tokenize(employeeData, {
+    policy: "hr_employee_data"
+  });
+
+  console.log(`Protected: ${protected.text}`);
+  // All employee PII is tokenized according to HR policy
+}
+
+setupHRPolicy();
+```
+
+### Example 4: React with Policy
+
+```typescript
+import { Blindfold } from '@blindfold/sdk';
+import { useState } from 'react';
+
+// Note: In production, make this API call from a server-side route
+async function protectUserInput(text: string): Promise<string> {
+  const response = await fetch('/api/protect', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, policy: 'gdpr_eu' })
+  });
+
+  const data = await response.json();
+  return data.protectedText;
+}
+
+function UserForm() {
+  const [input, setInput] = useState('');
+  const [protected, setProtected] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Call server-side API that uses Blindfold SDK with GDPR policy
+    const result = await protectUserInput(input);
+    setProtected(result);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder="Enter your data..."
+      />
+      <button type="submit">Protect Data</button>
+      {protected && <p>Protected: {protected}</p>}
+    </form>
+  );
+}
 ```
 
 ## Browser vs Node.js

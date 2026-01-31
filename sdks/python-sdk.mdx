@@ -49,6 +49,46 @@ with Blindfold(api_key="your-api-key-here") as client:
     print(response.text)
 ```
 
+## Policy-Based Detection
+
+Blindfold supports **policy-based PII detection** for simplified configuration and compliance. Use pre-configured policies instead of manually specifying entities and thresholds.
+
+### Available Global Policies
+
+- **`basic`** - Minimal PII detection (threshold: 0.30) - Fast, general purpose
+- **`gdpr_eu`** - GDPR EU compliant (threshold: 0.35) - European data protection
+- **`hipaa_us`** - HIPAA compliant (threshold: 0.40) - US healthcare compliance
+- **`pci_dss`** - PCI DSS compliant (threshold: 0.45) - Payment card industry
+- **`strict`** - Maximum detection (threshold: 0.25) - Comprehensive protection
+
+### Using Policies
+
+```python
+# Use a policy instead of specifying entities
+response = client.tokenize(
+    text="Contact John Doe at john@example.com",
+    policy="gdpr_eu"  # GDPR-compliant detection
+)
+
+# Override policy settings for specific needs
+response = client.tokenize(
+    text="Patient: John Doe, SSN: 123-45-6789",
+    policy="hipaa_us",
+    override_threshold=0.30  # Lower threshold for testing
+)
+
+# Override entities while keeping policy threshold
+response = client.tokenize(
+    text="Custom data processing",
+    policy="gdpr_eu",
+    override_entities=["person", "email address"]  # Only detect these
+)
+```
+
+<Info>
+  Policies simplify your code and ensure consistent PII detection across your application. Create custom policies through the dashboard or API.
+</Info>
+
 ## Core Methods
 
 ### Tokenize
@@ -56,19 +96,26 @@ with Blindfold(api_key="your-api-key-here") as client:
 Replace sensitive data with reversible tokens. Perfect for AI interactions where you need to restore original values later.
 
 ```python
+# Method 1: Using a policy (recommended)
+response = client.tokenize(
+    text="Contact John Doe at john@example.com or call +1-555-1234",
+    policy="gdpr_eu"
+)
+
+# Method 2: Manual configuration
 response = client.tokenize(
     text="Contact John Doe at john@example.com or call +1-555-1234",
     config={
-        "entities": ["PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER"],  # Optional: Filter specific entities
+        "entities": ["person", "email address", "phone number"],  # Natural language entity names
         "score_threshold": 0.4  # Optional: Confidence threshold (0.0-1.0)
     }
 )
 
 print(response.text)
-# "Contact <PERSON_1> at <EMAIL_ADDRESS_1> or call <PHONE_NUMBER_1>"
+# "Contact <person_1> at <email_address_1> or call <phone_number_1>"
 
 print(response.mapping)
-# {'<PERSON_1>': 'John Doe', '<EMAIL_ADDRESS_1>': 'john@example.com', '<PHONE_NUMBER_1>': '+1-555-1234'}
+# {'<person_1>': 'John Doe', '<email_address_1>': 'john@example.com', '<phone_number_1>': '+1-555-1234'}
 
 print(response.entities_count)
 # 3
@@ -79,9 +126,12 @@ for entity in response.detected_entities:
 
 **Parameters:**
 - `text` (str, required): The text to tokenize
+- `policy` (str, optional): Policy name (e.g., `gdpr_eu`, `hipaa_us`)
 - `config` (dict, optional):
-  - `entities` (list[str]): List of entity types to detect
+  - `entities` (list[str]): List of entity types to detect (use natural language names like `"person"`, `"email address"`)
   - `score_threshold` (float): Minimum confidence score (0.0-1.0)
+- `override_threshold` (float, optional): Override policy threshold
+- `override_entities` (list[str], optional): Override policy entities
 
 **Returns:** `TokenizeResponse` with:
 - `text`: Anonymized text with tokens
@@ -265,41 +315,127 @@ async def main():
 asyncio.run(main())
 ```
 
+## Policy Management
+
+Manage custom policies for your organization.
+
+### List Policies
+
+```python
+# List all available policies
+policies = client.list_policies()
+
+for policy in policies['global_policies']:
+    print(f"{policy['name']}: {policy['description']}")
+
+for policy in policies['custom_policies']:
+    print(f"Custom: {policy['name']} (threshold: {policy['threshold']})")
+```
+
+### Get Policy Details
+
+```python
+# Get specific policy configuration
+policy = client.get_policy("gdpr_eu")
+print(f"Entities: {policy['entities']}")
+print(f"Threshold: {policy['threshold']}")
+```
+
+### Create Custom Policy
+
+```python
+# Create a custom policy
+custom_policy = client.create_policy(
+    name="internal_hr_policy",
+    entities=[
+        "person",
+        "email address",
+        "social security number",
+        "date of birth",
+        "phone number"
+    ],
+    threshold=0.45,
+    description="HR department policy for employee data"
+)
+
+print(f"Created policy: {custom_policy['id']}")
+
+# Use the custom policy
+response = client.tokenize(
+    text="Employee: John Doe, SSN: 123-45-6789",
+    policy="internal_hr_policy"
+)
+```
+
+### Update Custom Policy
+
+```python
+# Update an existing custom policy
+updated_policy = client.update_policy(
+    policy_id="123e4567-e89b-12d3-a456-426614174000",
+    threshold=0.50,
+    description="Updated HR policy with stricter threshold"
+)
+```
+
+### Delete Custom Policy
+
+```python
+# Delete a custom policy (cannot delete global policies)
+client.delete_policy(policy_id="123e4567-e89b-12d3-a456-426614174000")
+```
+
 ## Supported Entity Types
 
-The SDK automatically detects 50+ types of sensitive information:
+The SDK automatically detects 60+ types of sensitive information using **natural language names** (lowercase):
 
 ### Personal Information
-- `PERSON` - Person names
-- `EMAIL_ADDRESS` - Email addresses
-- `PHONE_NUMBER` - Phone numbers
-- `DATE_TIME` - Dates and times
+- `person` - Person names
+- `email` / `email address` - Email addresses
+- `phone number` / `mobile phone number` - Phone numbers
+- `date of birth` - Birth dates
+- `blood type` - Blood type classification
 
 ### Financial Information
-- `CREDIT_CARD` - Credit card numbers
-- `IBAN_CODE` - International Bank Account Numbers
-- `CRYPTO` - Cryptocurrency addresses
+- `credit card number` - Credit card numbers
+- `credit card brand` - Card issuers (Visa, Mastercard, etc.)
+- `cvv` / `cvc` - Card verification codes
+- `iban` - International Bank Account Numbers
+- `bank account number` - Bank accounts
+- `tax identification number` - Tax IDs
 
 ### Government IDs
-- `US_SSN` - US Social Security Numbers
-- `US_DRIVER_LICENSE` - US Driver Licenses
-- `US_PASSPORT` - US Passport Numbers
-- `NRP` - National Registry Person (various countries)
+- `social security number` - Social security numbers
+- `passport number` - Passport numbers
+- `driver's license number` - Driver's licenses
+- `national id number` - National ID cards
+- `cpf` - Brazilian individual taxpayer ID
+- `cnpj` - Brazilian company registry
 
-### Medical Information
-- `MEDICAL_LICENSE` - Medical license numbers
-- `US_ITIN` - Individual Taxpayer Identification Numbers
+### Healthcare Information
+- `health insurance number` - Health insurance IDs
+- `medical condition` - Medical diagnoses
+- `medication` - Medication names
+- `insurance company` - Insurance providers
 
 ### Technical Information
-- `IP_ADDRESS` - IP addresses (IPv4/IPv6)
-- `URL` - URLs and domains
-- `API_KEY` - API keys and tokens
+- `ip address` - IP addresses (IPv4/IPv6)
+- `username` - User identifiers
+- `social media handle` - Social media usernames
 
-### Location Information
-- `LOCATION` - Cities, addresses, and locations
-- `ADDRESS` - Physical addresses
+### Travel & Transactions
+- `flight number` - Airline flight numbers
+- `reservation number` - Booking confirmations
+- `transaction number` - Transaction IDs
 
-And many more...
+### Registration
+- `license plate number` - Vehicle plates
+- `student id number` - Student IDs
+- `serial number` - Product serial numbers
+
+<Info>
+  See the complete list of 60+ entity types in the [Supported Entities](/essentials/supported-entities) documentation.
+</Info>
 
 ## Error Handling
 
@@ -420,9 +556,9 @@ async with AsyncBlindfold(api_key=api_key) as client:
     results = await asyncio.gather(*tasks)
 ```
 
-## Complete Example
+## Complete Examples
 
-Here's a complete example integrating Blindfold with OpenAI:
+### Example 1: OpenAI Integration with GDPR Policy
 
 ```python
 import os
@@ -434,11 +570,15 @@ blindfold = Blindfold(api_key=os.environ["BLINDFOLD_API_KEY"])
 openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 # User input with sensitive data
-user_message = "My name is John Doe and my email is john@example.com"
+user_message = "My name is John Doe, email john@example.com, phone +49 30 12345678"
 
-# 1. Tokenize sensitive data
-protected = blindfold.tokenize(user_message)
+# 1. Tokenize sensitive data using GDPR policy
+protected = blindfold.tokenize(
+    text=user_message,
+    policy="gdpr_eu"  # GDPR-compliant detection
+)
 print(f"Protected: {protected.text}")
+# Output: "My name is <person_1>, email <email_address_1>, phone <phone_number_1>"
 
 # 2. Send protected text to OpenAI
 ai_response = openai_client.chat.completions.create(
@@ -451,6 +591,101 @@ ai_text = ai_response.choices[0].message.content
 # 3. Detokenize AI response to restore original data
 final_response = blindfold.detokenize(ai_text, protected.mapping)
 print(f"Final: {final_response.text}")
+```
+
+### Example 2: Healthcare Data with HIPAA Policy
+
+```python
+import os
+from blindfold import Blindfold
+
+client = Blindfold(api_key=os.environ["BLINDFOLD_API_KEY"])
+
+# Patient data with sensitive information
+patient_data = """
+Patient: Jane Smith
+DOB: 1985-04-12
+SSN: 123-45-6789
+Health Insurance: ABC123456
+Diagnosis: Type 2 Diabetes
+Medication: Metformin 500mg
+"""
+
+# Redact using HIPAA policy
+redacted = client.redact(
+    text=patient_data,
+    policy="hipaa_us"  # HIPAA-compliant redaction
+)
+
+print(f"Redacted data:\n{redacted.text}")
+print(f"Protected {redacted.entities_count} entities")
+```
+
+### Example 3: Custom Policy for Internal Use
+
+```python
+import os
+from blindfold import Blindfold
+
+client = Blindfold(api_key=os.environ["BLINDFOLD_API_KEY"])
+
+# Create a custom policy for HR department
+hr_policy = client.create_policy(
+    name="hr_employee_data",
+    entities=[
+        "person",
+        "email address",
+        "social security number",
+        "date of birth",
+        "phone number",
+        "address"
+    ],
+    threshold=0.45,
+    description="HR department employee data protection"
+)
+
+print(f"Created policy: {hr_policy['name']}")
+
+# Use the custom policy
+employee_data = "Employee: John Doe, SSN: 123-45-6789, DOB: 1990-05-15, Phone: +1-555-1234"
+
+protected = client.tokenize(
+    text=employee_data,
+    policy="hr_employee_data"
+)
+
+print(f"Protected: {protected.text}")
+# All employee PII is tokenized according to HR policy
+```
+
+### Example 4: Async with Policy
+
+```python
+import asyncio
+import os
+from blindfold import AsyncBlindfold
+
+async def process_batch():
+    async with AsyncBlindfold(api_key=os.environ["BLINDFOLD_API_KEY"]) as client:
+        # Process multiple texts with GDPR policy
+        texts = [
+            "Customer: John Doe, john@example.com",
+            "User: Jane Smith, jane@example.com",
+            "Client: Bob Wilson, bob@example.com"
+        ]
+
+        # Concurrent processing with policy
+        tasks = [
+            client.tokenize(text, policy="gdpr_eu")
+            for text in texts
+        ]
+
+        results = await asyncio.gather(*tasks)
+
+        for i, result in enumerate(results):
+            print(f"Protected {i+1}: {result.text}")
+
+asyncio.run(process_batch())
 ```
 
 ## Need Help?
