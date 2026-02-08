@@ -1,0 +1,323 @@
+---
+title: "Detection"
+description: "Detect PII in text without modifying it"
+---
+
+## What is Detection?
+
+Detection is a read-only analysis method that identifies sensitive data in text without transforming it. The original text is not modified — you only receive a list of detected entities with their types, positions, and confidence scores.
+
+**Example:**
+```
+Input:  "Contact John Doe at john@example.com"
+Output: [{entity_type: "Person", text: "John Doe", start: 8, end: 16, score: 0.99},
+         {entity_type: "Email Address", text: "john@example.com", start: 20, end: 36, score: 0.98}]
+```
+
+## How It Works
+
+1. **Detection**: Blindfold identifies sensitive entities in your text
+2. **Report**: Returns entity types, positions, confidence scores, and matched text
+3. **No transformation**: The original text is not modified, masked, or returned
+
+## When to Use Detection
+
+Detection is ideal when you need to:
+
+### 1. Data Loss Prevention (DLP)
+
+Monitor what sensitive data flows through your AI agents or applications.
+
+```python
+# Check if user input contains sensitive data before processing
+result = client.detect(user_input, policy="strict")
+
+if result.entities_count > 0:
+    log_violation(user_id, result.detected_entities)
+    block_or_alert()
+```
+
+**Why this matters:**
+- Know what PII is flowing through your systems
+- Enforce data handling policies automatically
+- Create audit trails for compliance
+
+### 2. Compliance Monitoring
+
+Continuously scan data streams to detect policy violations.
+
+```python
+# Scan customer support messages for HIPAA violations
+result = client.detect(support_message, policy="hipaa_us")
+
+critical_types = {"Social Security Number", "Medical Condition", "Medication"}
+found_types = {e.entity_type for e in result.detected_entities}
+
+if found_types & critical_types:
+    alert_compliance_team(found_types)
+```
+
+### 3. Data Auditing
+
+Understand what PII exists in your datasets before processing.
+
+```python
+# Audit a batch of records
+for record in records:
+    result = client.detect(record)
+    for entity in result.detected_entities:
+        audit_log.append({
+            "entity_type": entity.entity_type,
+            "confidence": entity.score
+        })
+```
+
+### 4. Pre-Processing Checks
+
+Decide which privacy method to apply based on what's detected.
+
+```python
+# Route to different processing based on detected PII
+result = client.detect(text, policy="strict")
+
+entity_types = {e.entity_type for e in result.detected_entities}
+
+if "Credit Card Number" in entity_types:
+    # Mask credit cards
+    processed = client.mask(text, policy="pci_dss")
+elif "Social Security Number" in entity_types:
+    # Redact SSNs completely
+    processed = client.redact(text, policy="hipaa_us")
+else:
+    # Tokenize everything else
+    processed = client.tokenize(text)
+```
+
+## When NOT to Use Detection
+
+Detection is **not suitable** when:
+
+### 1. You Need to Transform the Text
+
+If you need to remove, mask, or replace PII, use the appropriate method directly.
+
+```python
+# Detection only tells you WHAT is there — it doesn't change anything
+result = client.detect("SSN: 123-45-6789")
+# result.detected_entities → [{entity_type: "Social Security Number", ...}]
+# But the text is unchanged!
+
+# Use redact, mask, tokenize, etc. to actually transform
+redacted = client.redact("SSN: 123-45-6789")
+```
+
+### 2. You Already Know You Want a Specific Method
+
+If you know you want tokenization or redaction, call that method directly — it already returns detected entities in its response.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Read-Only" icon="eye">
+    Text is analyzed but never modified
+  </Card>
+  <Card title="Lightweight" icon="feather">
+    No transformation overhead — fastest method
+  </Card>
+  <Card title="Policy Support" icon="shield-check">
+    Use GDPR, HIPAA, PCI DSS, or custom policies
+  </Card>
+  <Card title="60+ Entity Types" icon="list">
+    Detects all supported PII types
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    client = Blindfold(api_key="your-api-key")
+
+    result = client.detect(
+        "Patient Jane Smith (DOB: 1985-04-12, SSN: 123-45-6789) prescribed Metformin",
+        policy="hipaa_us"
+    )
+
+    print(f"Found {result.entities_count} entities")
+
+    for entity in result.detected_entities:
+        print(f"- {entity.entity_type}: {entity.text} (confidence: {entity.score:.2f})")
+    # - Person: Jane Smith (confidence: 0.99)
+    # - Date of Birth: 1985-04-12 (confidence: 0.94)
+    # - Social Security Number: 123-45-6789 (confidence: 0.97)
+    # - Medication: Metformin (confidence: 0.99)
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const client = new Blindfold({ apiKey: 'your-api-key' });
+
+    const result = await client.detect(
+      "Patient Jane Smith (DOB: 1985-04-12, SSN: 123-45-6789) prescribed Metformin",
+      { policy: "hipaa_us" }
+    );
+
+    console.log(`Found ${result.entities_count} entities`);
+
+    result.detected_entities.forEach(entity => {
+      console.log(`- ${entity.entity_type}: ${entity.text} (confidence: ${entity.score.toFixed(2)})`);
+    });
+    ```
+  </Tab>
+
+  <Tab title="cURL">
+    ```bash
+    curl -X POST https://api.blindfold.dev/api/public/v1/detect \
+      -H "X-API-Key: your-api-key" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "text": "Patient Jane Smith (DOB: 1985-04-12, SSN: 123-45-6789) prescribed Metformin",
+        "policy": "hipaa_us"
+      }'
+
+    # Response
+    {
+      "entities_count": 4,
+      "detected_entities": [
+        {
+          "entity_type": "Person",
+          "text": "Jane Smith",
+          "start": 8,
+          "end": 18,
+          "score": 0.99
+        },
+        {
+          "entity_type": "Date of Birth",
+          "text": "1985-04-12",
+          "start": 25,
+          "end": 35,
+          "score": 0.94
+        },
+        {
+          "entity_type": "Social Security Number",
+          "text": "123-45-6789",
+          "start": 42,
+          "end": 53,
+          "score": 0.97
+        },
+        {
+          "entity_type": "Medication",
+          "text": "Metformin",
+          "start": 66,
+          "end": 75,
+          "score": 0.99
+        }
+      ]
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Configuration Options
+
+### Filter Specific Entity Types
+
+Only detect specific types of sensitive data:
+
+```python
+result = client.detect(
+    "John Doe (SSN: 123-45-6789) paid with card 4532-7562-9102-3456",
+    entities=["social security number", "credit card number"]
+)
+# Only SSN and credit card entities returned
+```
+
+### Adjust Confidence Threshold
+
+Control detection sensitivity:
+
+```python
+# Only high-confidence detections
+result = client.detect(
+    text="Maybe email: test@test",
+    score_threshold=0.8
+)
+```
+
+## Common Patterns
+
+### DLP Agent Gate
+
+Block sensitive data from reaching AI models:
+
+```python
+def safe_ai_call(user_message: str) -> str:
+    """Only send to AI if no critical PII detected"""
+    scan = client.detect(user_message, policy="strict")
+
+    critical = {"Social Security Number", "Credit Card Number"}
+    found = {e.entity_type for e in scan.detected_entities}
+
+    if found & critical:
+        return "I cannot process messages containing SSNs or credit card numbers."
+
+    return call_ai_model(user_message)
+```
+
+### Compliance Dashboard
+
+Aggregate PII detection across your application:
+
+```python
+def log_pii_detection(user_id: str, text: str) -> None:
+    """Log PII detections for compliance reporting"""
+    result = client.detect(text, policy="gdpr_eu")
+
+    if result.entities_count > 0:
+        compliance_db.insert({
+            "user_id": user_id,
+            "timestamp": datetime.utcnow(),
+            "entity_types": [e.entity_type for e in result.detected_entities],
+            "entity_count": result.entities_count,
+        })
+```
+
+## Learn More
+
+<CardGroup cols={2}>
+  <Card title="Python SDK" icon="python" href="/sdks/python-sdk">
+    Full Python SDK documentation
+  </Card>
+  <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
+    Complete JavaScript guide
+  </Card>
+  <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
+    HTTP API reference for /detect
+  </Card>
+  <Card title="Examples" icon="code" href="/examples">
+    Practical integration examples
+  </Card>
+</CardGroup>
+
+## Compare with Other Methods
+
+<CardGroup cols={2}>
+  <Card title="Tokenization" icon="shuffle" href="/methods/tokenization">
+    Reversible replacement (restore later)
+  </Card>
+  <Card title="Redaction" icon="eraser" href="/methods/redaction">
+    Permanent removal of PII
+  </Card>
+  <Card title="Masking" icon="eye-slash" href="/methods/masking">
+    Partial visibility for users
+  </Card>
+  <Card title="Hashing" icon="hashtag" href="/methods/hashing">
+    Consistent identifiers for tracking
+  </Card>
+</CardGroup>
