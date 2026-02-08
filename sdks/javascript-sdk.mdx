@@ -89,6 +89,39 @@ const response = await client.tokenize(
 
 ## Core Methods
 
+### Detect
+
+Detect PII in text without modifying it. Returns only the detected entities with their types, positions, and confidence scores.
+
+```typescript
+// Using a policy
+const response = await client.detect(
+  "Contact John Doe at john@example.com or call +1-555-1234",
+  { policy: "gdpr_eu" }
+);
+
+console.log(response.entities_count);
+// 3
+
+response.detected_entities.forEach(entity => {
+  console.log(`${entity.entity_type}: ${entity.text} (confidence: ${entity.score.toFixed(2)})`);
+});
+// Person: John Doe (confidence: 0.99)
+// Email Address: john@example.com (confidence: 0.98)
+// Phone Number: +1-555-1234 (confidence: 0.95)
+```
+
+**Parameters:**
+- `text` (string, required): The text to analyze
+- `config` (object, optional):
+  - `policy` (string): Policy name (e.g., `gdpr_eu`, `hipaa_us`)
+  - `entities` (string[]): Array of entity types to detect
+  - `score_threshold` (number): Minimum confidence score (0.0-1.0)
+
+**Returns:** `DetectResponse` with:
+- `detected_entities`: Array of detected entities with details
+- `entities_count`: Total number of entities found
+
 ### Tokenize
 
 Replace sensitive data with reversible tokens. Perfect for AI interactions where you need to restore original values later.

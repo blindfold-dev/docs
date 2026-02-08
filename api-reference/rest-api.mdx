@@ -98,7 +98,7 @@ Blindfold supports **policy-based PII detection** for simplified configuration a
 
 ### Using Policies in API Calls
 
-All detection endpoints (`/tokenize`, `/mask`, `/redact`, `/hash`, `/encrypt`) support an optional `policy` parameter:
+All detection endpoints (`/detect`, `/tokenize`, `/mask`, `/redact`, `/hash`, `/encrypt`) support an optional `policy` parameter:
 
 ```json
 {
@@ -137,6 +137,7 @@ Choose the right privacy method for your use case:
 
 | Method | Reversible | Output Example | Best For |
 |--------|-----------|----------------|----------|
+| [Detect](#post-detect) | N/A | `[{entity_type, text, ...}]` | DLP, monitoring, compliance |
 | [Tokenize](#post-tokenize) | ✅ Yes | `<person_1>` | AI processing, chatbots |
 | [Mask](#post-mask) | ❌ No | `***3456` | Display to users |
 | [Redact](#post-redact) | ❌ No | `` (removed) | Permanent removal, logs |
@@ -149,6 +150,98 @@ Choose the right privacy method for your use case:
 
   **For compliance:** Use policies like `gdpr_eu`, `hipaa_us`, or `pci_dss` to automatically apply the correct entity types and thresholds.
 </Tip>
+
+---
+
+### POST /detect
+
+Detect PII in text without modifying it. Returns only the detected entities.
+
+<CodeGroup>
+```bash cURL (with policy)
+curl -X POST https://api.blindfold.dev/api/public/v1/detect \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Contact John Doe at john@example.com",
+    "policy": "gdpr_eu"
+  }'
+```
+
+```python Python (with policy)
+import requests
+
+response = requests.post(
+    "https://api.blindfold.dev/api/public/v1/detect",
+    headers={
+        "X-API-Key": "your-api-key-here",
+        "Content-Type": "application/json"
+    },
+    json={
+        "text": "Contact John Doe at john@example.com",
+        "policy": "gdpr_eu"
+    }
+)
+
+data = response.json()
+print(data)
+```
+
+```javascript JavaScript (with policy)
+const response = await fetch(
+  'https://api.blindfold.dev/api/public/v1/detect',
+  {
+    method: 'POST',
+    headers: {
+      'X-API-Key': 'your-api-key-here',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      text: 'Contact John Doe at john@example.com',
+      policy: 'gdpr_eu'
+    })
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+</CodeGroup>
+
+**Request Body:**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `text` | string | Yes | Text to analyze for PII |
+| `policy` | string | No | Policy name (e.g., `gdpr_eu`, `hipaa_us`) |
+| `entities` | string[] | No | Filter specific entity types |
+| `score_threshold` | number | No | Minimum confidence (0.0-1.0) |
+
+**Response:**
+```json
+{
+  "entities_count": 2,
+  "detected_entities": [
+    {
+      "entity_type": "Person",
+      "text": "John Doe",
+      "start": 8,
+      "end": 16,
+      "score": 0.95
+    },
+    {
+      "entity_type": "Email Address",
+      "text": "john@example.com",
+      "start": 20,
+      "end": 36,
+      "score": 1.0
+    }
+  ]
+}
+```
+
+<Info>
+  Unlike other methods, `/detect` does not return a `text` field — it only returns the detected entities. Use this when you need to know **what** PII exists without transforming the text.
+</Info>
 
 ---
 
