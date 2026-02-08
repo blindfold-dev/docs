@@ -78,6 +78,37 @@ response = client.tokenize(
 
 ## Core Methods
 
+### Detect
+
+Detect PII in text without modifying it. Returns only the detected entities with their types, positions, and confidence scores.
+
+```python
+# Using a policy
+response = client.detect(
+    text="Contact John Doe at john@example.com or call +1-555-1234",
+    policy="gdpr_eu"
+)
+
+print(response.entities_count)
+# 3
+
+for entity in response.detected_entities:
+    print(f"{entity.entity_type}: {entity.text} (confidence: {entity.score:.2f})")
+# Person: John Doe (confidence: 0.99)
+# Email Address: john@example.com (confidence: 0.98)
+# Phone Number: +1-555-1234 (confidence: 0.95)
+```
+
+**Parameters:**
+- `text` (str, required): The text to analyze
+- `policy` (str, optional): Policy name (e.g., `gdpr_eu`, `hipaa_us`)
+- `entities` (list[str], optional): List of entity types to detect
+- `score_threshold` (float, optional): Minimum confidence score (0.0-1.0)
+
+**Returns:** `DetectResponse` with:
+- `detected_entities`: List of detected entities with details
+- `entities_count`: Total number of entities found
+
 ### Tokenize
 
 Replace sensitive data with reversible tokens. Perfect for AI interactions where you need to restore original values later.
