@@ -191,7 +191,7 @@ hash2 = client.hash("User: john@example.com")  # ID_a3f8b9... (same)
 
     # Check what was redacted
     for entity in result.detected_entities:
-        print(f"- {entity.entity_type}: {entity.text} (removed)")
+        print(f"- {entity.type}: {entity.text} (removed)")
     # - PERSON: John Doe (removed)
     # - EMAIL_ADDRESS: john@example.com (removed)
     # - PHONE_NUMBER: +1-555-1234 (removed)
@@ -217,7 +217,7 @@ hash2 = client.hash("User: john@example.com")  # ID_a3f8b9... (same)
 
     // Check what was redacted
     result.detected_entities.forEach(entity => {
-      console.log(`- ${entity.entity_type}: ${entity.text} (removed)`);
+      console.log(`- ${entity.type}: ${entity.text} (removed)`);
     });
     // - PERSON: John Doe (removed)
     // - EMAIL_ADDRESS: john@example.com (removed)
@@ -240,21 +240,21 @@ hash2 = client.hash("User: john@example.com")  # ID_a3f8b9... (same)
       "entities_count": 3,
       "detected_entities": [
         {
-          "entity_type": "PERSON",
+          "type": "PERSON",
           "text": "John Doe",
           "start": 8,
           "end": 16,
           "score": 0.95
         },
         {
-          "entity_type": "EMAIL_ADDRESS",
+          "type": "EMAIL_ADDRESS",
           "text": "john@example.com",
           "start": 20,
           "end": 36,
           "score": 1.0
         },
         {
-          "entity_type": "PHONE_NUMBER",
+          "type": "PHONE_NUMBER",
           "text": "+1-555-1234",
           "start": 48,
           "end": 59,
@@ -493,7 +493,7 @@ result = client.redact(text)
 audit_log.info({
     'action': 'redaction',
     'entities_redacted': result.entities_count,
-    'entity_types': [e.entity_type for e in result.detected_entities],
+    'entity_types': [e.type for e in result.detected_entities],
     'timestamp': datetime.now()
 })
 ```
@@ -513,8 +513,8 @@ def analyze_redactions(timeframe):
     for event in get_redaction_events(timeframe):
         stats['total_redactions'] += event.entities_count
         for entity in event.detected_entities:
-            stats['entity_types'][entity.entity_type] = \
-                stats['entity_types'].get(entity.entity_type, 0) + 1
+            stats['entity_types'][entity.type] = \
+                stats['entity_types'].get(entity.type, 0) + 1
 
     return stats
 ```
