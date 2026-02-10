@@ -191,7 +191,7 @@ protected = client.tokenize(data)
 
     # Check what was encrypted
     for entity in result.detected_entities:
-        print(f"- {entity.entity_type}: {entity.text}")
+        print(f"- {entity.type}: {entity.text}")
     # - API_KEY: sk-1234567890abcdef
     # - PASSWORD: my_secret
 
@@ -223,7 +223,7 @@ protected = client.tokenize(data)
 
     // Check what was encrypted
     result.detected_entities.forEach(entity => {
-      console.log(`- ${entity.entity_type}: ${entity.text}`);
+      console.log(`- ${entity.type}: ${entity.text}`);
     });
     // - API_KEY: sk-1234567890abcdef
     // - PASSWORD: my_secret
@@ -248,12 +248,12 @@ protected = client.tokenize(data)
       "entities_count": 2,
       "detected_entities": [
         {
-          "entity_type": "API_KEY",
+          "type": "API_KEY",
           "text": "sk-1234567890abcdef",
           "score": 0.85
         },
         {
-          "entity_type": "PASSWORD",
+          "type": "PASSWORD",
           "text": "my_secret",
           "score": 0.75
         }

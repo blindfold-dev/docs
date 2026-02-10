@@ -64,7 +64,7 @@ All successful responses return JSON with:
   "entities_count": 2,
   "detected_entities": [
     {
-      "entity_type": "EMAIL_ADDRESS",
+      "type": "EMAIL_ADDRESS",
       "text": "john@example.com",
       "start": 12,
       "end": 28,
@@ -111,6 +111,99 @@ All detection endpoints (`/detect`, `/tokenize`, `/mask`, `/redact`, `/hash`, `/
   Using policies simplifies your code and ensures consistent PII detection across your application. Policies can be managed through the dashboard.
 </Info>
 
+## Batch Processing
+
+All privacy method endpoints support **batch processing** — send multiple texts in a single request by using `texts` (array) instead of `text` (string). Configuration parameters (`policy`, `entities`, `score_threshold`) apply to all texts in the batch.
+
+### Batch Request Format
+
+```json
+{
+  "texts": ["Text one with PII", "Text two with PII", "Text three"],
+  "policy": "gdpr_eu"
+}
+```
+
+### Batch Response Format
+
+```json
+{
+  "results": [
+    { "text": "...", "detected_entities": [...], "entities_count": 1 },
+    { "text": "...", "detected_entities": [...], "entities_count": 0 },
+    { "error": "Processing failed for this item" }
+  ],
+  "total": 3,
+  "succeeded": 2,
+  "failed": 1
+}
+```
+
+### Batch Limits
+
+| Limit | Value |
+|-------|-------|
+| Max texts per request | 100 |
+| Max characters per text | 100,000 |
+| Rate limiting | Once per request (not per text) |
+
+<Warning>
+  You must provide either `text` (single) or `texts` (batch), not both. Each text in the batch must be non-empty.
+</Warning>
+
+### Batch Example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
+  -H "X-API-Key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "texts": [
+      "Contact John Doe at john@example.com",
+      "Call Jane at +1-555-9876",
+      "No sensitive data here"
+    ],
+    "policy": "gdpr_eu"
+  }'
+```
+
+```python Python SDK
+from blindfold import Blindfold
+
+client = Blindfold(api_key="your-api-key-here")
+
+result = client.tokenize_batch(
+    texts=["John Doe john@example.com", "Jane Smith +1-555-9876"],
+    policy="gdpr_eu"
+)
+
+print(f"Processed {result.succeeded}/{result.total} texts")
+for item in result.results:
+    print(item["text"])
+```
+
+```typescript JavaScript SDK
+import { Blindfold } from '@blindfold/sdk'
+
+const client = new Blindfold({ apiKey: 'your-api-key-here' })
+
+const result = await client.tokenizeBatch(
+  ['John Doe john@example.com', 'Jane Smith +1-555-9876'],
+  { policy: 'gdpr_eu' }
+)
+
+console.log(`Processed ${result.succeeded}/${result.total} texts`)
+result.results.forEach(item => console.log(item.text))
+```
+</CodeGroup>
+
+<Tip>
+  Batch processing is available on all 7 privacy methods: **tokenize**, **detect**, **redact**, **mask**, **synthesize**, **hash**, and **encrypt**. The `/detokenize` and `/discover` endpoints do not support batch mode.
+</Tip>
+
+---
+
 ## API Endpoints
 
 <CardGroup cols={2}>
@@ -137,7 +230,7 @@ Choose the right privacy method for your use case:
 
 | Method | Reversible | Output Example | Best For |
 |--------|-----------|----------------|----------|
-| [Detect](#post-detect) | N/A | `[{entity_type, text, ...}]` | DLP, monitoring, compliance |
+| [Detect](#post-detect) | N/A | `[{type, text, ...}]` | DLP, monitoring, compliance |
 | [Tokenize](#post-tokenize) | ✅ Yes | `<person_1>` | AI processing, chatbots |
 | [Mask](#post-mask) | ❌ No | `***3456` | Display to users |
 | [Redact](#post-redact) | ❌ No | `` (removed) | Permanent removal, logs |
@@ -222,14 +315,14 @@ console.log(data);
   "entities_count": 2,
   "detected_entities": [
     {
-      "entity_type": "Person",
+      "type": "Person",
       "text": "John Doe",
       "start": 8,
       "end": 16,
       "score": 0.95
     },
     {
-      "entity_type": "Email Address",
+      "type": "Email Address",
       "text": "john@example.com",
       "start": 20,
       "end": 36,
@@ -343,14 +436,14 @@ curl -X POST https://api.blindfold.dev/api/public/v1/tokenize \
   "entities_count": 2,
   "detected_entities": [
     {
-      "entity_type": "PERSON",
+      "type": "PERSON",
       "text": "John Doe",
       "start": 8,
       "end": 16,
       "score": 0.95
     },
     {
-      "entity_type": "EMAIL_ADDRESS",
+      "type": "EMAIL_ADDRESS",
       "text": "john@example.com",
       "start": 20,
       "end": 36,
@@ -542,7 +635,7 @@ console.log(data);
   "entities_count": 1,
   "detected_entities": [
     {
-      "entity_type": "CREDIT_CARD",
+      "type": "CREDIT_CARD",
       "text": "4532-7562-9102-3456",
       "start": 13,
       "end": 32,
@@ -634,7 +727,7 @@ console.log(data);
   "entities_count": 1,
   "detected_entities": [
     {
-      "entity_type": "US_SSN",
+      "type": "US_SSN",
       "text": "123-45-6789",
       "start": 10,
       "end": 21,
@@ -740,7 +833,7 @@ console.log(data);
   "entities_count": 1,
   "detected_entities": [
     {
-      "entity_type": "EMAIL_ADDRESS",
+      "type": "EMAIL_ADDRESS",
       "text": "john@example.com",
       "start": 5,
       "end": 21,
@@ -822,14 +915,14 @@ console.log(data);
   "entities_count": 2,
   "detected_entities": [
     {
-      "entity_type": "PERSON",
+      "type": "PERSON",
       "text": "John",
       "start": 0,
       "end": 4,
       "score": 0.95
     },
     {
-      "entity_type": "LOCATION",
+      "type": "LOCATION",
       "text": "New York",
       "start": 14,
       "end": 22,
@@ -925,7 +1018,7 @@ console.log(data);
   "entities_count": 1,
   "detected_entities": [
     {
-      "entity_type": "API_KEY",
+      "type": "API_KEY",
       "text": "sk-12345",
       "start": 19,
       "end": 27,

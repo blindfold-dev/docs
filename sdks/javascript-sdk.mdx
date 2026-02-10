@@ -104,7 +104,7 @@ console.log(response.entities_count);
 // 3
 
 response.detected_entities.forEach(entity => {
-  console.log(`${entity.entity_type}: ${entity.text} (confidence: ${entity.score.toFixed(2)})`);
+  console.log(`${entity.type}: ${entity.text} (confidence: ${entity.score.toFixed(2)})`);
 });
 // Person: John Doe (confidence: 0.99)
 // Email Address: john@example.com (confidence: 0.98)
@@ -152,7 +152,7 @@ console.log(response.entities_count);
 // 3
 
 response.detected_entities.forEach(entity => {
-  console.log(`${entity.entity_type}: ${entity.text} (confidence: ${entity.score.toFixed(2)})`);
+  console.log(`${entity.type}: ${entity.text} (confidence: ${entity.score.toFixed(2)})`);
 });
 ```
 
@@ -337,6 +337,103 @@ console.log(response.text);
 - `detected_entities`: Array of encrypted entities
 - `entities_count`: Number of entities encrypted
 
+## Batch Processing
+
+Process multiple texts in a single API call. All 7 methods (except detokenize) support batch processing.
+
+### Basic Batch Usage
+
+```typescript
+// Tokenize multiple texts at once
+const result = await client.tokenizeBatch([
+  "Contact John Doe at john@example.com",
+  "Jane Smith lives in New York",
+  "No sensitive data here"
+]);
+
+console.log(result.total);      // 3
+console.log(result.succeeded);  // 3
+console.log(result.failed);     // 0
+
+result.results.forEach(item => {
+  console.log(item.text, item.entities_count);
+});
+```
+
+### With Configuration
+
+```typescript
+const result = await client.tokenizeBatch(
+  ["Text one with PII", "Text two with PII"],
+  {
+    policy: "gdpr_eu",
+    entities: ["person", "email address"],
+    score_threshold: 0.5
+  }
+);
+```
+
+### All Batch Methods
+
+```typescript
+// Detection only
+const detected = await client.detectBatch(["text1", "text2"]);
+
+// Redaction
+const redacted = await client.redactBatch(["text1", "text2"]);
+
+// Masking
+const masked = await client.maskBatch(["text1", "text2"], {
+  chars_to_show: 4,
+  from_end: true
+});
+
+// Synthesize with fake data
+const synthesized = await client.synthesizeBatch(["text1", "text2"], {
+  language: "de"
+});
+
+// Hash
+const hashed = await client.hashBatch(["text1", "text2"], {
+  hash_type: "sha256",
+  hash_length: 16
+});
+
+// Encrypt
+const encrypted = await client.encryptBatch(["text1", "text2"], {
+  encryption_key: "your-key-min-16-chars"
+});
+```
+
+### Handling Partial Failures
+
+Individual texts can fail without affecting the rest of the batch:
+
+```typescript
+const result = await client.tokenizeBatch(["valid text", "another text"]);
+
+result.results.forEach((item, i) => {
+  if ('error' in item) {
+    console.log(`Text ${i} failed: ${item.error}`);
+  } else {
+    console.log(`Text ${i}: ${item.text}`);
+  }
+});
+
+console.log(`${result.succeeded}/${result.total} succeeded`);
+```
+
+**Limits:**
+- Maximum 100 texts per batch
+- Each text: max 100,000 characters
+- Shared config (policy, entities, score_threshold) applies to all texts
+
+**Returns:** `BatchResponse` with:
+- `results`: Array of individual results (same shape as single-text responses)
+- `total`: Number of texts submitted
+- `succeeded`: Number of successfully processed texts
+- `failed`: Number of failed texts
+
 ## TypeScript Support
 
 The SDK is written in TypeScript and provides full type definitions:
@@ -357,7 +454,7 @@ const response: TokenizeResponse = await client.tokenize("Hello John");
 
 // Autocomplete and type checking for entity properties
 response.detected_entities.forEach((entity: DetectedEntity) => {
-  console.log(entity.entity_type);  // TypeScript autocomplete works
+  console.log(entity.type);  // TypeScript autocomplete works
   console.log(entity.score);        // Type-safe access
 });
 ```

@@ -93,7 +93,7 @@ print(response.entities_count)
 # 3
 
 for entity in response.detected_entities:
-    print(f"{entity.entity_type}: {entity.text} (confidence: {entity.score:.2f})")
+    print(f"{entity.type}: {entity.text} (confidence: {entity.score:.2f})")
 # Person: John Doe (confidence: 0.99)
 # Email Address: john@example.com (confidence: 0.98)
 # Phone Number: +1-555-1234 (confidence: 0.95)
@@ -139,7 +139,7 @@ print(response.entities_count)
 # 3
 
 for entity in response.detected_entities:
-    print(f"{entity.entity_type}: {entity.text} (confidence: {entity.score:.2f})")
+    print(f"{entity.type}: {entity.text} (confidence: {entity.score:.2f})")
 ```
 
 **Parameters:**
@@ -306,6 +306,95 @@ print(response.text)
 - `text`: Text with encrypted entities
 - `detected_entities`: List of encrypted entities
 - `entities_count`: Number of entities encrypted
+
+## Batch Processing
+
+Process multiple texts in a single API call. All 7 methods (except detokenize) support batch processing.
+
+### Basic Batch Usage
+
+```python
+# Tokenize multiple texts at once
+result = client.tokenize_batch([
+    "Contact John Doe at john@example.com",
+    "Jane Smith lives in New York",
+    "No sensitive data here"
+])
+
+print(result.total)       # 3
+print(result.succeeded)   # 3
+print(result.failed)      # 0
+
+for item in result.results:
+    print(item["text"], item.get("entities_count", 0))
+```
+
+### With Configuration
+
+```python
+result = client.tokenize_batch(
+    ["Text one with PII", "Text two with PII"],
+    policy="gdpr_eu",
+    entities=["person", "email address"],
+    score_threshold=0.5
+)
+```
+
+### All Batch Methods
+
+```python
+# Detection only
+result = client.detect_batch(["text1", "text2"])
+
+# Redaction
+result = client.redact_batch(["text1", "text2"])
+
+# Masking
+result = client.mask_batch(["text1", "text2"], chars_to_show=4, from_end=True)
+
+# Synthesize with fake data
+result = client.synthesize_batch(["text1", "text2"], language="de")
+
+# Hash
+result = client.hash_batch(["text1", "text2"], hash_type="sha256", hash_length=16)
+
+# Encrypt
+result = client.encrypt_batch(["text1", "text2"], encryption_key="your-key-min-16-chars")
+```
+
+### Handling Partial Failures
+
+Individual texts can fail without affecting the rest of the batch:
+
+```python
+result = client.tokenize_batch(["valid text", "another text"])
+
+for i, item in enumerate(result.results):
+    if "error" in item:
+        print(f"Text {i} failed: {item['error']}")
+    else:
+        print(f"Text {i}: {item['text']}")
+
+print(f"{result.succeeded}/{result.total} succeeded")
+```
+
+### Async Batch
+
+```python
+async with AsyncBlindfold(api_key="your-key") as client:
+    result = await client.tokenize_batch(["text1", "text2"], policy="gdpr_eu")
+```
+
+**Limits:**
+- Maximum 100 texts per batch
+- Each text: max 100,000 characters
+- Shared config (policy, entities, score_threshold) applies to all texts
+
+**Returns:** `BatchResponse` with:
+- `results`: List of individual results (same shape as single-text responses)
+- `total`: Number of texts submitted
+- `succeeded`: Number of successfully processed texts
+- `failed`: Number of failed texts
 
 ## Async Support
 

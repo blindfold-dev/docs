@@ -130,7 +130,7 @@ Anonymize customer support tickets before storing in databases or sending to thi
         ticket_data = {
             "text": result.text,
             "pii_detected": result.entities_count,
-            "entity_types": [e.entity_type for e in result.detected_entities]
+            "entity_types": [e.type for e in result.detected_entities]
         }
 
         return ticket_data
@@ -174,7 +174,7 @@ Anonymize customer support tickets before storing in databases or sending to thi
       const ticketData = {
         text: result.text,
         pii_detected: result.entities_count,
-        entity_types: result.detected_entities.map(e => e.entity_type)
+        entity_types: result.detected_entities.map(e => e.type)
       };
 
       return ticketData;
