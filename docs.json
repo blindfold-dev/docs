@@ -25,6 +25,7 @@
           {
             "group": "Essentials",
             "pages": [
+              "essentials/regions",
               "essentials/policies",
               "essentials/supported-languages",
               "essentials/supported-entities",
