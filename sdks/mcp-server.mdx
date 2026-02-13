@@ -1,0 +1,240 @@
+---
+title: "MCP Server"
+description: "Blindfold MCP Server for AI assistants like Claude, Cursor, and Windsurf"
+---
+
+The Blindfold MCP (Model Context Protocol) Server lets AI assistants like Claude Desktop, Cursor, and Windsurf detect and protect PII directly through tool calls. No code required — the AI assistant handles everything.
+
+## Installation
+
+```bash
+npm install -g @blindfold/mcp-server
+```
+
+## Configuration
+
+The MCP server is configured via environment variables:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `BLINDFOLD_API_KEY` | Yes | Your Blindfold API key |
+| `BLINDFOLD_REGION` | No | Region for data residency: `eu` or `us` |
+| `BLINDFOLD_BASE_URL` | No | Custom API base URL (overrides region) |
+
+See [Regions](/essentials/regions) for data residency details.
+
+## Setup with Claude Desktop
+
+Add to your Claude Desktop configuration file:
+
+<Tabs>
+  <Tab title="macOS">
+    Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "blindfold": {
+          "command": "npx",
+          "args": ["-y", "@blindfold/mcp-server"],
+          "env": {
+            "BLINDFOLD_API_KEY": "your-api-key-here",
+            "BLINDFOLD_REGION": "eu"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Windows">
+    Edit `%APPDATA%\Claude\claude_desktop_config.json`:
+
+    ```json
+    {
+      "mcpServers": {
+        "blindfold": {
+          "command": "npx",
+          "args": ["-y", "@blindfold/mcp-server"],
+          "env": {
+            "BLINDFOLD_API_KEY": "your-api-key-here",
+            "BLINDFOLD_REGION": "eu"
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+Restart Claude Desktop after saving.
+
+## Setup with Cursor
+
+Add to your Cursor MCP settings (`.cursor/mcp.json` in your project or global settings):
+
+```json
+{
+  "mcpServers": {
+    "blindfold": {
+      "command": "npx",
+      "args": ["-y", "@blindfold/mcp-server"],
+      "env": {
+        "BLINDFOLD_API_KEY": "your-api-key-here",
+        "BLINDFOLD_REGION": "eu"
+      }
+    }
+  }
+}
+```
+
+## Setup with Claude Code
+
+Add the MCP server to Claude Code:
+
+```bash
+claude mcp add blindfold -- npx -y @blindfold/mcp-server
+```
+
+Set the required environment variable:
+
+```bash
+export BLINDFOLD_API_KEY=your-api-key-here
+export BLINDFOLD_REGION=eu
+```
+
+## Available Tools
+
+Once connected, the AI assistant has access to these tools:
+
+### blindfold_detect
+
+Detect PII in text without modifying it. Returns detected entities with types, positions, and confidence scores.
+
+**Parameters:**
+- `text` (string) — Text to analyze, OR
+- `texts` (string[]) — Array of texts for batch processing (max 100)
+- `policy` (string, optional) — Detection policy
+- `entities` (string[], optional) — Specific entity types to detect
+- `score_threshold` (number, optional) — Minimum confidence (0.0-1.0)
+
+### blindfold_tokenize
+
+Replace PII with reversible tokens. Returns tokenized text and a mapping to restore values later.
+
+**Parameters:**
+- `text` (string) — Text to tokenize, OR
+- `texts` (string[]) — Array of texts for batch processing (max 100)
+- `policy` (string, optional) — Detection policy
+- `entities` (string[], optional) — Specific entity types to detect
+- `score_threshold` (number, optional) — Minimum confidence (0.0-1.0)
+
+### blindfold_detokenize
+
+Restore original values from tokenized text using a mapping.
+
+**Parameters:**
+- `text` (string) — Text containing tokens
+- `mapping` (object) — Token-to-original mapping from a previous tokenize call
+
+### blindfold_mask
+
+Partially hide PII with masking characters.
+
+**Parameters:**
+- `text` (string) — Text to mask, OR
+- `texts` (string[]) — Array of texts for batch processing (max 100)
+- `policy` (string, optional) — Detection policy
+- `masking_char` (string, optional) — Masking character (default: `*`)
+- `chars_to_show` (number, optional) — Characters to leave visible
+- `from_end` (boolean, optional) — Show visible chars from end (default: true)
+
+### blindfold_redact
+
+Permanently remove PII from text.
+
+**Parameters:**
+- `text` (string) — Text to redact, OR
+- `texts` (string[]) — Array of texts for batch processing (max 100)
+- `policy` (string, optional) — Detection policy
+- `entities` (string[], optional) — Specific entity types to redact
+- `score_threshold` (number, optional) — Minimum confidence (0.0-1.0)
+
+### blindfold_synthesize
+
+Replace PII with realistic fake data. Supports 8 languages.
+
+**Parameters:**
+- `text` (string) — Text to synthesize, OR
+- `texts` (string[]) — Array of texts for batch processing (max 100)
+- `policy` (string, optional) — Detection policy
+- `language` (string, optional) — Language: `en`, `cs`, `de`, `fr`, `es`, `it`, `pl`, `sk`
+
+### blindfold_hash
+
+Replace PII with deterministic one-way hashes.
+
+**Parameters:**
+- `text` (string) — Text to hash, OR
+- `texts` (string[]) — Array of texts for batch processing (max 100)
+- `policy` (string, optional) — Detection policy
+- `hash_type` (string, optional) — Algorithm: `md5`, `sha1`, `sha256` (default)
+- `hash_length` (number, optional) — Truncate hash length
+
+### blindfold_encrypt
+
+Encrypt PII with AES encryption.
+
+**Parameters:**
+- `text` (string) — Text to encrypt, OR
+- `texts` (string[]) — Array of texts for batch processing (max 100)
+- `policy` (string, optional) — Detection policy
+- `encryption_key` (string, optional) — Encryption password
+
+### blindfold_discover
+
+Analyze text samples to discover what types of PII they contain.
+
+**Parameters:**
+- `samples` (string[]) — Array of text samples to analyze
+- `threshold` (number, optional) — Detection confidence threshold
+
+## Usage Examples
+
+Once the MCP server is connected, you can ask your AI assistant things like:
+
+- "Tokenize this text before sending it to the API: John Doe, john@example.com"
+- "Detect what PII is in this customer message"
+- "Redact all personal data from this document using GDPR policy"
+- "Mask the credit card numbers in this text"
+- "What types of PII are in these sample texts?"
+
+The AI assistant will automatically call the appropriate Blindfold tool.
+
+## Troubleshooting
+
+### Server not starting
+
+Make sure `BLINDFOLD_API_KEY` is set:
+
+```bash
+echo $BLINDFOLD_API_KEY
+```
+
+### Invalid region error
+
+Valid regions are `eu` and `us`:
+
+```bash
+export BLINDFOLD_REGION=eu
+```
+
+### Testing manually
+
+Run the server directly to check for errors:
+
+```bash
+BLINDFOLD_API_KEY=your-key npx @blindfold/mcp-server
+```
+
+The server communicates via stdio, so you should see no output if it starts successfully.

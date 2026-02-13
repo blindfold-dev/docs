@@ -1,0 +1,277 @@
+---
+title: "CLI"
+description: "Official Blindfold CLI for detecting and protecting PII from the terminal"
+---
+
+The Blindfold CLI lets you detect and protect PII directly from the terminal. Pipe text, read files, or use batch mode for bulk processing.
+
+## Installation
+
+```bash
+npm install -g @blindfold/cli
+```
+
+Or run without installing:
+
+```bash
+npx @blindfold/cli tokenize "John Doe, john@example.com"
+```
+
+## Configuration
+
+### Set API Key
+
+```bash
+# Save to config file
+blindfold config set-key your-api-key-here
+
+# Or use environment variable
+export BLINDFOLD_API_KEY=your-api-key-here
+```
+
+### Set Region
+
+```bash
+# Save default region
+blindfold config set-region eu
+
+# Or use environment variable
+export BLINDFOLD_REGION=eu
+```
+
+### View Configuration
+
+```bash
+blindfold config show
+```
+
+### Clear Configuration
+
+```bash
+blindfold config clear
+```
+
+Config is stored at `~/.config/blindfold/config.json`.
+
+## Global Options
+
+Every command supports these global options:
+
+| Option | Description |
+|--------|-------------|
+| `--api-key <key>` | API key (overrides env var and config file) |
+| `--base-url <url>` | Custom API base URL |
+| `--region <region>` | API region: `eu` or `us` (overrides env var and config file) |
+| `--json` | Output raw JSON response |
+| `--quiet` | Output only the transformed text |
+
+**Priority order** for API key: `--api-key` flag > `BLINDFOLD_API_KEY` env > config file.
+
+**Priority order** for region: `--region` flag > `BLINDFOLD_REGION` env > config file.
+
+See [Regions](/essentials/regions) for data residency details.
+
+## Commands
+
+### detect
+
+Detect PII in text without modifying it.
+
+```bash
+blindfold detect "Contact John Doe at john@example.com"
+```
+
+### tokenize
+
+Replace PII with reversible tokens.
+
+```bash
+blindfold tokenize "Contact John Doe at john@example.com"
+# Contact <Person_1> at <Email Address_1>
+```
+
+### detokenize
+
+Restore original values from tokenized text.
+
+```bash
+blindfold detokenize "Contact <Person_1>" \
+  --mapping '{"<Person_1>": "John Doe"}'
+# Contact John Doe
+```
+
+### redact
+
+Permanently remove PII from text.
+
+```bash
+blindfold redact "My SSN is 123-45-6789"
+```
+
+### mask
+
+Partially hide PII with masking characters.
+
+```bash
+blindfold mask "Card: 4532-7562-9102-3456"
+# Card: ***************3456
+```
+
+### synthesize
+
+Replace PII with realistic fake data.
+
+```bash
+blindfold synthesize "John Doe lives in New York"
+```
+
+### hash
+
+Replace PII with deterministic one-way hashes.
+
+```bash
+blindfold hash "john@example.com purchased item X"
+```
+
+### encrypt
+
+Encrypt PII with AES encryption.
+
+```bash
+blindfold encrypt "Secret: API key is sk-12345"
+```
+
+### discover
+
+Analyze text samples to discover what types of PII they contain.
+
+```bash
+blindfold discover "John Doe" "john@example.com" "+1-555-1234"
+```
+
+## Common Options
+
+All PII commands (except detokenize and discover) share these options:
+
+| Option | Description |
+|--------|-------------|
+| `-p, --policy <name>` | Detection policy: `basic`, `strict`, `gdpr_eu`, `hipaa_us`, `pci_dss` |
+| `-e, --entities <types>` | Entity types to detect (comma-separated) |
+| `-t, --threshold <n>` | Minimum confidence score (0.0-1.0) |
+| `-f, --file <path>` | Read input from file |
+| `-b, --batch` | Batch mode: process each line as a separate text |
+
+## Using Policies
+
+```bash
+# GDPR-compliant detection
+blindfold tokenize "John Doe, john@example.com" --policy gdpr_eu
+
+# HIPAA compliance
+blindfold redact "Patient Jane Smith, SSN 123-45-6789" --policy hipaa_us
+```
+
+## Region Selection
+
+```bash
+# Process in the US region
+blindfold --region us tokenize "John Doe at john@example.com"
+
+# Process in the EU region
+blindfold --region eu tokenize "John Doe at john@example.com"
+
+# Or set as default
+blindfold config set-region us
+```
+
+## Reading from Files
+
+```bash
+# Single text from file
+blindfold tokenize --file input.txt
+
+# Batch mode: each line is processed separately
+blindfold tokenize --batch --file data.txt
+```
+
+## Reading from stdin
+
+```bash
+# Pipe text
+echo "John Doe, john@example.com" | blindfold tokenize
+
+# Batch from stdin
+cat emails.txt | blindfold tokenize --batch
+```
+
+## JSON Output
+
+```bash
+blindfold tokenize "John at john@example.com" --json
+```
+
+```json
+{
+  "text": "John at <Email Address_1>",
+  "mapping": {
+    "<Email Address_1>": "john@example.com"
+  },
+  "entities_count": 1,
+  "detected_entities": [
+    {
+      "type": "Email Address",
+      "text": "john@example.com",
+      "start": 8,
+      "end": 24,
+      "score": 1.0
+    }
+  ]
+}
+```
+
+## Quiet Mode
+
+Output only the transformed text, useful for scripting:
+
+```bash
+blindfold tokenize "John Doe" --quiet
+# <Person_1>
+```
+
+## Examples
+
+### Tokenize before sending to an LLM
+
+```bash
+# Tokenize user input
+PROTECTED=$(blindfold tokenize "My email is john@example.com" --quiet)
+
+# Send to AI (the AI never sees real PII)
+echo "$PROTECTED" | your-ai-tool
+```
+
+### Batch process a CSV column
+
+```bash
+# Process each line in a file
+blindfold redact --batch --file customer_emails.txt --policy gdpr_eu --json
+```
+
+### Discover PII types in your data
+
+```bash
+blindfold discover \
+  "John Doe, 123-45-6789" \
+  "Card: 4532-7562-9102-3456" \
+  "Patient ID: ABC-123"
+```
+
+## Need Help?
+
+```bash
+# General help
+blindfold --help
+
+# Command-specific help
+blindfold tokenize --help
+```
