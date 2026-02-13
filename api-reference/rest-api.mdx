@@ -11,6 +11,16 @@ The Blindfold REST API provides direct HTTP access to all privacy protection fea
 https://api.blindfold.dev/api/public/v1
 ```
 
+### Regional Endpoints
+
+| Region | Base URL |
+|--------|----------|
+| **EU** (default) | `https://eu-api.blindfold.dev/api/public/v1` |
+| **US** | `https://us-api.blindfold.dev/api/public/v1` |
+| **Global** | `https://api.blindfold.dev/api/public/v1` (routes to EU) |
+
+See [Regions](/essentials/regions) for details on data residency and region selection.
+
 ## Authentication
 
 All API requests require authentication using an API key in the `X-API-Key` header:

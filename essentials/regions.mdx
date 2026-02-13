@@ -1,0 +1,121 @@
+---
+title: "Regions"
+description: "Choose where your data is processed for compliance and latency"
+---
+
+Blindfold operates PII processing nodes in multiple regions. You can select a region to ensure data residency compliance and minimize latency.
+
+## Available Regions
+
+| Region | Endpoint | Location |
+|--------|----------|----------|
+| **EU** (default) | `https://eu-api.blindfold.dev` | Europe |
+| **US** | `https://us-api.blindfold.dev` | United States |
+| **Global** (default) | `https://api.blindfold.dev` | Routes to EU |
+
+<Info>
+  If no region is specified, requests are routed to the EU region by default.
+</Info>
+
+## Selecting a Region
+
+### Python SDK
+
+```python
+from blindfold import Blindfold
+
+# EU region (explicit)
+client = Blindfold(api_key="your-key", region="eu")
+
+# US region
+client = Blindfold(api_key="your-key", region="us")
+```
+
+### JavaScript / TypeScript SDK
+
+```typescript
+import { Blindfold } from '@blindfold/sdk';
+
+// EU region (explicit)
+const client = new Blindfold({ apiKey: 'your-key', region: 'eu' });
+
+// US region
+const client = new Blindfold({ apiKey: 'your-key', region: 'us' });
+```
+
+### CLI
+
+```bash
+# EU region
+blindfold --region eu tokenize "Contact John Doe at john@example.com"
+
+# US region
+blindfold --region us tokenize "Contact John Doe at john@example.com"
+
+# Or set via environment variable
+export BLINDFOLD_REGION=us
+blindfold tokenize "Contact John Doe at john@example.com"
+```
+
+### MCP Server
+
+Set the `BLINDFOLD_REGION` environment variable:
+
+```json
+{
+  "mcpServers": {
+    "blindfold": {
+      "command": "npx",
+      "args": ["-y", "@blindfold/mcp-server"],
+      "env": {
+        "BLINDFOLD_API_KEY": "your-key",
+        "BLINDFOLD_REGION": "us"
+      }
+    }
+  }
+}
+```
+
+### Direct API Calls (cURL)
+
+```bash
+# EU region
+curl -X POST https://eu-api.blindfold.dev/api/public/v1/tokenize \
+  -H "X-API-Key: your-key" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Contact John Doe at john@example.com"}'
+
+# US region
+curl -X POST https://us-api.blindfold.dev/api/public/v1/tokenize \
+  -H "X-API-Key: your-key" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Contact John Doe at john@example.com"}'
+```
+
+## Data Residency
+
+When you select a region, your text data is processed entirely within that region:
+
+- **EU region**: PII detection and processing occurs on EU-based servers.
+- **US region**: PII detection and processing occurs on US-based servers.
+
+<Note>
+  Your API key works across all regions. You do not need separate API keys per region.
+</Note>
+
+## Priority Order
+
+The region is resolved in this order (highest priority first):
+
+1. **Explicit base URL** (`base_url` / `baseUrl` / `--base-url`) - always takes precedence
+2. **Region parameter** (`region` / `--region` / `BLINDFOLD_REGION`)
+3. **Default** - routes to EU via `api.blindfold.dev`
+
+## Default Behavior
+
+| Configuration | Result |
+|--------------|--------|
+| No region, no base URL | Routes to `api.blindfold.dev` (EU) |
+| `region="eu"` | Routes to `eu-api.blindfold.dev` |
+| `region="us"` | Routes to `us-api.blindfold.dev` |
+| `base_url="https://custom.dev"` + `region="us"` | Routes to `https://custom.dev` (base URL wins) |

@@ -25,6 +25,26 @@ client = Blindfold(
 )
 ```
 
+### With Region Selection
+
+```python
+from blindfold import Blindfold
+
+# Process data in the US region
+client = Blindfold(
+    api_key="your-api-key-here",
+    region="us"
+)
+
+# Process data in the EU region (default)
+client = Blindfold(
+    api_key="your-api-key-here",
+    region="eu"
+)
+```
+
+See [Regions](/essentials/regions) for available regions and data residency details.
+
 ### With Custom Configuration
 
 ```python

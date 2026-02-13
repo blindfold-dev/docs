@@ -49,6 +49,26 @@ const client = new Blindfold({
 });
 ```
 
+### With Region Selection
+
+```typescript
+import { Blindfold } from '@blindfold/sdk';
+
+// Process data in the US region
+const client = new Blindfold({
+  apiKey: 'your-api-key-here',
+  region: 'us'
+});
+
+// Process data in the EU region (default)
+const client = new Blindfold({
+  apiKey: 'your-api-key-here',
+  region: 'eu'
+});
+```
+
+See [Regions](/essentials/regions) for available regions and data residency details.
+
 ### With Custom Configuration
 
 ```typescript
