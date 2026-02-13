@@ -45,10 +45,12 @@
             ]
           },
           {
-            "group": "SDKs",
+            "group": "SDKs & Tools",
             "pages": [
               "sdks/python-sdk",
-              "sdks/javascript-sdk"
+              "sdks/javascript-sdk",
+              "sdks/cli",
+              "sdks/mcp-server"
             ]
           },
           {
