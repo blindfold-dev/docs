@@ -1,0 +1,272 @@
+---
+title: "GDPR Compliance"
+description: "How to process EU personal data through AI models while staying GDPR-compliant"
+---
+
+The **General Data Protection Regulation** (GDPR) applies to all EU/EEA residents' data, regardless of where your company is located. When you send personal data to AI providers like OpenAI or Anthropic, you're transferring it to a third-party processor — often outside the EU.
+
+Blindfold solves this by **tokenizing personal data in the EU region** before it reaches any AI provider. The LLM only sees anonymized tokens like `<Person_1>` — never real names, emails, or addresses.
+
+## Key GDPR Requirements for AI Applications
+
+<AccordionGroup>
+  <Accordion title="Data Minimization (Article 5(1)(c))" icon="compress">
+    **Requirement**: Only process the minimum personal data necessary for the purpose.
+
+    **Risk with AI**: Sending full user messages to an LLM means the AI provider processes _all_ personal data in the text — far more than necessary.
+
+    **With Blindfold**: PII is replaced with tokens before the AI call. The LLM only receives what it needs to generate a useful response, without real personal data.
+  </Accordion>
+
+  <Accordion title="Purpose Limitation (Article 5(1)(b))" icon="bullseye">
+    **Requirement**: Data collected for one purpose must not be used for another.
+
+    **Risk with AI**: AI providers may log, train on, or analyze the personal data you send them.
+
+    **With Blindfold**: Since only tokens reach the AI provider, there's no real personal data to repurpose.
+  </Accordion>
+
+  <Accordion title="Cross-Border Transfers (Articles 44-49)" icon="plane">
+    **Requirement**: Personal data transfers outside the EU/EEA require adequate safeguards (Schrems II ruling).
+
+    **Risk with AI**: Most LLM providers (OpenAI, Anthropic) process data in the US, triggering Chapter V transfer rules.
+
+    **With Blindfold**: Use the EU region (`region="eu"`) — PII is tokenized on EU servers. Only anonymized tokens cross borders, which are no longer personal data under GDPR.
+  </Accordion>
+
+  <Accordion title="Right to be Forgotten (Article 17)" icon="trash">
+    **Requirement**: Data subjects can request deletion of their personal data.
+
+    **Risk with AI**: Data sent to AI providers may be retained in their logs and training data — deletion is impossible.
+
+    **With Blindfold**: No real personal data reaches the AI provider. For your own records, use `redact()` to permanently remove PII.
+  </Accordion>
+
+  <Accordion title="Data Processing Agreements (Article 28)" icon="file-contract">
+    **Requirement**: Formal agreements must exist between data controllers and processors.
+
+    **With Blindfold**: Since tokenized data is no longer personal data, your DPA requirements with AI providers are simplified. Blindfold offers its own DPA — contact hello@blindfold.dev.
+  </Accordion>
+</AccordionGroup>
+
+## How Blindfold Maps to GDPR
+
+| GDPR Article | Requirement | Blindfold Feature |
+|---|---|---|
+| Art. 5(1)(c) | Data minimization | Tokenization removes PII before AI calls |
+| Art. 5(1)(b) | Purpose limitation | AI provider never receives real data |
+| Art. 17 | Right to erasure | `redact()` permanently removes PII |
+| Art. 25 | Data protection by design | SDK-level PII protection in your pipeline |
+| Art. 30 | Records of processing | Audit logs track all PII operations |
+| Art. 32 | Security of processing | `encrypt()` with AES-256 for storage |
+| Art. 44-49 | Cross-border transfers | EU region ensures PII stays in Europe |
+
+## EU Region + `gdpr_eu` Policy
+
+### Region Selection
+
+Use the EU region to ensure personal data is processed on EU-based servers:
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+
+client = Blindfold(
+    api_key="your-api-key",
+    region="eu",  # PII processed in the EU
+)
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+
+const client = new Blindfold({
+  apiKey: 'your-api-key',
+  region: 'eu',  // PII processed in the EU
+});
+```
+</CodeGroup>
+
+### What `gdpr_eu` Detects
+
+The `gdpr_eu` policy covers all GDPR Article 4(1) personal data types:
+
+| Entity Type | Examples |
+|---|---|
+| Person | Hans Mueller, Marie Dupont |
+| Email Address | hans.mueller@example.de |
+| Phone Number | +49 170 1234567 |
+| Address | Berliner Str. 42, 10115 Berlin |
+| IBAN | DE89 3704 0044 0532 0130 00 |
+| National ID Number | Country-specific national IDs |
+| Passport Number | C01X00T47 |
+| Tax ID | Country-specific tax identifiers |
+| Date of Birth | 15/03/1985 |
+| Credit Card Number | 4532-7562-9102-3456 |
+| Bank Account Number | Account numbers |
+| IP Address | 192.168.1.100 |
+| Health Insurance Number | Insurance identifiers |
+| Medical Condition | Diagnoses, symptoms |
+
+## Code Examples
+
+### Tokenize Before Sending to OpenAI
+
+The most common pattern: protect EU user data before any AI API call.
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+from openai import OpenAI
+
+blindfold = Blindfold(api_key="your-key", region="eu")
+openai = OpenAI(api_key="your-openai-key")
+
+user_message = (
+    "Hi, my name is Hans Mueller and I need help with my subscription. "
+    "My email is hans.mueller@example.de, IBAN DE89 3704 0044 0532 0130 00."
+)
+
+# Step 1: Tokenize PII in the EU
+tokenized = blindfold.tokenize(user_message, policy="gdpr_eu")
+# → "Hi, my name is <Person_1> and I need help with my subscription.
+#    My email is <Email Address_1>, IBAN <IBAN_1>."
+
+# Step 2: Send only tokens to OpenAI
+completion = openai.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": tokenized.text}],
+)
+ai_response = completion.choices[0].message.content
+
+# Step 3: Restore real values in the response
+restored = blindfold.detokenize(ai_response, tokenized.mapping)
+print(restored.text)
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+import OpenAI from 'openai';
+
+const blindfold = new Blindfold({ apiKey: 'your-key', region: 'eu' });
+const openai = new OpenAI({ apiKey: 'your-openai-key' });
+
+const userMessage =
+  'Hi, my name is Hans Mueller. My email is hans.mueller@example.de, ' +
+  'IBAN DE89 3704 0044 0532 0130 00.';
+
+// Step 1: Tokenize PII in the EU
+const tokenized = await blindfold.tokenize(userMessage, { policy: 'gdpr_eu' });
+
+// Step 2: Send only tokens to OpenAI
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4o-mini',
+  messages: [{ role: 'user', content: tokenized.text }],
+});
+const aiResponse = completion.choices[0].message.content;
+
+// Step 3: Restore real values
+const restored = await blindfold.detokenize(aiResponse, tokenized.mapping);
+console.log(restored.text);
+```
+</CodeGroup>
+
+### Right to be Forgotten (Article 17)
+
+When a data subject requests deletion, use `redact()` to permanently remove their PII:
+
+```python
+# User requests data deletion under GDPR Art. 17
+user_records = fetch_user_records(user_id)
+
+for record in user_records:
+    redacted = blindfold.redact(record.content, policy="gdpr_eu")
+    update_record(record.id, redacted.text)
+    # "Hans Mueller emailed about billing"
+    # → "[REDACTED] emailed about billing"
+
+# PII permanently removed — compliant with Right to be Forgotten
+```
+
+### Batch Processing Support Tickets
+
+Process multiple EU support tickets in a single API call:
+
+```python
+tickets = [
+    "Customer Marie Dupont (marie.dupont@example.fr) reports billing issue.",
+    "Jan Novak (jan.novak@example.cz) requests data export under GDPR Art. 15.",
+    "Sofia Garcia, sofia.garcia@example.es, cannot access her account.",
+]
+
+# Tokenize all tickets at once
+batch = blindfold.tokenize_batch(tickets, policy="gdpr_eu")
+
+for i, result in enumerate(batch.results):
+    print(f"Ticket {i+1}: {result['text']}")
+    print(f"  PII removed: {result['entities_count']} entities")
+```
+
+## Data Residency
+
+When you use `region="eu"`:
+
+- **Processing**: PII detection runs on EU-based servers at `eu-api.blindfold.dev`
+- **No cross-border transfer**: Personal data never leaves the EU during processing
+- **Tokens are not personal data**: The anonymized output (`<Person_1>`) can safely cross borders
+- **Your API key works globally**: No separate keys needed per region
+
+See [Regions](/essentials/regions) for full details on data residency.
+
+## Audit Trail for DPAs
+
+Every Blindfold API call is logged in your audit trail, providing documentation for Data Processing Agreements:
+
+- **What was detected**: Entity types and counts per request
+- **When**: Timestamp of every PII operation
+- **Which policy**: The detection policy used
+- **Processing region**: EU or US
+
+Export audit logs from the [Blindfold Dashboard](https://app.blindfold.dev) for DPA compliance reviews.
+
+## Cookbook Example
+
+For a complete, runnable GDPR + OpenAI integration, see the cookbook:
+
+<Card title="GDPR + OpenAI Python Example" icon="github" href="https://github.com/blindfold-dev/blindfold-cookbook/tree/main/examples/gdpr-openai-python">
+  Full working example with EU region, `gdpr_eu` policy, single queries, and batch ticket processing.
+</Card>
+
+## GDPR Compliance Checklist
+
+Use this checklist when integrating Blindfold for GDPR compliance:
+
+<Steps>
+  <Step title="Use the EU region">
+    Set `region="eu"` in your SDK client to ensure PII is processed in Europe.
+  </Step>
+
+  <Step title="Apply the gdpr_eu policy">
+    Use `policy="gdpr_eu"` on all tokenize/redact/encrypt calls handling EU data.
+  </Step>
+
+  <Step title="Tokenize before AI calls">
+    Always call `blindfold.tokenize()` before sending text to any LLM provider.
+  </Step>
+
+  <Step title="Implement Right to be Forgotten">
+    Use `blindfold.redact()` to permanently remove PII when data subjects request deletion.
+  </Step>
+
+  <Step title="Sign a DPA with Blindfold">
+    Contact hello@blindfold.dev to sign a Data Processing Agreement.
+  </Step>
+
+  <Step title="Review audit logs regularly">
+    Export audit logs from the dashboard for compliance documentation.
+  </Step>
+
+  <Step title="Document your data flows">
+    Record where PII enters your system, how it's protected, and where anonymized data is sent.
+  </Step>
+</Steps>

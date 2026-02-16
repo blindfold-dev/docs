@@ -18,8 +18,17 @@
             "pages": [
               "index",
               "quickstart",
-              "getting-started",
-              "compliance"
+              "getting-started"
+            ]
+          },
+          {
+            "group": "Compliance",
+            "pages": [
+              "compliance",
+              "compliance/gdpr",
+              "compliance/hipaa",
+              "compliance/pci-dss",
+              "compliance/eu-ai-act"
             ]
           },
           {

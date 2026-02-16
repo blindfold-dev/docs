@@ -1,208 +1,46 @@
 ---
 title: "Compliance & Legal"
-description: "How Blindfold helps you meet regulatory requirements"
+description: "How Blindfold helps you meet GDPR, HIPAA, PCI DSS, and EU AI Act requirements"
 ---
 
-## Why Blindfold Matters
+## Why Compliance Matters for AI
 
-When using AI services like OpenAI, Anthropic, or other LLM providers, you're often sending user data to third-party systems. This creates significant **legal and compliance risks** under modern privacy regulations.
+When using AI services like OpenAI, Anthropic, or other LLM providers, you're sending user data to third-party systems. This creates significant **legal and compliance risks** under modern privacy regulations.
 
-**Blindfold protects you** by ensuring sensitive data never reaches AI providers in plain text.
+**Blindfold protects you** by ensuring sensitive data never reaches AI providers in plain text. PII is detected and anonymized _before_ it leaves your infrastructure.
 
-## EU AI Act
-
-The **EU AI Act** (effective 2024-2026) is the world's first comprehensive AI regulation. It requires organizations to:
-
-### Key Requirements
-
-<AccordionGroup>
-  <Accordion title="Data Minimization" icon="compress">
-    **Requirement**: Only collect and process the minimum data necessary.
-
-    **Risk**: Sending full user conversations to AI providers violates this principle.
-
-    **Blindfold Solution**: Tokenize or redact PII before sending to AI, keeping only necessary context.
-
-    ```python
-    # Compliant approach
-    protected = client.tokenize(user_message)
-    ai_response = openai.chat(protected.text)  # No PII sent
-    ```
-  </Accordion>
-
-  <Accordion title="Third-Party Data Sharing" icon="share-nodes">
-    **Requirement**: Strict controls on sharing personal data with third parties.
-
-    **Risk**: Every AI API call shares user data with the provider (OpenAI, Anthropic, etc.).
-
-    **Blindfold Solution**: AI providers never see real PII, only anonymized versions.
-  </Accordion>
-
-  <Accordion title="Transparency & Documentation" icon="file-lines">
-    **Requirement**: Document all data processing activities.
-
-    **Risk**: Must prove data protection measures are in place.
-
-    **Blindfold Solution**: Audit logs show exactly what PII was detected and protected.
-  </Accordion>
-
-  <Accordion title="High-Risk AI Systems" icon="triangle-exclamation">
-    **Requirement**: Extra controls for AI systems that process sensitive data.
-
-    **Risk**: Healthcare, finance, and HR AI applications face stricter rules.
-
-    **Blindfold Solution**: Automatic PII detection and removal meets high-risk requirements.
-  </Accordion>
-</AccordionGroup>
-
-## GDPR Compliance
-
-The **General Data Protection Regulation** (GDPR) applies to all EU residents' data, regardless of where your company is located.
-
-### Critical GDPR Requirements
-
-| Requirement | Without Blindfold | With Blindfold |
-|-------------|-------------------|----------------|
-| **Data Minimization** | Full user data sent to AI | Only anonymized data sent |
-| **Purpose Limitation** | AI provider logs everything | PII never reaches provider |
-| **Right to be Forgotten** | Data in AI provider logs | Use redaction for permanent removal |
-| **Data Processing Agreement** | Complex agreements needed | Simplified - no PII shared |
-| **Data Breach Notification** | Must notify if AI provider breached | Lower risk - no real PII exposed |
-
-### Right to be Forgotten
-
-GDPR requires you to delete user data on request:
-
-```python
-# Redact user data permanently
-user_data = fetch_user_records(user_id)
-for record in user_data:
-    redacted = client.redact(record.content)
-    update_record(record.id, redacted.text)
-
-# PII permanently removed, compliant with GDPR
+```
+User message                    Blindfold                        AI Provider
+"Email hans@example.de"  →  "Email <Email Address_1>"  →  AI only sees tokens
+                                                              ↓
+"I'll email hans@..."    ←   Detokenize with mapping   ←  "I'll email <Email Address_1>"
 ```
 
-## HIPAA Compliance (Healthcare)
-
-The **Health Insurance Portability and Accountability Act** (HIPAA) protects medical information in the United States.
-
-### HIPAA Requirements
+## Regulation Guides
 
 <CardGroup cols={2}>
-  <Card title="Encryption at Rest" icon="lock">
-    Protected Health Information (PHI) must be encrypted when stored.
+  <Card title="GDPR" icon="globe" href="/compliance/gdpr">
+    EU data protection for AI applications. Use the **EU region** and `gdpr_eu` policy to keep European personal data compliant.
   </Card>
-  <Card title="Encryption in Transit" icon="shield">
-    PHI must be encrypted during transmission.
+  <Card title="HIPAA" icon="heart-pulse" href="/compliance/hipaa">
+    Protect PHI in healthcare AI. Use the **US region** and `hipaa_us` policy to meet HIPAA de-identification requirements.
   </Card>
-  <Card title="Access Controls" icon="user-lock">
-    Strict controls on who can access PHI.
+  <Card title="PCI DSS" icon="credit-card" href="/compliance/pci-dss">
+    Secure cardholder data in payment AI. Use the `pci_dss` policy to mask, encrypt, and redact card numbers.
   </Card>
-  <Card title="Audit Logs" icon="list-check">
-    Track all access to PHI.
+  <Card title="EU AI Act" icon="scale-balanced" href="/compliance/eu-ai-act">
+    Meet the world's first comprehensive AI regulation. Data minimization, transparency, and high-risk system requirements.
   </Card>
 </CardGroup>
 
-### How Blindfold Helps
+## Quick Comparison
 
-```python
-# Encrypt medical records
-patient_record = "Patient John Doe, SSN: 123-45-6789, Diagnosis: diabetes"
-
-encrypted = client.encrypt(
-    patient_record,
-    encryption_key=HIPAA_ENCRYPTION_KEY
-)
-
-# Store encrypted - HIPAA compliant
-secure_db.save(encrypted.text)
-```
-
-**Key Benefits:**
-- AES-256 encryption meets HIPAA standards
-- Automatic PHI detection (names, SSNs, medical IDs)
-- Audit logs for compliance reporting
-- Secure key management
-
-## PCI-DSS (Payment Card Industry)
-
-If you handle credit card data, **PCI-DSS** compliance is mandatory.
-
-### Requirements
-
-- Protect cardholder data
-- Mask card numbers when displayed
-- Encrypt card data in storage
-- Log all access to card data
-
-### Blindfold for PCI-DSS
-
-```python
-# Mask credit cards for display (PCI-DSS compliant)
-display_text = client.mask(
-    "Card: 4532-7562-9102-3456",
-    chars_to_show=4,
-    from_end=True
-)
-# Output: "Card: ***************3456"
-
-# Encrypt for storage
-encrypted = client.encrypt(
-    card_data,
-    encryption_key=PCI_KEY
-)
-```
-
-## Industry-Specific Regulations
-
-Different industries have specific requirements:
-
-<Tabs>
-  <Tab title="Healthcare">
-    **Regulations**: HIPAA (US), GDPR (EU), PIPEDA (Canada)
-
-    **Data Types**: Patient names, SSNs, medical records, diagnoses
-
-    **Blindfold Methods**:
-    - **Encryption** for storage
-    - **Tokenization** for AI processing
-    - **Redaction** for audit logs
-  </Tab>
-
-  <Tab title="Financial Services">
-    **Regulations**: PCI-DSS, GDPR, SOX, GLBA
-
-    **Data Types**: Credit cards, bank accounts, SSNs, financial records
-
-    **Blindfold Methods**:
-    - **Masking** for UI display
-    - **Encryption** for storage
-    - **Hashing** for analytics
-  </Tab>
-
-  <Tab title="Human Resources">
-    **Regulations**: GDPR, EEOC, FCRA
-
-    **Data Types**: Employee SSNs, salaries, performance reviews
-
-    **Blindfold Methods**:
-    - **Tokenization** for AI analysis
-    - **Redaction** for public records
-    - **Encryption** for storage
-  </Tab>
-
-  <Tab title="Legal">
-    **Regulations**: GDPR, attorney-client privilege, bar rules
-
-    **Data Types**: Client names, case details, SSNs
-
-    **Blindfold Methods**:
-    - **Redaction** for public filings
-    - **Tokenization** for AI legal research
-    - **Encryption** for storage
-  </Tab>
-</Tabs>
+| Regulation | Policy | Region | Key Focus |
+|---|---|---|---|
+| **GDPR** | `gdpr_eu` | EU | Personal data of EU residents — names, emails, IBANs, addresses |
+| **HIPAA** | `hipaa_us` | US | Protected Health Information — 18 identifiers including SSNs, MRNs |
+| **PCI DSS** | `pci_dss` | Any | Cardholder data — card numbers, CVVs, expiry dates |
+| **EU AI Act** | `gdpr_eu` + `strict` | EU | Data minimization, transparency, high-risk AI systems |
 
 ## Common Compliance Questions
 
@@ -228,12 +66,13 @@ Different industries have specific requirements:
   </Accordion>
 
   <Accordion title="Where is data processed and stored?" icon="globe">
-    - API processing: EU and US regions available. Select via SDK `region` parameter or regional endpoints.
-    - Data retention: We don't store your text data
-    - Logs: Audit logs retained for 90 days
-    - Backups: Encrypted at rest
+    - **EU region**: PII processed on EU-based servers (`eu-api.blindfold.dev`)
+    - **US region**: PII processed on US-based servers (`us-api.blindfold.dev`)
+    - **Data retention**: We don't store your text data
+    - **Audit logs**: Retained for 90 days
+    - **Backups**: Encrypted at rest
 
-    See [Regions](/essentials/regions) for regional endpoint details and data residency guarantees.
+    See [Regions](/essentials/regions) for details.
   </Accordion>
 
   <Accordion title="What happens if there's a data breach?" icon="shield-exclamation">
@@ -247,56 +86,14 @@ Different industries have specific requirements:
   <Accordion title="How do I prove compliance to auditors?" icon="clipboard-check">
     Blindfold provides:
 
-    1. **Audit logs**: Shows all PII detection and anonymization
-    2. **API documentation**: Proof of data protection implementation
-    3. **DPA/BAA**: Legal agreements for GDPR/HIPAA
-    4. **Integration documentation**: Shows data flow with PII protection
+    1. **Audit logs** — every PII detection and anonymization is logged
+    2. **API documentation** — proof of data protection implementation
+    3. **DPA/BAA** — legal agreements for GDPR/HIPAA
+    4. **Dashboard reports** — export audit logs for compliance reviews
 
-    Export audit logs from the dashboard for compliance reports.
+    Export audit logs from the [dashboard](https://app.blindfold.dev) for compliance reports.
   </Accordion>
 </AccordionGroup>
-
-## Best Practices
-
-### 1. Use the Right Method for Your Use Case
-
-```python
-# For AI processing (reversible)
-client.tokenize(text)
-
-# For permanent removal (GDPR Right to be Forgotten)
-client.redact(text)
-
-# For storage (encrypted)
-client.encrypt(text, encryption_key=KEY)
-
-# For analytics (non-reversible tracking)
-client.hash(text)
-```
-
-### 2. Document Your Data Flows
-
-Create documentation showing:
-- Where PII enters your system
-- How it's protected (tokenization, encryption, etc.)
-- Where it's sent (AI providers only see anonymized data)
-- How long it's retained
-- How it's deleted (right to be forgotten)
-
-### 3. Regular Compliance Reviews
-
-- **Monthly**: Review audit logs for unusual patterns
-- **Quarterly**: Test PII detection accuracy
-- **Annually**: Update privacy policies and DPAs
-- **When regulations change**: Adjust protection methods
-
-### 4. Staff Training
-
-Ensure your team understands:
-- Why PII protection is critical
-- How to use Blindfold correctly
-- When to use each protection method
-- How to respond to data subject requests
 
 ## Getting Started with Compliance
 
@@ -305,23 +102,20 @@ Ensure your team understands:
     Create your account at [app.blindfold.dev](https://app.blindfold.dev)
   </Step>
 
-  <Step title="Request compliance documents">
-    Email hello@blindfold.dev for:
-    - Data Processing Agreement (DPA)
-    - Business Associate Agreement (BAA)
-    - Security documentation
+  <Step title="Choose your region">
+    Select EU or US region based on your data residency requirements. See [Regions](/essentials/regions).
+  </Step>
+
+  <Step title="Select a compliance policy">
+    Use `gdpr_eu`, `hipaa_us`, or `pci_dss` depending on your regulation. See [Policies](/essentials/policies).
   </Step>
 
   <Step title="Integrate Blindfold">
-    Follow the [Quick Start guide](/quickstart) to integrate Blindfold into your application.
+    Follow the [Quick Start guide](/quickstart) to add Blindfold to your application.
   </Step>
 
-  <Step title="Configure entity detection">
-    Set up entity types relevant to your industry in the dashboard.
-  </Step>
-
-  <Step title="Test and monitor">
-    Test with sample data and monitor audit logs to ensure proper PII protection.
+  <Step title="Request compliance documents">
+    Email hello@blindfold.dev for DPA, BAA, or security documentation.
   </Step>
 </Steps>
 
@@ -337,8 +131,8 @@ Ensure your team understands:
   <Card title="Documentation" icon="book" href="/quickstart">
     Read our technical documentation
   </Card>
-  <Card title="Schedule Demo" icon="calendar" href="https://app.blindfold.dev">
-    Book a compliance consultation call
+  <Card title="Cookbook Examples" icon="code" href="https://github.com/blindfold-dev/blindfold-cookbook">
+    Working code examples for GDPR and HIPAA
   </Card>
 </CardGroup>
 

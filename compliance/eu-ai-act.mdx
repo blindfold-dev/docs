@@ -1,0 +1,258 @@
+---
+title: "EU AI Act Compliance"
+description: "Meet the world's first comprehensive AI regulation requirements"
+---
+
+The **EU AI Act** is the world's first comprehensive AI regulation, applying to any AI system that operates in the EU or affects EU citizens. It establishes requirements for data minimization, transparency, and documentation — with stricter rules for high-risk AI systems.
+
+Blindfold helps you comply by ensuring **personal data is removed from AI inputs**, providing an **audit trail** of all data processing, and supporting **EU data residency**.
+
+## Timeline
+
+| Date | Milestone |
+|---|---|
+| Aug 2024 | EU AI Act enters into force |
+| Feb 2025 | Prohibited AI practices apply |
+| Aug 2025 | General-purpose AI rules + governance |
+| Aug 2026 | High-risk AI system obligations (Annex III) |
+| Aug 2027 | Full enforcement for all AI systems |
+
+## Risk Categories
+
+The EU AI Act classifies AI systems by risk level:
+
+<CardGroup cols={2}>
+  <Card title="Unacceptable Risk" icon="ban">
+    **Banned.** Social scoring, real-time biometric surveillance, manipulative AI. These systems are prohibited.
+  </Card>
+  <Card title="High Risk" icon="triangle-exclamation">
+    **Strict requirements.** AI in healthcare, finance, HR, education, law enforcement. Must meet transparency, documentation, and data governance standards.
+  </Card>
+  <Card title="Limited Risk" icon="circle-info">
+    **Transparency obligations.** Chatbots, AI-generated content. Must disclose AI involvement to users.
+  </Card>
+  <Card title="Minimal Risk" icon="check">
+    **No requirements.** Spam filters, AI in games. Most AI applications fall here.
+  </Card>
+</CardGroup>
+
+## Key Requirements for AI Systems
+
+<AccordionGroup>
+  <Accordion title="Data Minimization (Article 10)" icon="compress">
+    **Requirement**: Training and input data must be relevant, representative, and limited to what is necessary.
+
+    **Risk**: Sending full user conversations to LLMs includes far more personal data than necessary for the AI task.
+
+    **With Blindfold**: Tokenize PII before AI calls. The LLM receives only the information needed for its task — personal identifiers are replaced with anonymous tokens.
+
+    ```python
+    # Data minimization: only anonymized context reaches the AI
+    tokenized = blindfold.tokenize(user_message, policy="gdpr_eu")
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": tokenized.text}],
+    )
+    ```
+  </Accordion>
+
+  <Accordion title="Transparency (Article 13)" icon="eye">
+    **Requirement**: AI systems must be transparent about how they process data. Users must be informed when interacting with AI.
+
+    **With Blindfold**: Audit logs document exactly what personal data was detected, what was anonymized, and what was sent to the AI provider. This creates a clear record for transparency requirements.
+  </Accordion>
+
+  <Accordion title="Documentation & Record-Keeping (Article 11-12)" icon="file-lines">
+    **Requirement**: High-risk AI systems must maintain technical documentation and log all operations.
+
+    **With Blindfold**: Every API call is logged with entity types detected, policy used, timestamp, and region. Export these logs for regulatory documentation.
+  </Accordion>
+
+  <Accordion title="Data Governance (Article 10)" icon="database">
+    **Requirement**: Data used in AI systems must meet quality, relevance, and privacy standards.
+
+    **With Blindfold**: The `detect()` method lets you audit text for personal data without modifying it — useful for data governance reviews and quality checks.
+
+    ```python
+    # Audit data for PII without modifying it
+    detection = blindfold.detect(training_data)
+    for entity in detection.detected_entities:
+        print(f"Found {entity.type}: {entity.text}")
+    ```
+  </Accordion>
+
+  <Accordion title="Human Oversight (Article 14)" icon="user-check">
+    **Requirement**: High-risk AI systems must allow human oversight and intervention.
+
+    **With Blindfold**: Tokenization is reversible — humans can always see the real data via `detokenize()`, while the AI only works with anonymized versions. This maintains human oversight of the actual information.
+  </Accordion>
+</AccordionGroup>
+
+## How Blindfold Maps to the EU AI Act
+
+| AI Act Requirement | Article | Blindfold Feature |
+|---|---|---|
+| Data minimization | Art. 10 | `tokenize()` removes PII before AI input |
+| Transparency | Art. 13 | Audit logs document all PII processing |
+| Documentation | Art. 11-12 | Export audit logs for regulatory records |
+| Data governance | Art. 10 | `detect()` audits data for PII |
+| Human oversight | Art. 14 | `detokenize()` restores data for human review |
+| Data protection by design | Art. 10 | SDK-level PII protection in your pipeline |
+
+## High-Risk AI Systems
+
+The EU AI Act imposes stricter requirements on AI systems in these domains:
+
+<Tabs>
+  <Tab title="Healthcare">
+    **AI Act Classification**: High-risk (Annex III, Section 5)
+
+    **Requirements**: Robust data governance, thorough testing, documentation of training data, continuous monitoring.
+
+    **Blindfold Approach**:
+    - Use `region="us"` or `region="eu"` depending on patient location
+    - Apply `hipaa_us` (US patients) or `gdpr_eu` (EU patients) policy
+    - Tokenize all PHI before clinical AI tools
+    - Maintain audit trail for regulatory inspections
+
+    See [HIPAA Compliance](/compliance/hipaa) for healthcare-specific guidance.
+  </Tab>
+
+  <Tab title="Financial Services">
+    **AI Act Classification**: High-risk (Annex III, Section 5)
+
+    **Requirements**: Transparency in AI-driven credit scoring, fraud detection, and insurance underwriting. Data quality and bias monitoring.
+
+    **Blindfold Approach**:
+    - Apply `pci_dss` policy for payment data
+    - Apply `gdpr_eu` policy for customer personal data
+    - Redact financial PII from AI training datasets
+    - Encrypt customer data at rest
+
+    See [PCI DSS Compliance](/compliance/pci-dss) for payment-specific guidance.
+  </Tab>
+
+  <Tab title="Human Resources">
+    **AI Act Classification**: High-risk (Annex III, Section 4)
+
+    **Requirements**: AI used in recruitment, performance evaluation, or workforce management must be transparent, unbiased, and documented.
+
+    **Blindfold Approach**:
+    - Apply `gdpr_eu` policy to anonymize candidate data
+    - Tokenize before AI screening tools to prevent bias on names/addresses
+    - Maintain audit trail of all AI-assisted HR decisions
+    - Redact PII from aggregated workforce analytics
+  </Tab>
+
+  <Tab title="Education">
+    **AI Act Classification**: High-risk (Annex III, Section 3)
+
+    **Requirements**: AI in education (grading, admissions, learning analytics) must be transparent and fair.
+
+    **Blindfold Approach**:
+    - Tokenize student PII before AI grading or analytics
+    - Apply `gdpr_eu` policy for EU student data
+    - Maintain audit trail for fairness reviews
+  </Tab>
+</Tabs>
+
+## Code Examples
+
+### Data Minimization for AI Calls
+
+```python
+from blindfold import Blindfold
+from openai import OpenAI
+
+blindfold = Blindfold(api_key="your-key", region="eu")
+openai_client = OpenAI(api_key="your-openai-key")
+
+# Customer support message with personal data
+message = (
+    "Hi, I'm Marie Dupont (marie.dupont@example.fr). "
+    "I was charged twice on 02/10/2026 for order #12345."
+)
+
+# Remove personal data before AI processing (data minimization)
+tokenized = blindfold.tokenize(message, policy="gdpr_eu")
+# → "Hi, I'm <Person_1> (<Email Address_1>).
+#    I was charged twice on 02/10/2026 for order #12345."
+
+# AI only processes what it needs — no real personal data
+completion = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": tokenized.text}],
+)
+
+# Restore for the human agent
+restored = blindfold.detokenize(
+    completion.choices[0].message.content,
+    tokenized.mapping,
+)
+```
+
+### Audit Data for PII (Data Governance)
+
+Use `detect()` to check datasets for personal data without modifying them:
+
+```python
+# Audit training data for PII before using in AI systems
+training_samples = [
+    "Customer feedback: Great service from the team!",
+    "John Smith at john@example.com reported a bug on 02/15.",
+    "Order #98765 shipped to Berlin on schedule.",
+]
+
+for sample in training_samples:
+    detection = blindfold.detect(sample, policy="gdpr_eu")
+    if detection.entities_count > 0:
+        print(f"PII found in: {sample[:50]}...")
+        for entity in detection.detected_entities:
+            print(f"  - {entity.type}: {entity.text}")
+```
+
+## Relationship with GDPR
+
+The EU AI Act and GDPR are complementary:
+
+| Aspect | GDPR | EU AI Act |
+|---|---|---|
+| **Focus** | Personal data protection | AI system safety and transparency |
+| **Scope** | Any personal data processing | AI systems operating in the EU |
+| **Data requirements** | Minimize collection | Minimize AI inputs + ensure quality |
+| **Documentation** | Processing records (Art. 30) | Technical documentation (Art. 11) |
+| **Oversight** | Data Protection Officers | AI governance structures |
+
+**Using Blindfold for both**: Apply the `gdpr_eu` policy with the EU region to satisfy both regulations simultaneously. GDPR protects the personal data, while the audit trail satisfies AI Act transparency requirements.
+
+## EU AI Act Compliance Checklist
+
+<Steps>
+  <Step title="Classify your AI system">
+    Determine if your AI system is high-risk, limited-risk, or minimal-risk under the EU AI Act.
+  </Step>
+
+  <Step title="Minimize data in AI inputs">
+    Use `blindfold.tokenize()` to remove personal data before AI processing.
+  </Step>
+
+  <Step title="Use the EU region">
+    Set `region="eu"` for data processed in Europe — required for GDPR alignment.
+  </Step>
+
+  <Step title="Implement audit logging">
+    Use Blindfold's audit trail to document what PII was detected and anonymized.
+  </Step>
+
+  <Step title="Audit training data">
+    Use `blindfold.detect()` to scan training datasets for personal data.
+  </Step>
+
+  <Step title="Document your data pipeline">
+    Record how data flows through your system, where PII is detected, and how it's protected.
+  </Step>
+
+  <Step title="Review regularly">
+    As the EU AI Act phases in (through 2027), review your compliance posture with each milestone.
+  </Step>
+</Steps>

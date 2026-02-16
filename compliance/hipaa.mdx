@@ -1,0 +1,335 @@
+---
+title: "HIPAA Compliance"
+description: "Protect PHI in healthcare AI applications with US data residency"
+---
+
+The **Health Insurance Portability and Accountability Act** (HIPAA) protects medical information in the United States. Any AI application that processes Protected Health Information (PHI) must comply with HIPAA's Privacy and Security Rules.
+
+Blindfold helps by **tokenizing PHI in the US region** before it reaches any AI provider. The LLM only sees anonymized tokens — never real patient names, SSNs, or medical records.
+
+## Who Must Comply
+
+<CardGroup cols={2}>
+  <Card title="Covered Entities" icon="hospital">
+    Healthcare providers, health plans, and healthcare clearinghouses that transmit health information electronically.
+  </Card>
+  <Card title="Business Associates" icon="handshake">
+    Any organization that creates, receives, maintains, or transmits PHI on behalf of a covered entity — including AI/software vendors.
+  </Card>
+</CardGroup>
+
+If your AI application processes patient data for a healthcare organization, HIPAA likely applies to you.
+
+## The 18 HIPAA Identifiers
+
+HIPAA's Safe Harbor method (45 CFR § 164.514(b)(2)) requires removal of 18 types of identifiers for de-identification. Blindfold's `hipaa_us` policy covers them:
+
+| # | Identifier | Blindfold Entity Type | Covered |
+|---|---|---|---|
+| 1 | Names | Person | ✅ |
+| 2 | Geographic subdivisions (smaller than state) | Address | ✅ |
+| 3 | Dates (except year) related to individual | Date of Birth | ✅ |
+| 4 | Phone numbers | Phone Number | ✅ |
+| 5 | Fax numbers | Phone Number | ✅ |
+| 6 | Email addresses | Email Address | ✅ |
+| 7 | Social Security Numbers | Social Security Number | ✅ |
+| 8 | Medical Record Numbers | Medical Record Number | ✅ |
+| 9 | Health plan beneficiary numbers | Health Insurance ID Number | ✅ |
+| 10 | Account numbers | Bank Account Number | ✅ |
+| 11 | Certificate/license numbers | License Number | ✅ |
+| 12 | Vehicle identifiers | Vehicle ID | ✅ |
+| 13 | Device identifiers | Device ID | ✅ |
+| 14 | Web URLs | URL | ✅ |
+| 15 | IP addresses | IP Address | ✅ |
+| 16 | Biometric identifiers | Biometric Data | ✅ |
+| 17 | Full-face photographs | — | N/A (text-only API) |
+| 18 | Any other unique identifying number | Custom entities | ✅ |
+
+## How Blindfold Helps
+
+### Minimum Necessary Rule
+
+HIPAA requires that only the **minimum necessary** PHI is used for any given purpose. With Blindfold:
+
+```
+Patient Data                     Blindfold US Region              AI Provider
+"Patient Sarah Johnson,          "<Person_1>,                     AI sees only
+ SSN 123-45-6789,         →      <Social Security Number_1>,  →  anonymized tokens
+ MRN P-4532..."                   <Medical Record Number_1>..."
+
+                                                                      ↓
+
+"Patient Sarah Johnson    ←     Detokenize with mapping    ←    "Patient <Person_1>
+ is a 47-year-old..."           (PHI stays in US)                is a 47-year-old..."
+```
+
+### Safe Harbor De-Identification
+
+Blindfold's tokenization satisfies the Safe Harbor method by removing all 18 identifier types. The tokenized output is considered **de-identified data** under HIPAA, which is no longer subject to the Privacy Rule.
+
+## US Region + `hipaa_us` Policy
+
+### Region Selection
+
+Use the US region to ensure PHI is processed on US-based servers:
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+
+client = Blindfold(
+    api_key="your-api-key",
+    region="us",  # PHI processed in the US
+)
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+
+const client = new Blindfold({
+  apiKey: 'your-api-key',
+  region: 'us',  // PHI processed in the US
+});
+```
+</CodeGroup>
+
+### What `hipaa_us` Detects
+
+| Entity Type | Examples |
+|---|---|
+| Person | Sarah Johnson, Dr. Emily Chen |
+| Social Security Number | 123-45-6789 |
+| Medical Record Number | P-4532, MRN-78901 |
+| Health Insurance ID Number | BC-9876543 |
+| Date of Birth | 03/15/1978 |
+| Email Address | sarah.johnson@email.com |
+| Phone Number | (555) 234-5678 |
+| Address | 123 Oak Street, Springfield |
+| Medical Condition | chest pain, diabetes, hypertension |
+| Medication | metformin, lisinopril |
+| Insurance Company | BlueCross, Aetna |
+
+## Code Examples
+
+### Tokenize a Patient Record
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+from openai import OpenAI
+
+blindfold = Blindfold(api_key="your-key", region="us")
+openai_client = OpenAI(api_key="your-openai-key")
+
+patient_message = (
+    "Patient Sarah Johnson (DOB 03/15/1978, SSN 123-45-6789, "
+    "MRN P-4532) presented with chest pain. "
+    "Contact: sarah.johnson@email.com, phone (555) 234-5678."
+)
+
+# Step 1: Tokenize PHI
+tokenized = blindfold.tokenize(patient_message, policy="hipaa_us")
+
+print(f"PHI detected: {tokenized.entities_count} identifiers")
+for entity in tokenized.detected_entities:
+    print(f"  [{entity.type}] {entity.text}")
+
+# Step 2: Send to OpenAI — only anonymized tokens
+completion = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are a healthcare records assistant."},
+        {"role": "user", "content": tokenized.text},
+    ],
+)
+
+# Step 3: Restore PHI in the response
+restored = blindfold.detokenize(
+    completion.choices[0].message.content,
+    tokenized.mapping,
+)
+print(restored.text)
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+import OpenAI from 'openai';
+
+const blindfold = new Blindfold({ apiKey: 'your-key', region: 'us' });
+const openai = new OpenAI({ apiKey: 'your-openai-key' });
+
+const patientMessage =
+  'Patient Sarah Johnson (DOB 03/15/1978, SSN 123-45-6789, ' +
+  'MRN P-4532) presented with chest pain. ' +
+  'Contact: sarah.johnson@email.com, phone (555) 234-5678.';
+
+// Step 1: Tokenize PHI
+const tokenized = await blindfold.tokenize(patientMessage, {
+  policy: 'hipaa_us',
+});
+
+// Step 2: Send to OpenAI
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4o-mini',
+  messages: [
+    { role: 'system', content: 'You are a healthcare records assistant.' },
+    { role: 'user', content: tokenized.text },
+  ],
+});
+
+// Step 3: Restore PHI
+const restored = await blindfold.detokenize(
+  completion.choices[0].message.content,
+  tokenized.mapping,
+);
+console.log(restored.text);
+```
+</CodeGroup>
+
+### Multi-Turn PHI-Safe Conversation
+
+Maintain PHI mappings across a multi-turn healthcare chat:
+
+```python
+class HealthcareChatbot:
+    def __init__(self):
+        self.blindfold = Blindfold(api_key="your-key", region="us")
+        self.openai = OpenAI(api_key="your-openai-key")
+        self.conversation = [
+            {"role": "system", "content": "You are a healthcare assistant."}
+        ]
+        self.mapping = {}  # Accumulated across turns
+
+    def chat(self, user_message: str) -> str:
+        # Tokenize new message
+        tokenized = self.blindfold.tokenize(user_message, policy="hipaa_us")
+
+        # Merge new mappings into conversation-wide mapping
+        self.mapping.update(tokenized.mapping)
+
+        # Add tokenized message to conversation
+        self.conversation.append({"role": "user", "content": tokenized.text})
+
+        # Send to AI — only tokens
+        completion = self.openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=self.conversation,
+        )
+        ai_response = completion.choices[0].message.content
+        self.conversation.append({"role": "assistant", "content": ai_response})
+
+        # Restore PHI for display
+        restored = self.blindfold.detokenize(ai_response, self.mapping)
+        return restored.text
+```
+
+### Batch PHI Redaction
+
+Permanently remove PHI from multiple records for safe storage or logging:
+
+```python
+records = [
+    "Patient: Robert Lee, SSN 111-22-3333, admitted for knee surgery.",
+    "Patient: Maria Santos, DOB 11/05/1990, MRN P-2468. Allergy to penicillin.",
+    "Patient: David Kim, SSN 444-55-6666, referred by Dr. Amanda Torres.",
+]
+
+# Redact all records in one call (irreversible)
+batch = blindfold.redact_batch(records, policy="hipaa_us")
+
+for i, result in enumerate(batch.results):
+    print(f"Record {i+1}: {result['text']}")
+    print(f"  PHI removed: {result['entities_count']} identifiers")
+```
+
+## Three Modes of PHI Protection
+
+| Mode | Method | Reversible | Use Case |
+|---|---|---|---|
+| **Tokenize** | `blindfold.tokenize()` | Yes | AI chat, summarization — restore PHI in responses |
+| **Redact** | `blindfold.redact()` | No | Logs, storage — permanently remove PHI |
+| **Encrypt** | `blindfold.encrypt()` | Yes (with key) | Secure archives — AES-256 encrypted PHI storage |
+
+<CodeGroup>
+```python Tokenize (for AI)
+# Reversible — PHI can be restored
+tokenized = blindfold.tokenize(text, policy="hipaa_us")
+# → "Patient <Person_1> (SSN <Social Security Number_1>)"
+restored = blindfold.detokenize(response, tokenized.mapping)
+```
+
+```python Redact (for logs)
+# Permanent removal — PHI cannot be recovered
+redacted = blindfold.redact(text, policy="hipaa_us")
+# → "Patient [REDACTED] (SSN [REDACTED])"
+```
+
+```python Encrypt (for storage)
+# Reversible with encryption key
+encrypted = blindfold.encrypt(text, encryption_key="your-key")
+# → "Patient aGVsbG8... (SSN dGVzdA...)"
+decrypted = blindfold.decrypt(encrypted.text, encryption_key="your-key")
+```
+</CodeGroup>
+
+## Audit Trail
+
+Every Blindfold API call is logged, supporting HIPAA's audit requirements (45 CFR § 164.312(b)):
+
+- **Who**: Which API key made the request
+- **What**: Entity types detected and count
+- **When**: Timestamp of every PHI operation
+- **Where**: Processing region (US)
+- **How**: Which privacy method and policy was used
+
+Export audit logs from the [Blindfold Dashboard](https://app.blindfold.dev).
+
+## BAA Readiness
+
+Blindfold is ready to sign a **Business Associate Agreement** (BAA) with covered entities and their business associates. A BAA is required under HIPAA when a third party handles PHI.
+
+Contact us at **hello@blindfold.dev** to request a BAA.
+
+## Cookbook Example
+
+For a complete, runnable HIPAA healthcare chatbot, see the cookbook:
+
+<Card title="HIPAA Healthcare Chatbot Example" icon="github" href="https://github.com/blindfold-dev/blindfold-cookbook/tree/main/examples/hipaa-healthcare-chatbot">
+  Full working example with US region, `hipaa_us` policy, single queries, multi-turn chat, and batch redaction.
+</Card>
+
+## HIPAA Compliance Checklist
+
+<Steps>
+  <Step title="Use the US region">
+    Set `region="us"` to ensure PHI is processed within the United States.
+  </Step>
+
+  <Step title="Apply the hipaa_us policy">
+    Use `policy="hipaa_us"` on all calls handling patient data.
+  </Step>
+
+  <Step title="Tokenize before AI calls">
+    Always call `blindfold.tokenize()` before sending PHI to any AI provider.
+  </Step>
+
+  <Step title="Redact PHI in logs">
+    Use `blindfold.redact()` to remove PHI from application logs and audit records.
+  </Step>
+
+  <Step title="Encrypt PHI at rest">
+    Use `blindfold.encrypt()` for PHI stored in databases or file systems.
+  </Step>
+
+  <Step title="Sign a BAA with Blindfold">
+    Contact hello@blindfold.dev to execute a Business Associate Agreement.
+  </Step>
+
+  <Step title="Implement access controls">
+    Use separate API keys for different applications and teams.
+  </Step>
+
+  <Step title="Review audit logs">
+    Regularly export and review audit logs from the dashboard.
+  </Step>
+</Steps>

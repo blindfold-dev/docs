@@ -1,0 +1,198 @@
+---
+title: "PCI DSS Compliance"
+description: "Protect cardholder data in AI-powered payment applications"
+---
+
+The **Payment Card Industry Data Security Standard** (PCI DSS) is mandatory for any organization that stores, processes, or transmits credit card data. If your AI application handles payment information — even in free-text customer messages — PCI DSS applies.
+
+Blindfold's `pci_dss` policy automatically detects and protects cardholder data before it reaches AI providers, reducing your PCI scope.
+
+## Who Must Comply
+
+PCI DSS applies to:
+- **Merchants** that accept card payments
+- **Service providers** that store, process, or transmit cardholder data
+- **Any AI application** that processes text containing card numbers, CVVs, or expiry dates
+
+<Warning>
+  If a customer pastes a credit card number into your AI chatbot, your application is processing cardholder data — even if you didn't ask for it.
+</Warning>
+
+## Key PCI DSS Requirements
+
+| Requirement | Description | Blindfold Solution |
+|---|---|---|
+| **Req 3** | Protect stored cardholder data | `encrypt()` with AES-256 |
+| **Req 3.3** | Mask PAN when displayed | `mask()` shows only last 4 digits |
+| **Req 3.4** | Render PAN unreadable in storage | `encrypt()` or `hash()` |
+| **Req 7** | Restrict access to cardholder data | Separate API keys per application |
+| **Req 10** | Track and monitor all access | Audit logs for every operation |
+| **Req 12** | Maintain a security policy | Policy-based detection rules |
+
+## `pci_dss` Policy
+
+The `pci_dss` policy detects payment-related sensitive data:
+
+| Entity Type | Examples |
+|---|---|
+| Credit Card Number | 4532-7562-9102-3456 |
+| Credit Card Expiration | 12/25, 03/2027 |
+| CVV / CVC | 123, 4567 |
+| Credit Card Brand | Visa, Mastercard, Amex |
+| Bank Account Number | 1234567890 |
+| IBAN | DE89 3704 0044 0532 0130 00 |
+| Person | Cardholder name |
+| Email Address | Contact email |
+
+## Code Examples
+
+### Mask Card Numbers for Display (Req 3.3)
+
+PCI DSS requires that PANs are masked when displayed, showing at most the first 6 and last 4 digits:
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+
+client = Blindfold(api_key="your-key")
+
+text = "Customer card: 4532-7562-9102-3456, CVV: 789, Exp: 12/25"
+
+masked = client.mask(text, policy="pci_dss")
+# → "Customer card: ************3456, CVV: ***, Exp: *****"
+
+print(masked.text)  # Safe to display in UI
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+
+const client = new Blindfold({ apiKey: 'your-key' });
+
+const text = 'Customer card: 4532-7562-9102-3456, CVV: 789, Exp: 12/25';
+
+const masked = await client.mask(text, { policy: 'pci_dss' });
+// → "Customer card: ************3456, CVV: ***, Exp: *****"
+
+console.log(masked.text); // Safe to display in UI
+```
+</CodeGroup>
+
+### Encrypt for Storage (Req 3.4)
+
+Render cardholder data unreadable anywhere it is stored:
+
+<CodeGroup>
+```python Python
+# Encrypt card data for database storage
+transaction = "Payment from John Doe, card 4532-7562-9102-3456, amount $500"
+
+encrypted = client.encrypt(transaction, encryption_key="your-encryption-key")
+# Store encrypted.text in your database — PCI compliant
+
+# Decrypt when authorized access is needed
+decrypted = client.decrypt(encrypted.text, encryption_key="your-encryption-key")
+print(decrypted.text)  # Original text restored
+```
+
+```typescript TypeScript
+const transaction = 'Payment from John Doe, card 4532-7562-9102-3456, amount $500';
+
+const encrypted = await client.encrypt(transaction, {
+  encryptionKey: 'your-encryption-key',
+});
+// Store encrypted.text in your database
+
+const decrypted = await client.decrypt(encrypted.text, {
+  encryptionKey: 'your-encryption-key',
+});
+console.log(decrypted.text);
+```
+</CodeGroup>
+
+### Redact from Logs (Req 3)
+
+Remove cardholder data from application logs permanently:
+
+```python
+log_entry = "2026-02-15 Payment processed: card 4532-7562-9102-3456 for $250.00"
+
+redacted = client.redact(log_entry, policy="pci_dss")
+# → "2026-02-15 Payment processed: card [REDACTED] for $250.00"
+
+# Safe to store in log files — no cardholder data
+```
+
+### Tokenize for AI Processing
+
+If your AI chatbot might receive card numbers in customer messages:
+
+```python
+from openai import OpenAI
+
+openai_client = OpenAI(api_key="your-openai-key")
+
+customer_message = (
+    "I was charged twice on my card 4532-7562-9102-3456. "
+    "The charges were on 02/10 and 02/11 for $49.99 each."
+)
+
+# Tokenize before sending to AI
+tokenized = client.tokenize(customer_message, policy="pci_dss")
+# → "I was charged twice on my card <Credit Card Number_1>..."
+
+completion = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are a billing support agent."},
+        {"role": "user", "content": tokenized.text},
+    ],
+)
+
+# Restore card details in response
+restored = client.detokenize(
+    completion.choices[0].message.content,
+    tokenized.mapping,
+)
+print(restored.text)
+```
+
+## Reducing PCI Scope
+
+By tokenizing cardholder data with Blindfold _before_ it reaches your AI provider or logs:
+
+- **AI provider** is out of PCI scope — it never sees real card numbers
+- **Application logs** are out of scope — redacted data has no cardholder data
+- **Your PCI audit** is simpler — fewer systems in scope
+
+## PCI DSS Compliance Checklist
+
+<Steps>
+  <Step title="Apply the pci_dss policy">
+    Use `policy="pci_dss"` on all calls that might contain payment data.
+  </Step>
+
+  <Step title="Mask PANs in UI">
+    Use `blindfold.mask()` before displaying any text that might contain card numbers.
+  </Step>
+
+  <Step title="Encrypt cardholder data at rest">
+    Use `blindfold.encrypt()` before storing any text containing card data.
+  </Step>
+
+  <Step title="Redact card data from logs">
+    Use `blindfold.redact()` to strip cardholder data from application logs.
+  </Step>
+
+  <Step title="Tokenize before AI calls">
+    Use `blindfold.tokenize()` before sending customer messages to AI providers.
+  </Step>
+
+  <Step title="Use separate API keys">
+    Issue different Blindfold API keys for different applications to enforce access control.
+  </Step>
+
+  <Step title="Review audit logs">
+    Regularly export and review audit logs for compliance documentation.
+  </Step>
+</Steps>
