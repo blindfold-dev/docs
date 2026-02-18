@@ -1130,20 +1130,16 @@ All detection endpoints support filtering by entity type using **natural languag
   See the complete list of 60+ entity types in the [Supported Entities](/essentials/supported-entities) documentation.
 </Info>
 
-## Rate Limiting
+## Plans & Limits
 
-The API has the following rate limits:
+| | Free | Pay As You Go |
+|---|---|---|
+| **Characters** | 500K / month | Unlimited ($0.50 / 1M) |
+| **Max text per request** | 5K chars | 500K chars |
+| **Team members** | 3 | Unlimited |
+| **API keys** | 2 | Unlimited |
 
-- **Free Tier**: 1,000 requests per day
-- **Pro Tier**: 100,000 requests per day
-- **Enterprise**: Custom limits
-
-Rate limit headers are included in responses:
-```http
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1640995200
-```
+The API returns a `429 Too Many Requests` response when you exceed your plan limits. Implement retry logic with exponential backoff for production use.
 
 ## Error Codes
 

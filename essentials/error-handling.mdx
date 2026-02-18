@@ -109,16 +109,15 @@ Blindfold uses standard HTTP status codes to indicate the success or failure of 
     }
     ```
 
-    **Rate Limits** (default):
-    - **Free Plan**: 100 requests/minute
-    - **Pro Plan**: 1,000 requests/minute
-    - **Enterprise**: Custom limits
+    **Plan Limits:**
+    - **Free**: 500K characters/month, 5K chars per request
+    - **Pay As You Go**: Unlimited characters, 500K chars per request
 
     **How to Fix**:
     - Implement exponential backoff
     - Use the `retry_after` value from response
     - Batch multiple texts into single requests
-    - Upgrade your plan for higher limits
+    - Upgrade to Pay As You Go for unlimited usage
   </Accordion>
 </AccordionGroup>
 
