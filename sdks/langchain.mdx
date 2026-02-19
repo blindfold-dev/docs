@@ -1,0 +1,245 @@
+---
+title: "LangChain"
+description: "PII protection for LangChain chains and RAG pipelines"
+---
+
+The `langchain-blindfold` package integrates Blindfold with [LangChain](https://python.langchain.com), letting you tokenize PII before it reaches your LLM and restore originals in the response. Includes chain-composable Runnables and a DocumentTransformer for RAG pipelines.
+
+## Installation
+
+```bash
+pip install langchain-blindfold
+```
+
+Set your API key:
+
+```bash
+export BLINDFOLD_API_KEY=your-api-key
+```
+
+Get a free API key at [app.blindfold.dev](https://app.blindfold.dev).
+
+## Quick Start
+
+### Protect a LangChain Chain
+
+```python
+from langchain_blindfold import blindfold_protect
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+
+tokenize, detokenize = blindfold_protect(policy="basic")
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant."),
+    ("user", "{input}"),
+])
+llm = ChatOpenAI(model="gpt-4o-mini")
+
+chain = tokenize | prompt | llm | (lambda msg: msg.content) | detokenize
+
+# PII is tokenized before the LLM sees it, then restored in the response
+result = chain.invoke("Write a follow-up email to John Doe at john@example.com")
+```
+
+The LLM only sees `<Person_1>` and `<Email Address_1>` — never the real data.
+
+### Transform Documents for RAG
+
+```python
+from langchain_blindfold import BlindfoldPIITransformer
+from langchain_core.documents import Document
+
+transformer = BlindfoldPIITransformer(pii_method="redact", policy="hipaa_us", region="us")
+
+docs = [Document(page_content="Patient John Smith, SSN 123-45-6789")]
+safe_docs = transformer.transform_documents(docs)
+# safe_docs[0].page_content → "Patient [REDACTED], SSN [REDACTED]"
+```
+
+## Components
+
+### `blindfold_protect()`
+
+Convenience function that returns a paired tokenizer and detokenizer for use in chains:
+
+```python
+tokenize, detokenize = blindfold_protect(
+    api_key=None,         # Falls back to BLINDFOLD_API_KEY env var
+    region=None,          # "eu" or "us" for data residency
+    policy="basic",       # Detection policy
+    entities=None,        # Specific entity types to detect
+    score_threshold=None, # Confidence threshold (0.0-1.0)
+)
+```
+
+### `BlindfoldTokenizer`
+
+A LangChain `Runnable` that tokenizes PII in text and stores the mapping:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `api_key` | `str` | `None` | Falls back to `BLINDFOLD_API_KEY` env var |
+| `region` | `str` | `None` | `"eu"` or `"us"` for data residency |
+| `policy` | `str` | `"basic"` | Detection policy |
+| `entities` | `list` | `None` | Specific entity types to detect |
+| `score_threshold` | `float` | `None` | Confidence threshold (0.0–1.0) |
+
+```python
+from langchain_blindfold import BlindfoldTokenizer
+
+tokenizer = BlindfoldTokenizer(policy="gdpr_eu", region="eu")
+safe_text = tokenizer.invoke("Contact Hans at hans@example.de")
+# → "Contact <Person_1> at <Email Address_1>"
+```
+
+### `BlindfoldDetokenizer`
+
+A LangChain `Runnable` that restores original PII from tokenized text using the paired tokenizer's mapping:
+
+```python
+from langchain_blindfold import BlindfoldTokenizer, BlindfoldDetokenizer
+
+tokenizer = BlindfoldTokenizer(api_key="...")
+detokenizer = BlindfoldDetokenizer(tokenizer=tokenizer)
+
+tokenizer.invoke("Hi John")  # stores mapping
+result = detokenizer.invoke("Response to <Person_1>")
+# → "Response to John"
+```
+
+This is a client-side operation — no API call is made for detokenization.
+
+### `BlindfoldPIITransformer`
+
+A LangChain `DocumentTransformer` for protecting PII in documents:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `api_key` | `str` | `None` | Falls back to `BLINDFOLD_API_KEY` env var |
+| `region` | `str` | `None` | `"eu"` or `"us"` for data residency |
+| `policy` | `str` | `"basic"` | Detection policy |
+| `pii_method` | `str` | `"tokenize"` | How to protect PII |
+| `entities` | `list` | `None` | Specific entity types to detect |
+| `score_threshold` | `float` | `None` | Confidence threshold (0.0–1.0) |
+
+When `pii_method="tokenize"`, the mapping is stored in `doc.metadata["blindfold_mapping"]` so you can restore originals later.
+
+### Policies
+
+| Policy | Entities | Best For |
+|---|---|---|
+| `basic` | Names, emails, phones, locations | General PII protection |
+| `gdpr_eu` | EU-specific: IBANs, addresses, dates of birth | GDPR compliance |
+| `hipaa_us` | PHI: SSNs, MRNs, medical terms | HIPAA compliance |
+| `pci_dss` | Card numbers, CVVs, expiry dates | PCI DSS compliance |
+| `strict` | All entity types, lower threshold | Maximum detection |
+
+See [Policies](/essentials/policies) for details.
+
+### PII Methods
+
+The `pii_method` parameter controls how detected PII is protected (applies to `BlindfoldPIITransformer`):
+
+| Method | Output | Reversible |
+|---|---|---|
+| `tokenize` | `<Person_1>`, `<Email Address_1>` | Yes |
+| `redact` | PII removed entirely | No |
+| `mask` | `J****oe`, `j****om` | No |
+| `hash` | `HASH_abc123` | No |
+| `synthesize` | `Jane Smith`, `jane@example.org` | No |
+| `encrypt` | AES-256 encrypted value | Yes (with key) |
+
+## Usage Examples
+
+### GDPR Compliance with EU Region
+
+```python
+from langchain_blindfold import blindfold_protect
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+
+tokenize, detokenize = blindfold_protect(policy="gdpr_eu", region="eu")
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a GDPR-compliant assistant."),
+    ("user", "{input}"),
+])
+llm = ChatOpenAI(model="gpt-4o-mini")
+
+chain = tokenize | prompt | llm | (lambda msg: msg.content) | detokenize
+result = chain.invoke("Contact Hans Mueller at hans.mueller@example.de about IBAN DE89370400440532013000")
+```
+
+### HIPAA — Redact PHI in Documents
+
+```python
+from langchain_blindfold import BlindfoldPIITransformer
+from langchain_core.documents import Document
+
+transformer = BlindfoldPIITransformer(
+    policy="hipaa_us",
+    pii_method="redact",
+    region="us",
+)
+
+docs = [
+    Document(page_content="Patient Sarah Jones, SSN 123-45-6789, MRN 4567890"),
+    Document(page_content="Dr. Smith prescribed medication on 2024-01-15"),
+]
+safe_docs = transformer.transform_documents(docs)
+# PHI redacted from all documents
+```
+
+### Protect RAG Pipeline
+
+```python
+from langchain_blindfold import BlindfoldPIITransformer
+from langchain_core.documents import Document
+
+# Tokenize documents before storing in vector DB
+transformer = BlindfoldPIITransformer(pii_method="tokenize", policy="strict")
+
+docs = [Document(page_content="John Doe's account #12345 has balance $50,000")]
+safe_docs = transformer.transform_documents(docs)
+
+# Mapping stored in metadata for later restoration
+print(safe_docs[0].metadata["blindfold_mapping"])
+# → {"<Person_1>": "John Doe", ...}
+```
+
+### Detect Specific Entity Types
+
+```python
+tokenize, detokenize = blindfold_protect(
+    entities=["Email Address", "Phone Number", "Credit Card Number"],
+)
+```
+
+## Data Residency
+
+Use the `region` parameter to ensure PII is processed in a specific jurisdiction:
+
+| Region | Endpoint | Location |
+|---|---|---|
+| `eu` | `eu-api.blindfold.dev` | Frankfurt, Germany |
+| `us` | `us-api.blindfold.dev` | Virginia, US |
+
+See [Regions](/essentials/regions) for details.
+
+## Links
+
+<CardGroup cols={2}>
+  <Card title="PyPI Package" icon="python" href="https://pypi.org/project/langchain-blindfold/">
+    Install from PyPI
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/blindfold-dev/langchain-blindfold">
+    Source code and issues
+  </Card>
+  <Card title="LangChain Docs" icon="book" href="https://python.langchain.com">
+    LangChain documentation
+  </Card>
+  <Card title="Cookbook Examples" icon="code" href="https://github.com/blindfold-dev/blindfold-cookbook">
+    Working integration examples
+  </Card>
+</CardGroup>

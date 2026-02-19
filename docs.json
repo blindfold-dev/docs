@@ -64,7 +64,8 @@
               "sdks/javascript-sdk",
               "sdks/cli",
               "sdks/mcp-server",
-              "sdks/guardrails"
+              "sdks/guardrails",
+              "sdks/langchain"
             ]
           },
           {
