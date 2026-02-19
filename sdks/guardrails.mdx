@@ -1,0 +1,204 @@
+---
+title: "Guardrails AI"
+description: "PII detection and protection validator for the Guardrails AI framework"
+---
+
+The `guardrails-blindfold` package integrates Blindfold with [Guardrails AI](https://guardrailsai.com), letting you add PII protection to any Guard with one line. Detect and fix PII in LLM outputs automatically.
+
+## Installation
+
+```bash
+pip install guardrails-blindfold
+```
+
+Set your API key:
+
+```bash
+export BLINDFOLD_API_KEY=your-api-key
+```
+
+Get a free API key at [app.blindfold.dev](https://app.blindfold.dev).
+
+## Quick Start
+
+```python
+from guardrails import Guard
+from guardrails_blindfold import BlindfoldPII
+
+guard = Guard().use(BlindfoldPII(on_fail="fix"))
+
+result = guard.validate("Contact John Doe at john@example.com")
+print(result.validated_output)
+# → "Contact <Person_1> at <Email Address_1>"
+```
+
+## Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `policy` | `str` | `"basic"` | Detection policy |
+| `pii_method` | `str` | `"tokenize"` | How to fix detected PII |
+| `region` | `str` | `None` | `"eu"` or `"us"` for data residency |
+| `entities` | `list` | `None` | Specific entity types to detect |
+| `score_threshold` | `float` | `None` | Confidence threshold (0.0–1.0) |
+| `api_key` | `str` | `None` | Falls back to `BLINDFOLD_API_KEY` env var |
+| `on_fail` | `str` | `None` | Guardrails failure action |
+
+### Policies
+
+| Policy | Entities | Best For |
+|---|---|---|
+| `basic` | Names, emails, phones, locations | General PII protection |
+| `gdpr_eu` | EU-specific: IBANs, addresses, dates of birth | GDPR compliance |
+| `hipaa_us` | PHI: SSNs, MRNs, medical terms | HIPAA compliance |
+| `pci_dss` | Card numbers, CVVs, expiry dates | PCI DSS compliance |
+| `strict` | All entity types, lower threshold | Maximum detection |
+
+See [Policies](/essentials/policies) for details.
+
+### PII Methods
+
+The `pii_method` parameter controls how detected PII is fixed when `on_fail="fix"`:
+
+| Method | Output | Reversible |
+|---|---|---|
+| `tokenize` | `<Person_1>`, `<Email Address_1>` | Yes |
+| `redact` | PII removed entirely | No |
+| `mask` | `J****oe`, `j****om` | No |
+| `hash` | `HASH_abc123` | No |
+| `synthesize` | `Jane Smith`, `jane@example.org` | No |
+| `encrypt` | AES-256 encrypted value | Yes (with key) |
+
+## Usage Examples
+
+### GDPR Compliance with EU Region
+
+```python
+guard = Guard().use(
+    BlindfoldPII(
+        policy="gdpr_eu",
+        region="eu",
+        on_fail="fix",
+    )
+)
+
+result = guard.validate("Hans Mueller, hans.mueller@example.de, IBAN DE89370400440532013000")
+print(result.validated_output)
+# → "<Person_1>, <Email Address_1>, IBAN <IBAN_1>"
+```
+
+### HIPAA — Redact PHI
+
+```python
+guard = Guard().use(
+    BlindfoldPII(
+        policy="hipaa_us",
+        pii_method="redact",
+        region="us",
+        on_fail="fix",
+    )
+)
+
+result = guard.validate("Patient Sarah Jones, SSN 123-45-6789, MRN 4567890")
+print(result.validated_output)
+# → PHI redacted from output
+```
+
+### Block Output if PII Detected
+
+Use `on_fail="exception"` to raise an error instead of fixing:
+
+```python
+from guardrails.errors import ValidationError
+
+guard = Guard().use(
+    BlindfoldPII(policy="strict", on_fail="exception")
+)
+
+try:
+    result = guard.validate("Email john@example.com")
+except ValidationError as e:
+    print("PII detected — output blocked")
+```
+
+### Detect Specific Entity Types
+
+```python
+guard = Guard().use(
+    BlindfoldPII(
+        entities=["Email Address", "Phone Number", "Credit Card Number"],
+        on_fail="fix",
+    )
+)
+```
+
+### Chain with Other Validators
+
+Blindfold can be combined with any other Guardrails validator:
+
+```python
+guard = Guard().use(
+    BlindfoldPII(policy="strict", on_fail="fix"),
+).use(
+    AnotherValidator(on_fail="exception"),
+)
+```
+
+### Protect LLM Output in a Chain
+
+```python
+from guardrails import Guard
+from guardrails_blindfold import BlindfoldPII
+from openai import OpenAI
+
+client = OpenAI()
+guard = Guard().use(BlindfoldPII(policy="gdpr_eu", on_fail="fix"))
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Write a sample customer profile"}],
+)
+
+# Validate and protect PII in the LLM output
+result = guard.validate(response.choices[0].message.content)
+print(result.validated_output)  # PII tokenized
+```
+
+## On-Fail Actions
+
+Guardrails supports several failure handling strategies:
+
+| Action | Behavior |
+|---|---|
+| `fix` | Replace PII with the protected version (tokenized, redacted, etc.) |
+| `exception` | Raise `ValidationError` — blocks the output entirely |
+| `noop` | Log the failure but return the original output unchanged |
+| `reask` | Re-prompt the LLM to regenerate without PII |
+
+## Data Residency
+
+Use the `region` parameter to ensure PII is processed in a specific jurisdiction:
+
+| Region | Endpoint | Location |
+|---|---|---|
+| `eu` | `eu-api.blindfold.dev` | Frankfurt, Germany |
+| `us` | `us-api.blindfold.dev` | Virginia, US |
+
+See [Regions](/essentials/regions) for details.
+
+## Links
+
+<CardGroup cols={2}>
+  <Card title="PyPI Package" icon="python" href="https://pypi.org/project/guardrails-blindfold/">
+    Install from PyPI
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/blindfold-dev/guardrails-blindfold">
+    Source code and issues
+  </Card>
+  <Card title="Guardrails AI Docs" icon="book" href="https://docs.guardrailsai.com">
+    Guardrails AI documentation
+  </Card>
+  <Card title="Cookbook Examples" icon="code" href="https://github.com/blindfold-dev/blindfold-cookbook">
+    Working integration examples
+  </Card>
+</CardGroup>

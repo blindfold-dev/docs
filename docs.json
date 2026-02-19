@@ -63,7 +63,8 @@
               "sdks/python-sdk",
               "sdks/javascript-sdk",
               "sdks/cli",
-              "sdks/mcp-server"
+              "sdks/mcp-server",
+              "sdks/guardrails"
             ]
           },
           {
