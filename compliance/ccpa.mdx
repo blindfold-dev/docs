@@ -1,0 +1,300 @@
+---
+title: "CCPA / CPRA Compliance"
+description: "Protect California consumer data in AI applications"
+---
+
+The **California Consumer Privacy Act** (CCPA) is the most comprehensive state-level privacy law in the United States. The **California Privacy Rights Act** (CPRA), which amended and expanded CCPA effective January 2023, added new consumer rights and created the California Privacy Protection Agency (CPPA) for enforcement.
+
+When your AI application processes personal information of California residents, CCPA/CPRA applies — and sending that data to third-party AI providers like OpenAI or Anthropic creates significant legal risk.
+
+Blindfold solves this by **tokenizing personal information in the US region** before it reaches any AI provider. The LLM only sees anonymized tokens like `<Person_1>` — never real names, SSNs, or email addresses.
+
+## Who Must Comply
+
+CCPA/CPRA applies to any for-profit business that collects California consumers' personal information **and** meets any one of these thresholds:
+
+- **Annual gross revenue** over $25 million
+- **Buy, sell, or share** the personal information of 100,000 or more consumers, households, or devices
+- **Derive 50% or more of annual revenue** from selling or sharing consumers' personal information
+
+<Warning>
+  CCPA applies based on where your **users** live, not where your company is located. If you have California customers, CCPA likely applies to you.
+</Warning>
+
+## Key CCPA/CPRA Rights
+
+<AccordionGroup>
+  <Accordion title="Right to Know (Art. 1798.100)" icon="magnifying-glass">
+    **Right**: Consumers can request what personal information is collected, used, disclosed, or sold about them.
+
+    **Risk with AI**: If you send consumer data to AI providers, you must disclose this in your privacy policy — and be able to tell consumers exactly what data was shared.
+
+    **With Blindfold**: Since only anonymized tokens reach the AI provider, no real personal information is disclosed. Audit logs document exactly what entity types were detected and protected.
+  </Accordion>
+
+  <Accordion title="Right to Delete (Art. 1798.105)" icon="trash">
+    **Right**: Consumers can request deletion of their personal information.
+
+    **Risk with AI**: Data sent to AI providers may be retained in their logs, caches, or training data — making deletion impossible.
+
+    **With Blindfold**: No real personal information reaches the AI provider. For your own records, use `tokenize()` with mapping deletion — once the mapping is destroyed, tokens become meaningless and irrecoverable.
+  </Accordion>
+
+  <Accordion title="Right to Opt-Out of Sale/Sharing (Art. 1798.120)" icon="ban">
+    **Right**: Consumers can opt out of the sale or sharing of their personal information, including sharing with AI providers.
+
+    **Risk with AI**: Sending consumer data to a third-party AI provider may constitute "sharing" under CCPA/CPRA, even without monetary exchange.
+
+    **With Blindfold**: Tokenization eliminates this risk entirely. Since only anonymized tokens leave your system, there is no "sale" or "sharing" of personal information — regardless of consumer opt-out status.
+  </Accordion>
+
+  <Accordion title="Right to Correct (Art. 1798.106, CPRA)" icon="pen">
+    **Right**: Consumers can request correction of inaccurate personal information held by a business.
+
+    **Risk with AI**: If inaccurate data is sent to AI providers, corrections cannot propagate to third-party systems.
+
+    **With Blindfold**: Real personal information stays in your system where you control it. Corrections only need to happen in your database — the AI provider never had the real data.
+  </Accordion>
+
+  <Accordion title="Right to Limit Use of Sensitive PI (Art. 1798.121, CPRA)" icon="lock">
+    **Right**: Consumers can limit the use and disclosure of sensitive personal information — including Social Security numbers, financial account information, precise geolocation, racial or ethnic origin, health data, and biometric information.
+
+    **Risk with AI**: Sensitive PI sent to AI providers violates this right if the consumer has opted to limit its use.
+
+    **With Blindfold**: Sensitive PI is detected and tokenized before AI calls. The `strict` policy catches SSNs, financial data, health information, and other sensitive categories automatically.
+  </Accordion>
+</AccordionGroup>
+
+## How AI Creates CCPA Risk
+
+Under CCPA/CPRA, "sharing" means disclosing personal information to a third party for cross-context behavioral advertising or other purposes — and the definition is broad. When you send consumer data to third-party AI providers like OpenAI or Anthropic, this may constitute **"sharing"** or even **"selling"** personal information under CCPA.
+
+This creates three problems:
+
+1. **Opt-out obligations** — consumers who opt out of sharing must have their data excluded from AI provider calls
+2. **Disclosure requirements** — you must list AI providers as recipients in your privacy policy
+3. **Right to delete** — data sent to AI providers may be irrecoverable
+
+**Tokenization eliminates all three risks.** When you tokenize before AI calls, no personal information reaches the AI provider. There is nothing to opt out of, nothing to disclose, and nothing to delete.
+
+```
+Consumer Message                     Blindfold US Region              AI Provider
+"Hi, I'm Sarah Johnson,             "Hi, I'm <Person_1>,             AI sees only
+ sarah.johnson@example.com,   →      <Email Address_1>,          →   anonymized tokens
+ SSN 123-45-6789"                     <US SSN_1>"
+
+                                                                         ↓
+
+"Dear Sarah Johnson,          ←    Detokenize with mapping     ←   "Dear <Person_1>,
+ we've updated your..."              (PI stays in US)                we've updated your..."
+```
+
+## CCPA Categories and Blindfold
+
+CCPA defines specific categories of personal information (Cal. Civ. Code 1798.140(v)). Here is how Blindfold's entity detection maps to them:
+
+| CCPA Category | Examples | Blindfold Entity Types |
+|---|---|---|
+| **Identifiers** | Name, SSN, email, address | Person, Email Address, US SSN, Address |
+| **Financial Information** | Bank account, credit card | Credit Card Number, Bank Account Number, IBAN |
+| **Commercial Information** | Purchase records, transactions | Handled by custom policies |
+| **Internet Activity** | IP addresses, browsing history | IP Address |
+| **Geolocation** | Physical location, GPS | Location, Address |
+| **Professional Information** | Employer, job title | Organization |
+| **Sensitive PI (CPRA)** | SSN, financial accounts, health data, biometrics | US SSN, Medical Record Number, Biometric Data |
+
+## Code Examples
+
+### Tokenize Before AI Calls
+
+The most common pattern: protect California consumer data before any AI API call.
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+from openai import OpenAI
+
+blindfold = Blindfold(api_key="your-key", region="us")
+openai_client = OpenAI(api_key="your-openai-key")
+
+consumer_message = (
+    "Hi, my name is Sarah Johnson and I need help with my account. "
+    "My email is sarah.johnson@example.com, SSN 123-45-6789. "
+    "I live at 742 Evergreen Terrace, Los Angeles, CA 90001."
+)
+
+# Step 1: Tokenize PI before sending to AI provider
+tokenized = blindfold.tokenize(consumer_message, policy="strict")
+# → "Hi, my name is <Person_1> and I need help with my account.
+#    My email is <Email Address_1>, <US SSN_1>.
+#    I live at <Address_1>."
+
+# Step 2: Send only tokens to OpenAI — no "sharing" of PI
+completion = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are a customer support agent."},
+        {"role": "user", "content": tokenized.text},
+    ],
+)
+ai_response = completion.choices[0].message.content
+
+# Step 3: Restore real values for the consumer
+restored = blindfold.detokenize(ai_response, tokenized.mapping)
+print(restored.text)
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+import OpenAI from 'openai';
+
+const blindfold = new Blindfold({ apiKey: 'your-key', region: 'us' });
+const openai = new OpenAI({ apiKey: 'your-openai-key' });
+
+const consumerMessage =
+  'Hi, my name is Sarah Johnson and I need help with my account. ' +
+  'My email is sarah.johnson@example.com, SSN 123-45-6789. ' +
+  'I live at 742 Evergreen Terrace, Los Angeles, CA 90001.';
+
+// Step 1: Tokenize PI before sending to AI provider
+const tokenized = await blindfold.tokenize(consumerMessage, {
+  policy: 'strict',
+});
+
+// Step 2: Send only tokens to OpenAI — no "sharing" of PI
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4o-mini',
+  messages: [
+    { role: 'system', content: 'You are a customer support agent.' },
+    { role: 'user', content: tokenized.text },
+  ],
+});
+const aiResponse = completion.choices[0].message.content;
+
+// Step 3: Restore real values for the consumer
+const restored = await blindfold.detokenize(aiResponse, tokenized.mapping);
+console.log(restored.text);
+```
+</CodeGroup>
+
+### Redact Consumer Data from Logs
+
+Permanently remove personal information from application logs to minimize data retention:
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+
+blindfold = Blindfold(api_key="your-key", region="us")
+
+log_entries = [
+    "2026-02-19 User Sarah Johnson (sarah.johnson@example.com) submitted a support ticket.",
+    "2026-02-19 Payment processed for card ending 3456, customer Mike Chen, IP 192.168.1.42.",
+    "2026-02-19 Account update requested by Lisa Park, SSN 987-65-4321.",
+]
+
+# Redact PI from all log entries (irreversible)
+batch = blindfold.redact_batch(log_entries, policy="strict")
+
+for i, result in enumerate(batch.results):
+    print(f"Log {i+1}: {result['text']}")
+    # Log 1: "2026-02-19 User [REDACTED] ([REDACTED]) submitted a support ticket."
+    # Log 2: "2026-02-19 Payment processed for card ending [REDACTED], customer [REDACTED], IP [REDACTED]."
+    # Log 3: "2026-02-19 Account update requested by [REDACTED], [REDACTED]."
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+
+const blindfold = new Blindfold({ apiKey: 'your-key', region: 'us' });
+
+const logEntries = [
+  '2026-02-19 User Sarah Johnson (sarah.johnson@example.com) submitted a support ticket.',
+  '2026-02-19 Payment processed for card ending 3456, customer Mike Chen, IP 192.168.1.42.',
+  '2026-02-19 Account update requested by Lisa Park, SSN 987-65-4321.',
+];
+
+// Redact PI from all log entries (irreversible)
+const batch = await blindfold.redactBatch(logEntries, { policy: 'strict' });
+
+for (const [i, result] of batch.results.entries()) {
+  console.log(`Log ${i + 1}: ${result.text}`);
+}
+```
+</CodeGroup>
+
+### Right to Delete Implementation
+
+Tokenization naturally supports CCPA's Right to Delete. When a consumer requests deletion, destroy the token mapping — the tokens become meaningless:
+
+```python
+from blindfold import Blindfold
+
+blindfold = Blindfold(api_key="your-key", region="us")
+
+# Original consumer interaction (stored with tokenized text + mapping)
+consumer_message = (
+    "My name is Sarah Johnson, email sarah.johnson@example.com. "
+    "Please cancel my subscription."
+)
+
+tokenized = blindfold.tokenize(consumer_message, policy="strict")
+# Stored text: "My name is <Person_1>, email <Email Address_1>.
+#               Please cancel my subscription."
+# Stored mapping: {"<Person_1>": "Sarah Johnson", "<Email Address_1>": "sarah.johnson@example.com"}
+
+# --- Consumer requests deletion under CCPA Art. 1798.105 ---
+
+# Step 1: Delete the mapping from your database
+delete_token_mapping(consumer_id="sarah-johnson-123")
+
+# Step 2: The tokenized text is now permanently de-identified
+# "<Person_1>" can never be linked back to "Sarah Johnson"
+# No real PI remains — deletion obligation satisfied
+
+# Optional: Redact stored records for extra safety
+records = fetch_consumer_records(consumer_id="sarah-johnson-123")
+for record in records:
+    redacted = blindfold.redact(record.content, policy="strict")
+    update_record(record.id, redacted.text)
+```
+
+## Blindfold as a CCPA Safeguard
+
+Using Blindfold tokenization before AI provider calls provides three key CCPA protections:
+
+- **No "sale" or "sharing"** — the AI provider never receives real personal information, so sending tokenized data does not constitute a sale or sharing under CCPA/CPRA
+- **Data minimization** — only anonymized tokens leave your system, minimizing the personal information exposed to third parties
+- **Audit trail** — every PI detection is logged with entity types, counts, timestamps, and policy used, providing documentation for CCPA compliance reviews and consumer requests
+
+## CCPA/CPRA Compliance Checklist
+
+<Steps>
+  <Step title="Identify if CCPA applies to your business">
+    Check if you meet any of the three thresholds: $25M revenue, 100K+ consumers' data, or 50%+ revenue from selling/sharing PI.
+  </Step>
+
+  <Step title="Classify the personal information your AI processes">
+    Map the CCPA categories (identifiers, financial, geolocation, etc.) to the data flowing through your AI application.
+  </Step>
+
+  <Step title="Apply Blindfold tokenization before all AI provider calls">
+    Use `blindfold.tokenize()` with `policy="strict"` and `region="us"` to protect consumer PI before it reaches any third-party AI provider.
+  </Step>
+
+  <Step title="Implement opt-out mechanisms for data sharing">
+    Provide a "Do Not Sell or Share My Personal Information" link. With Blindfold tokenization, no real PI is shared — but the mechanism is still required.
+  </Step>
+
+  <Step title="Enable audit logging for PI processing records">
+    Use Blindfold's audit trail to document what personal information was detected and how it was protected. Export logs from the [dashboard](https://app.blindfold.dev).
+  </Step>
+
+  <Step title="Document your data protection practices in your privacy policy">
+    Disclose how you use AI providers, what categories of PI are collected, and how Blindfold tokenization prevents sharing of real consumer data.
+  </Step>
+
+  <Step title="Review and update quarterly">
+    CCPA regulations evolve through CPPA rulemaking. Review your compliance posture, privacy policy, and Blindfold configuration at least quarterly.
+  </Step>
+</Steps>

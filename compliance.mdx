@@ -1,6 +1,6 @@
 ---
 title: "Compliance & Legal"
-description: "How Blindfold helps you meet GDPR, HIPAA, PCI DSS, and EU AI Act requirements"
+description: "How Blindfold helps you meet GDPR, HIPAA, PCI DSS, EU AI Act, CCPA, LGPD, and SOC 2 requirements"
 ---
 
 ## Why Compliance Matters for AI
@@ -31,6 +31,18 @@ User message                    Blindfold                        AI Provider
   <Card title="EU AI Act" icon="scale-balanced" href="/compliance/eu-ai-act">
     Meet the world's first comprehensive AI regulation. Data minimization, transparency, and high-risk system requirements.
   </Card>
+  <Card title="Data Residency" icon="earth-americas" href="/compliance/data-residency">
+    Keep sensitive data in the right jurisdiction. Regional endpoints and tokenization for cross-border AI compliance.
+  </Card>
+  <Card title="CCPA / CPRA" icon="flag-usa" href="/compliance/ccpa">
+    Protect California consumer data. Prevent "sale" or "sharing" of personal information with AI providers.
+  </Card>
+  <Card title="LGPD" icon="globe" href="/compliance/lgpd">
+    Brazil's data protection law. Use the EU region and `gdpr_eu` policy for LGPD-compliant AI processing.
+  </Card>
+  <Card title="SOC 2" icon="certificate" href="/compliance/soc2">
+    Demonstrate security practices to enterprise customers. Audit logs, encryption, and access controls.
+  </Card>
 </CardGroup>
 
 ## Quick Comparison
@@ -41,6 +53,10 @@ User message                    Blindfold                        AI Provider
 | **HIPAA** | `hipaa_us` | US | Protected Health Information — 18 identifiers including SSNs, MRNs |
 | **PCI DSS** | `pci_dss` | Any | Cardholder data — card numbers, CVVs, expiry dates |
 | **EU AI Act** | `gdpr_eu` + `strict` | EU | Data minimization, transparency, high-risk AI systems |
+| **Data Residency** | Any | EU / US | Cross-border data transfers, Schrems II, GDPR Chapter V |
+| **CCPA / CPRA** | `strict` | US | California consumer rights — opt-out of sale/sharing of PI |
+| **LGPD** | `gdpr_eu` | EU | Brazilian personal data — names, CPFs, addresses |
+| **SOC 2** | Any | Any | Trust Services Criteria — security, confidentiality, privacy |
 
 ## Common Compliance Questions
 

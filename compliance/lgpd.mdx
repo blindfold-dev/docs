@@ -1,0 +1,308 @@
+---
+title: "LGPD Compliance"
+description: "Protect Brazilian personal data in AI applications"
+---
+
+The **Lei Geral de Protecao de Dados** (LGPD, Law No. 13,709/2018) is Brazil's comprehensive data protection law, in effect since September 2020. Enforced by the **ANPD** (Autoridade Nacional de Protecao de Dados), LGPD regulates how organizations collect, process, store, and share personal data of individuals in Brazil.
+
+When your AI application processes personal data of individuals located in Brazil, LGPD applies. Blindfold helps by **tokenizing personal data before it reaches any AI provider**. The LLM only sees anonymized tokens like `<Person_1>` — never real names, CPFs, or addresses.
+
+## Who Must Comply
+
+LGPD applies to:
+
+- **Any organization** processing personal data of individuals located in Brazil
+- **Regardless of where the organization is headquartered** — a US or EU company processing Brazilian data must comply
+- When **data processing occurs in Brazil**, when **data subjects are in Brazil**, or when **data was collected in Brazil**
+
+<Warning>
+  LGPD applies extraterritorially — your company doesn't need to be in Brazil. If you process personal data of individuals in Brazil, you must comply.
+</Warning>
+
+## Key LGPD Requirements
+
+<AccordionGroup>
+  <Accordion title="Legal Basis for Processing (Art. 7)" icon="scale-balanced">
+    **Requirement**: Personal data processing requires one of 10 legal bases — more than GDPR's 6. These include consent, legitimate interest, contract performance, legal obligation, research, exercise of rights, health protection, credit protection, and public administration.
+
+    **Risk with AI**: Sending personal data to AI providers may lack a clear legal basis, especially when data is used for model training or analytics by the provider.
+
+    **With Blindfold**: Since only anonymized tokens reach the AI provider, the legal basis question for the AI provider's processing is simplified — tokens are not personal data.
+  </Accordion>
+
+  <Accordion title="Data Subject Rights (Arts. 17-22)" icon="user-shield">
+    **Requirement**: Data subjects have the right to confirmation of processing, access, correction, anonymization of unnecessary data, deletion, data portability, information about third-party sharing, and information about denying consent.
+
+    **With Blindfold**: Use `tokenize()` for anonymization, `redact()` for deletion, and `detect()` to identify what personal data exists. Audit logs document all processing activities for access requests.
+  </Accordion>
+
+  <Accordion title="International Data Transfers (Art. 33)" icon="plane">
+    **Requirement**: Personal data may only be transferred to countries with adequate protection levels, or with specific guarantees such as Standard Contractual Clauses, binding corporate rules, or specific consent from the data subject.
+
+    **Risk with AI**: Most AI providers (OpenAI, Anthropic) process data in the US, which may not meet LGPD adequacy requirements.
+
+    **With Blindfold**: Use the EU region (`region="eu"`) — PII is tokenized before crossing borders. Only anonymized tokens reach the AI provider, which are no longer personal data under LGPD.
+  </Accordion>
+
+  <Accordion title="Data Protection Impact Assessment (Art. 38)" icon="clipboard-check">
+    **Requirement**: The ANPD may require a Data Protection Impact Assessment (DPIA / RIPD) when processing activities may create risks to data subjects' fundamental rights and freedoms.
+
+    **With Blindfold**: Blindfold's audit trail documents all PII detection and anonymization, providing evidence for your DPIA that personal data is protected before AI processing.
+  </Accordion>
+
+  <Accordion title="Data Protection Officer (Art. 41)" icon="user-tie">
+    **Requirement**: Organizations must appoint a DPO (Encarregado) whose identity and contact information must be publicly disclosed. The Encarregado handles data subject requests, advises on data protection practices, and communicates with the ANPD.
+
+    **With Blindfold**: Audit logs and processing records from Blindfold support the DPO's oversight responsibilities by documenting how personal data is protected in AI workflows.
+  </Accordion>
+</AccordionGroup>
+
+## LGPD vs GDPR
+
+LGPD is closely modeled on the EU's GDPR, but there are important differences:
+
+| Aspect | LGPD | GDPR |
+|---|---|---|
+| Legal bases for processing | 10 | 6 |
+| Supervisory authority | ANPD | National DPAs |
+| Maximum fines | 2% of revenue, max R$50M per violation | 4% of revenue or EUR 20M |
+| DPO required | Yes (all organizations) | Conditional (specific cases) |
+| Cross-border transfers | Adequacy + guarantees | Adequacy + SCCs |
+| Effective date | September 2020 | May 2018 |
+
+## How Blindfold Maps to LGPD
+
+| LGPD Article | Requirement | Blindfold Feature |
+|---|---|---|
+| Art. 6 (III) | Data minimization | Tokenization removes PII before AI calls |
+| Art. 7 | Legal basis documentation | Audit logs track all processing activities |
+| Art. 12 | Anonymization | `tokenize()`, `hash()`, `redact()` |
+| Art. 18 (IV) | Right to anonymization | `tokenize()` + delete mapping |
+| Art. 33 | International transfers | EU region + tokenization |
+| Art. 46 | Security measures | AES-256 encryption, access controls |
+
+## EU Region for LGPD
+
+Since LGPD is closely modeled on GDPR, using Blindfold's EU region with the `gdpr_eu` policy provides excellent coverage for LGPD requirements. The `gdpr_eu` policy detects entity types relevant to both European and Brazilian personal data.
+
+<Info>
+  Brazil's LGPD is closely aligned with GDPR. The `gdpr_eu` policy covers the entity types needed for LGPD compliance.
+</Info>
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+
+client = Blindfold(
+    api_key="your-api-key",
+    region="eu",  # Recommended for LGPD compliance
+)
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+
+const client = new Blindfold({
+  apiKey: 'your-api-key',
+  region: 'eu',  // Recommended for LGPD compliance
+});
+```
+</CodeGroup>
+
+## `gdpr_eu` Policy Coverage for LGPD
+
+| Entity Type | LGPD Category | Examples |
+|---|---|---|
+| Person | Nome (Name) | Maria Silva, Joao Santos |
+| Email Address | Email | maria.silva@example.com.br |
+| Phone Number | Telefone | +55 11 98765-4321 |
+| Location | Endereco | Sao Paulo, Rua Augusta 123 |
+| Date of Birth | Data de nascimento | 15/03/1990 |
+| US SSN / National ID | CPF | 123.456.789-09 |
+| Credit Card Number | Cartao de credito | 4532-7562-9102-3456 |
+| IBAN | Conta bancaria | BR15 0000 0000 0000 1093 2840 814 P2 |
+| IP Address | Endereco IP | 189.6.45.123 |
+| Organization | Empresa | Empresa XYZ Ltda |
+
+## Code Examples
+
+### Tokenize Brazilian Personal Data
+
+The most common pattern: protect Brazilian user data before any AI API call.
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+from openai import OpenAI
+
+blindfold = Blindfold(api_key="your-key", region="eu")
+openai_client = OpenAI(api_key="your-openai-key")
+
+user_message = (
+    "Ola, meu nome e Maria Silva e preciso de ajuda com minha assinatura. "
+    "Meu email e maria.silva@example.com.br, CPF 123.456.789-09, "
+    "telefone +55 11 98765-4321."
+)
+
+# Step 1: Tokenize PII with gdpr_eu policy
+tokenized = blindfold.tokenize(user_message, policy="gdpr_eu")
+# → "Ola, meu nome e <Person_1> e preciso de ajuda com minha assinatura.
+#    Meu email e <Email Address_1>, CPF <US SSN / National ID_1>,
+#    telefone <Phone Number_1>."
+
+# Step 2: Send only tokens to OpenAI
+completion = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": tokenized.text}],
+)
+ai_response = completion.choices[0].message.content
+
+# Step 3: Restore real values in the response
+restored = blindfold.detokenize(ai_response, tokenized.mapping)
+print(restored.text)
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+import OpenAI from 'openai';
+
+const blindfold = new Blindfold({ apiKey: 'your-key', region: 'eu' });
+const openai = new OpenAI({ apiKey: 'your-openai-key' });
+
+const userMessage =
+  'Ola, meu nome e Maria Silva e preciso de ajuda com minha assinatura. ' +
+  'Meu email e maria.silva@example.com.br, CPF 123.456.789-09, ' +
+  'telefone +55 11 98765-4321.';
+
+// Step 1: Tokenize PII with gdpr_eu policy
+const tokenized = await blindfold.tokenize(userMessage, { policy: 'gdpr_eu' });
+
+// Step 2: Send only tokens to OpenAI
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4o-mini',
+  messages: [{ role: 'user', content: tokenized.text }],
+});
+const aiResponse = completion.choices[0].message.content;
+
+// Step 3: Restore real values
+const restored = await blindfold.detokenize(aiResponse, tokenized.mapping);
+console.log(restored.text);
+```
+</CodeGroup>
+
+### Anonymize for LGPD Art. 12
+
+Use `hash()` to irreversibly anonymize personal data for analytics or research — satisfying LGPD's anonymization requirements:
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+
+blindfold = Blindfold(api_key="your-key", region="eu")
+
+customer_record = (
+    "Cliente: Joao Santos, email joao.santos@example.com.br, "
+    "CPF 987.654.321-00, endereco Rua Augusta 123, Sao Paulo."
+)
+
+# Hash PII — irreversible anonymization (Art. 12)
+hashed = blindfold.hash(customer_record, policy="gdpr_eu")
+# PII replaced with one-way hashes — cannot be reversed
+# Safe for analytics, research, and aggregate reporting
+
+print(hashed.text)
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+
+const blindfold = new Blindfold({ apiKey: 'your-key', region: 'eu' });
+
+const customerRecord =
+  'Cliente: Joao Santos, email joao.santos@example.com.br, ' +
+  'CPF 987.654.321-00, endereco Rua Augusta 123, Sao Paulo.';
+
+// Hash PII — irreversible anonymization (Art. 12)
+const hashed = await blindfold.hash(customerRecord, { policy: 'gdpr_eu' });
+// PII replaced with one-way hashes — cannot be reversed
+// Safe for analytics, research, and aggregate reporting
+
+console.log(hashed.text);
+```
+</CodeGroup>
+
+### Right to Anonymization (Art. 18)
+
+When a data subject exercises their right to anonymization under Art. 18(IV), tokenize their data and then delete the mapping to make anonymization permanent:
+
+```python
+from blindfold import Blindfold
+
+blindfold = Blindfold(api_key="your-key", region="eu")
+
+# Data subject requests anonymization under LGPD Art. 18(IV)
+user_records = fetch_user_records(user_id)
+
+for record in user_records:
+    # Step 1: Tokenize the record
+    tokenized = blindfold.tokenize(record.content, policy="gdpr_eu")
+
+    # Step 2: Store only the tokenized text (discard the mapping)
+    update_record(record.id, tokenized.text)
+    # "Maria Silva emailed about billing from Sao Paulo"
+    # → "<Person_1> emailed about billing from <Location_1>"
+
+    # Mapping is never stored — anonymization is permanent
+    # The original PII cannot be recovered
+
+# Data subject's personal data is now permanently anonymized
+```
+
+## Benefits for LGPD Compliance
+
+| Benefit | Details |
+|---|---|
+| **No international data transfer risk** | Tokens are not personal data — they can safely cross borders without triggering Art. 33 transfer restrictions |
+| **Data minimization** | Art. 6(III) satisfied automatically — AI providers only receive anonymized tokens |
+| **Audit trail** | Art. 37 record of processing activities — every PII operation is logged with timestamps, entity types, and policies |
+| **Anonymization** | Art. 12 compliance through tokenization and hashing — data subjects' right to anonymization is supported |
+
+## LGPD Compliance Checklist
+
+<Steps>
+  <Step title="Identify LGPD applicability">
+    Determine if your AI application processes personal data of individuals in Brazil. LGPD applies regardless of where your organization is located.
+  </Step>
+
+  <Step title="Configure Blindfold with EU region">
+    Set `region="eu"` in your SDK client. The EU region provides data residency aligned with LGPD requirements.
+  </Step>
+
+  <Step title="Apply gdpr_eu policy to all processing">
+    Use `policy="gdpr_eu"` on all tokenize, redact, encrypt, and hash calls handling Brazilian personal data.
+  </Step>
+
+  <Step title="Tokenize personal data before AI providers">
+    Always call `blindfold.tokenize()` before sending text to any LLM provider. This ensures no real personal data reaches third parties.
+  </Step>
+
+  <Step title="Maintain audit logs as record of processing">
+    Export audit logs from the [Blindfold Dashboard](https://app.blindfold.dev) to document your processing activities as required by Art. 37.
+  </Step>
+
+  <Step title="Implement data subject rights">
+    Use `detect()` for access requests, `redact()` for deletion, `hash()` for irreversible anonymization, and `tokenize()` with discarded mappings for right to anonymization.
+  </Step>
+
+  <Step title="Appoint a DPO (Encarregado)">
+    Designate an Encarregado, publicly disclose their contact information, and document your data flows including how Blindfold protects personal data in AI workflows.
+  </Step>
+</Steps>
+
+<Note>
+  LGPD is evolving — the ANPD continues to issue new regulations and guidance. Review your compliance posture regularly as new ANPD resolutions are published.
+</Note>
+
+---
+
+**Disclaimer**: This documentation provides general information about LGPD compliance requirements. It is not legal advice. Consult with legal counsel familiar with Brazilian data protection law to ensure your specific implementation meets all applicable requirements.

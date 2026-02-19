@@ -1,0 +1,359 @@
+---
+title: "Data Residency"
+description: "Keep sensitive data in the right jurisdiction when using AI"
+---
+
+**Data residency** refers to the physical or geographic location where data is stored and processed. When you build AI-powered applications, every API call to an LLM provider sends your users' data to wherever that provider's servers are located — often the United States.
+
+This creates a problem: if your users are in the EU, Brazil, or China, their personal data may be crossing borders without the legal safeguards those jurisdictions require. Blindfold solves this by either **processing PII within the correct region** or **removing PII before it crosses any border**.
+
+## Why Data Residency Matters for AI
+
+When you call OpenAI, Anthropic, or any other AI provider, user data travels to their servers — typically in the US. For a simple prompt like _"Help Hans Mueller at hans.mueller@example.de with his subscription"_, you have just transferred a German citizen's personal data outside the EU.
+
+This matters because:
+
+- **Regulations restrict cross-border transfers** — GDPR, LGPD, PIPL, and others impose strict rules on sending personal data abroad
+- **AI providers are third-party processors** — every LLM call is a data processing event under privacy law
+- **Adequacy decisions are fragile** — the EU-US Privacy Shield was invalidated overnight by Schrems II; relying solely on legal frameworks is risky
+- **Fines are substantial** — GDPR penalties reach 4% of global annual turnover; PIPL violations can result in service suspension
+
+<Warning>
+  Sending personal data to an AI provider in another jurisdiction without proper safeguards is a cross-border data transfer — even if the data is only processed in memory and never stored.
+</Warning>
+
+## Key Regulations
+
+<AccordionGroup>
+  <Accordion title="GDPR (European Union)" icon="flag">
+    **Articles 44-49** govern cross-border data transfers. Personal data can only leave the EU/EEA if the destination country has an **adequacy decision** from the European Commission, or if appropriate safeguards are in place.
+
+    **Schrems II ruling** (2020) invalidated the EU-US Privacy Shield, leaving Standard Contractual Clauses (SCCs) as the primary mechanism — but SCCs require a supplementary transfer impact assessment.
+
+    **Key points**:
+    - Adequacy decisions exist for limited countries (Japan, South Korea, UK, etc.)
+    - The EU-US Data Privacy Framework (2023) replaced Privacy Shield but faces legal challenges
+    - Tokenized data (e.g., `<Person_1>`) is not personal data and falls outside Chapter V transfer rules
+  </Accordion>
+
+  <Accordion title="LGPD (Brazil)" icon="flag">
+    **Article 33** of the Lei Geral de Protecao de Dados restricts international data transfers. Personal data may only be transferred to countries or organizations that provide an **adequate level of protection**, or with the data subject's **explicit and informed consent**.
+
+    **Key points**:
+    - Brazil's ANPD (National Data Protection Authority) has yet to publish its full adequacy list
+    - Transfer mechanisms mirror GDPR: adequacy decisions, SCCs, binding corporate rules
+    - Consent must be specific, informed, and separate from other consents
+    - LGPD penalties reach 2% of revenue in Brazil (up to 50 million BRL per infraction)
+  </Accordion>
+
+  <Accordion title="PIPL (China)" icon="flag">
+    **Articles 38-43** of the Personal Information Protection Law impose the strictest cross-border transfer rules globally. Transfers require a **security assessment** by the Cyberspace Administration of China (CAC) for large-scale processors.
+
+    **Key points**:
+    - Critical Information Infrastructure (CII) operators must store personal data within China (strict data localization)
+    - Processors handling data of 1M+ individuals must pass a CAC security assessment before any transfer
+    - Standard contracts are available for smaller-scale transfers but still require filing with the CAC
+    - Separate consent is required for each cross-border transfer
+  </Accordion>
+
+  <Accordion title="DPDPA (India)" icon="flag">
+    India's **Digital Personal Data Protection Act** (2023) empowers the central government to restrict transfers to specific countries via notification. While broadly permissive (transfers are allowed unless a country is blacklisted), certain categories of data may be subject to **localization requirements**.
+
+    **Key points**:
+    - Government can notify countries where transfers are prohibited
+    - Certain sectors (e.g., financial, telecom) have existing RBI/SEBI/TRAI data localization mandates
+    - Significant Data Fiduciaries face additional obligations
+    - Penalties up to 250 crore INR (~$30M) for non-compliance
+  </Accordion>
+
+  <Accordion title="POPIA (South Africa)" icon="flag">
+    **Section 72** of the Protection of Personal Information Act requires that cross-border transfers only occur when the recipient is subject to an **adequate level of protection** — either through the recipient country's laws, binding corporate rules, or the data subject's consent.
+
+    **Key points**:
+    - Adequacy is assessed by the Information Regulator
+    - Consent is a valid transfer mechanism
+    - Binding corporate rules and contractual safeguards are accepted
+    - POPIA applies to any processing of South African residents' data, regardless of where the processor is located
+  </Accordion>
+</AccordionGroup>
+
+## Global Data Residency Requirements
+
+| Regulation | Jurisdiction | Key Requirement | Blindfold Solution |
+|---|---|---|---|
+| **GDPR** | EU/EEA | No transfer without adequacy decision or SCCs | EU region endpoint (`region="eu"`) |
+| **LGPD** | Brazil | Adequate protection required for transfers | EU region (adequacy aligned) |
+| **PIPL** | China | Security assessment for cross-border transfers | Tokenize before transfer |
+| **DPDPA** | India | Localization for certain data categories | Tokenize before transfer |
+| **POPIA** | South Africa | Adequate protection or consent required | Tokenize before transfer |
+
+## How Blindfold Solves Data Residency
+
+Blindfold offers two complementary approaches to data residency compliance:
+
+1. **Regional endpoints** — Process PII within the correct jurisdiction so personal data never leaves the region. Use this when regulations require data to stay within a specific geography.
+
+2. **Tokenize before transfer** — Replace PII with anonymous tokens like `<Person_1>` before sending data to any AI provider. Since tokens contain no personal data, they are not subject to cross-border transfer restrictions. Use this when regional processing alone is insufficient or when the AI provider is in a different jurisdiction.
+
+### Regional Endpoints
+
+| Region | Endpoint | Data Location |
+|---|---|---|
+| **EU** | `eu-api.blindfold.dev` | Frankfurt, Germany |
+| **US** | `us-api.blindfold.dev` | Virginia, US |
+
+<Info>
+  API keys work globally — the same key works with any region. You choose the region in your SDK constructor or API URL, not in your API key configuration.
+</Info>
+
+### When to Use Which Approach
+
+| Scenario | Approach |
+|---|---|
+| EU users + US-based AI provider | EU region + tokenize before AI call |
+| US users + US-based AI provider | US region (data stays domestic) |
+| Brazilian users + any AI provider | EU region + tokenize (LGPD-GDPR alignment) |
+| Chinese users + any AI provider | Tokenize before any cross-border transfer |
+| Multi-region application | Configure region per-request based on user location |
+
+## Code Examples
+
+### EU Data Residency with GDPR Policy
+
+Protect EU personal data by processing PII in the EU before sending tokens to OpenAI:
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+from openai import OpenAI
+
+blindfold = Blindfold(api_key="your-key", region="eu")
+openai_client = OpenAI(api_key="your-openai-key")
+
+user_message = (
+    "Hallo, mein Name ist Hans Mueller. Meine E-Mail ist "
+    "hans.mueller@example.de und meine IBAN ist DE89 3704 0044 0532 0130 00. "
+    "Ich brauche Hilfe mit meiner Bestellung."
+)
+
+# Step 1: Tokenize PII on EU servers (Frankfurt)
+tokenized = blindfold.tokenize(user_message, policy="gdpr_eu")
+# → "Hallo, mein Name ist <Person_1>. Meine E-Mail ist
+#    <Email Address_1> und meine IBAN ist <IBAN_1>.
+#    Ich brauche Hilfe mit meiner Bestellung."
+
+# Step 2: Only anonymous tokens cross the border to OpenAI (US)
+completion = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are a helpful customer support agent."},
+        {"role": "user", "content": tokenized.text},
+    ],
+)
+ai_response = completion.choices[0].message.content
+
+# Step 3: Restore real values for the human agent
+restored = blindfold.detokenize(ai_response, tokenized.mapping)
+print(restored.text)
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+import OpenAI from 'openai';
+
+const blindfold = new Blindfold({ apiKey: 'your-key', region: 'eu' });
+const openai = new OpenAI({ apiKey: 'your-openai-key' });
+
+const userMessage =
+  'Hallo, mein Name ist Hans Mueller. Meine E-Mail ist ' +
+  'hans.mueller@example.de und meine IBAN ist DE89 3704 0044 0532 0130 00. ' +
+  'Ich brauche Hilfe mit meiner Bestellung.';
+
+// Step 1: Tokenize PII on EU servers (Frankfurt)
+const tokenized = await blindfold.tokenize(userMessage, { policy: 'gdpr_eu' });
+
+// Step 2: Only anonymous tokens cross the border to OpenAI (US)
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4o-mini',
+  messages: [
+    { role: 'system', content: 'You are a helpful customer support agent.' },
+    { role: 'user', content: tokenized.text },
+  ],
+});
+const aiResponse = completion.choices[0].message.content;
+
+// Step 3: Restore real values for the human agent
+const restored = await blindfold.detokenize(aiResponse, tokenized.mapping);
+console.log(restored.text);
+```
+</CodeGroup>
+
+### US Data Residency for Healthcare
+
+Keep US patient data within US borders using the HIPAA policy:
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+from openai import OpenAI
+
+blindfold = Blindfold(api_key="your-key", region="us")
+openai_client = OpenAI(api_key="your-openai-key")
+
+patient_note = (
+    "Patient: Emily Johnson, DOB 03/15/1985, MRN 4567890. "
+    "Diagnosed with Type 2 diabetes. Contact: emily.johnson@example.com, "
+    "SSN 123-45-6789."
+)
+
+# Tokenize PHI on US servers (Virginia)
+tokenized = blindfold.tokenize(patient_note, policy="hipaa_us")
+# → "Patient: <Person_1>, DOB <Date of Birth_1>, MRN <Medical Record Number_1>.
+#    Diagnosed with Type 2 diabetes. Contact: <Email Address_1>,
+#    SSN <Social Security Number_1>."
+
+# Safe to send to AI — no PHI exposed
+completion = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are a clinical documentation assistant."},
+        {"role": "user", "content": tokenized.text},
+    ],
+)
+
+restored = blindfold.detokenize(
+    completion.choices[0].message.content,
+    tokenized.mapping,
+)
+print(restored.text)
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+import OpenAI from 'openai';
+
+const blindfold = new Blindfold({ apiKey: 'your-key', region: 'us' });
+const openai = new OpenAI({ apiKey: 'your-openai-key' });
+
+const patientNote =
+  'Patient: Emily Johnson, DOB 03/15/1985, MRN 4567890. ' +
+  'Diagnosed with Type 2 diabetes. Contact: emily.johnson@example.com, ' +
+  'SSN 123-45-6789.';
+
+// Tokenize PHI on US servers (Virginia)
+const tokenized = await blindfold.tokenize(patientNote, { policy: 'hipaa_us' });
+
+// Safe to send to AI — no PHI exposed
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4o-mini',
+  messages: [
+    { role: 'system', content: 'You are a clinical documentation assistant.' },
+    { role: 'user', content: tokenized.text },
+  ],
+});
+
+const restored = await blindfold.detokenize(
+  completion.choices[0].message.content,
+  tokenized.mapping,
+);
+console.log(restored.text);
+```
+</CodeGroup>
+
+### Cross-Border AI Without PII Exposure
+
+When you tokenize first, the data that crosses borders contains no personal information — making it compliant with any data residency regulation:
+
+```python
+from blindfold import Blindfold
+from openai import OpenAI
+
+blindfold = Blindfold(api_key="your-key", region="eu")
+openai_client = OpenAI(api_key="your-openai-key")
+
+# A Brazilian customer writes in Portuguese
+customer_message = (
+    "Olá, meu nome é Maria Silva, CPF 123.456.789-00, "
+    "e-mail maria.silva@example.com.br. Preciso de ajuda com meu pedido."
+)
+
+# Step 1: Tokenize in the EU region
+tokenized = blindfold.tokenize(customer_message, policy="gdpr_eu")
+# → "Olá, meu nome é <Person_1>, CPF <National ID Number_1>,
+#    e-mail <Email Address_1>. Preciso de ajuda com meu pedido."
+
+# Step 2: Send tokens to OpenAI (US) — no personal data crosses borders
+# <Person_1> is not Maria Silva. <Email Address_1> is not an email.
+# This is NOT a cross-border data transfer under LGPD or GDPR.
+completion = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {
+            "role": "system",
+            "content": "You are a customer support agent. Respond in Portuguese.",
+        },
+        {"role": "user", "content": tokenized.text},
+    ],
+)
+ai_response = completion.choices[0].message.content
+
+# Step 3: Restore real values — PII never left the EU
+restored = blindfold.detokenize(ai_response, tokenized.mapping)
+print(restored.text)
+```
+
+## Tokenization as a Data Residency Strategy
+
+Tokenization fundamentally changes the data residency equation. When Blindfold replaces _Hans Mueller_ with `<Person_1>`, the resulting token:
+
+- **Contains no personal data** — `<Person_1>` cannot be traced back to any individual without the mapping
+- **Is not subject to transfer restrictions** — under GDPR, anonymous data falls outside the regulation entirely (Recital 26)
+- **Can be sent anywhere globally** — to OpenAI in the US, Anthropic in the US, or any other provider in any jurisdiction
+
+The **mapping** (which links `<Person_1>` back to _Hans Mueller_) stays within Blindfold's regional infrastructure. When you use `region="eu"`, this mapping is processed and held in Frankfurt — never crossing borders.
+
+This means you can:
+
+- Use **any AI provider** regardless of where they are hosted
+- Avoid complex **Standard Contractual Clauses** for AI provider relationships
+- Reduce your **transfer impact assessment** scope — no personal data in the transfer means no assessment needed for that data flow
+- Stay compliant even if **adequacy decisions are revoked** (as happened with Privacy Shield)
+
+<Note>
+  Tokenization as an anonymization strategy is supported by GDPR Recital 26, which states that the principles of data protection should not apply to anonymous information — information that does not relate to an identified or identifiable natural person.
+</Note>
+
+## Data Residency Checklist
+
+<Steps>
+  <Step title="Identify applicable regulations">
+    Determine which data residency laws apply based on where your users are located — not where your company is incorporated. A German user's data is subject to GDPR regardless of whether your company is in the US.
+  </Step>
+
+  <Step title="Choose the right region">
+    Select the Blindfold region that matches your compliance needs. Use `region="eu"` for EU/EEA users and LGPD-aligned processing. Use `region="us"` for US users and HIPAA workloads.
+  </Step>
+
+  <Step title="Configure your SDK with the region parameter">
+    Set the region in your SDK constructor so all PII processing happens in the correct jurisdiction:
+    ```python
+    blindfold = Blindfold(api_key="your-key", region="eu")
+    ```
+  </Step>
+
+  <Step title="Apply the appropriate compliance policy">
+    Use the policy that matches the regulation: `gdpr_eu` for GDPR/LGPD, `hipaa_us` for HIPAA, or `pci_dss` for payment data. Policies ensure the right entity types are detected for each regulation.
+  </Step>
+
+  <Step title="Verify audit logs show the correct region">
+    After your first API calls, check the audit trail in the [Blindfold Dashboard](https://app.blindfold.dev) to confirm requests are being processed in the expected region.
+  </Step>
+
+  <Step title="Document data flows for compliance audits">
+    Record how personal data enters your system, where it is tokenized, what crosses borders (only tokens), and where the mapping is held. This documentation is essential for GDPR Article 30 records and transfer impact assessments.
+  </Step>
+
+  <Step title="Review when expanding to new markets">
+    When you launch in a new country, revisit your data residency strategy. New regulations may require a different region, a different policy, or additional tokenization steps. Check this page for updates as Blindfold adds new regions.
+  </Step>
+</Steps>

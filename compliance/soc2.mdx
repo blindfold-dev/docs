@@ -1,0 +1,330 @@
+---
+title: "SOC 2 Compliance"
+description: "How Blindfold supports SOC 2 Trust Services Criteria for AI applications"
+---
+
+**Service Organization Control 2** (SOC 2) is developed by the American Institute of Certified Public Accountants (AICPA) and is the gold standard for demonstrating security practices to enterprise customers. Unlike certifications, SOC 2 is an **audit report** — an independent auditor evaluates your controls against the Trust Services Criteria and issues a formal report.
+
+There are two types of SOC 2 reports:
+- **Type I** evaluates the design of your controls at a specific point in time
+- **Type II** evaluates the operating effectiveness of your controls over a period, typically 6-12 months
+
+When your AI application handles customer data, SOC 2 demonstrates your commitment to security, availability, and data protection. Blindfold helps you implement the technical controls that auditors look for.
+
+## Who Needs SOC 2
+
+SOC 2 is relevant for:
+- **SaaS companies** handling customer data
+- **AI applications** processing sensitive information
+- **Service providers** to enterprise customers
+- **Any company** where customers ask "Are you SOC 2 compliant?"
+
+<Info>
+  SOC 2 is not legally required, but it's increasingly expected by enterprise customers and often a prerequisite for closing deals.
+</Info>
+
+## Trust Services Criteria
+
+SOC 2 is organized around five Trust Services Criteria. Security is required; the other four are optional but commonly included.
+
+<AccordionGroup>
+  <Accordion title="Security (CC)" icon="shield-halved">
+    The foundation of every SOC 2 report. Security covers protection against unauthorized access to systems and data.
+
+    Key controls include firewalls, encryption, access controls, intrusion detection, and vulnerability management. Every SOC 2 audit includes the Security criteria — also known as the Common Criteria (CC).
+  </Accordion>
+
+  <Accordion title="Availability (A)" icon="server">
+    System uptime and performance commitments. Availability criteria cover SLAs, monitoring, disaster recovery, capacity planning, and incident response.
+
+    Auditors evaluate whether your systems are available for operation and use as committed or agreed upon.
+  </Accordion>
+
+  <Accordion title="Processing Integrity (PI)" icon="check-double">
+    Data processing is complete, valid, accurate, and timely. Processing Integrity criteria cover input validation, error handling, reconciliation, and output review.
+
+    This ensures that your system processes data correctly and as authorized — critical for AI applications that transform sensitive information.
+  </Accordion>
+
+  <Accordion title="Confidentiality (C)" icon="lock">
+    Sensitive data is protected throughout its lifecycle. Confidentiality criteria cover encryption at rest and in transit, access restrictions, data classification, and secure disposal.
+
+    When your AI application handles customer data, confidentiality controls ensure that data is only accessible to authorized parties.
+  </Accordion>
+
+  <Accordion title="Privacy (P)" icon="user-shield">
+    Personal information collection, use, retention, disclosure, and disposal. Privacy criteria cover notice, consent, purpose limitation, and data minimization.
+
+    This criteria aligns closely with privacy regulations like GDPR and CCPA, making it especially relevant for AI applications that process personal data.
+  </Accordion>
+</AccordionGroup>
+
+## How Blindfold Maps to SOC 2
+
+| Trust Criteria | Requirement | Blindfold Feature |
+|---|---|---|
+| Security (CC6.1) | Logical access controls | API key authentication, per-tenant isolation |
+| Security (CC6.7) | Data protection in transit | TLS encryption, tokenization before transfer |
+| Confidentiality (C1.1) | Identify confidential data | Automatic PII detection with policies |
+| Confidentiality (C1.2) | Protect confidential data | `tokenize()`, `encrypt()`, `redact()`, `mask()` |
+| Privacy (P3.1) | Collection limitation | Data minimization via tokenization |
+| Privacy (P4.1) | Use limitation | PII never reaches AI providers |
+| Processing Integrity (PI1.1) | Accurate processing | Audit logs track every operation |
+| Availability (A1.2) | Recovery objectives | Regional redundancy (EU/US endpoints) |
+
+## Blindfold for Your SOC 2 Audit
+
+Using Blindfold in your data pipeline strengthens your SOC 2 posture across multiple Trust Services Criteria.
+
+### Audit Logs
+
+Every PII detection and protection operation is logged with timestamps, entity types detected, and the method used. These logs provide direct evidence for your auditor — export them from the [Blindfold Dashboard](https://app.blindfold.dev) during audit preparation.
+
+### Data Minimization
+
+Tokenization ensures AI providers never receive real PII. Your auditor sees a clear data boundary: sensitive data stays within your controlled environment, while only anonymized tokens like `<Person_1>` cross to third-party AI providers.
+
+### Encryption
+
+Blindfold provides AES-256 encryption for sensitive data at rest via `encrypt()`, and all API communication is protected with TLS encryption in transit.
+
+### Access Controls
+
+Separate API keys per application enforce logical access boundaries. Per-tenant isolation ensures that one customer's data is never accessible to another. Role-based dashboard access controls who can view audit logs and manage configurations.
+
+## Code Examples
+
+### Data Protection with Audit Trail
+
+Tokenize sensitive data before sending it to an AI provider. Every call creates an audit log entry that your SOC 2 auditor can review.
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+from openai import OpenAI
+
+blindfold = Blindfold(api_key="your-key")
+openai_client = OpenAI(api_key="your-openai-key")
+
+customer_message = (
+    "Hi, I'm Alex Chen. My email is alex.chen@example.com "
+    "and my phone number is (555) 123-4567. "
+    "I need to update my billing address to 742 Evergreen Terrace."
+)
+
+# Tokenize PII — creates an audit log entry
+tokenized = blindfold.tokenize(customer_message)
+# → "Hi, I'm <Person_1>. My email is <Email Address_1>
+#    and my phone number is <Phone Number_1>.
+#    I need to update my billing address to <Address_1>."
+
+# Audit log records: timestamp, 4 entities detected, method: tokenize
+print(f"Entities detected: {tokenized.entities_count}")
+for entity in tokenized.detected_entities:
+    print(f"  [{entity.type}] → {entity.token}")
+
+# Send only tokens to AI provider
+completion = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": tokenized.text}],
+)
+
+# Restore real values in the response
+restored = blindfold.detokenize(
+    completion.choices[0].message.content,
+    tokenized.mapping,
+)
+print(restored.text)
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+import OpenAI from 'openai';
+
+const blindfold = new Blindfold({ apiKey: 'your-key' });
+const openai = new OpenAI({ apiKey: 'your-openai-key' });
+
+const customerMessage =
+  "Hi, I'm Alex Chen. My email is alex.chen@example.com " +
+  'and my phone number is (555) 123-4567. ' +
+  'I need to update my billing address to 742 Evergreen Terrace.';
+
+// Tokenize PII — creates an audit log entry
+const tokenized = await blindfold.tokenize(customerMessage);
+// → "Hi, I'm <Person_1>. My email is <Email Address_1>
+//    and my phone number is <Phone Number_1>.
+//    I need to update my billing address to <Address_1>."
+
+console.log(`Entities detected: ${tokenized.entitiesCount}`);
+for (const entity of tokenized.detectedEntities) {
+  console.log(`  [${entity.type}] → ${entity.token}`);
+}
+
+// Send only tokens to AI provider
+const completion = await openai.chat.completions.create({
+  model: 'gpt-4o-mini',
+  messages: [{ role: 'user', content: tokenized.text }],
+});
+
+// Restore real values in the response
+const restored = await blindfold.detokenize(
+  completion.choices[0].message.content,
+  tokenized.mapping,
+);
+console.log(restored.text);
+```
+</CodeGroup>
+
+### Encrypt Sensitive Data at Rest
+
+Use `encrypt()` to protect customer data before storing it in your database — satisfying Confidentiality (C1.2) requirements.
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+
+client = Blindfold(api_key="your-key")
+
+customer_record = (
+    "Customer: Alex Chen, email: alex.chen@example.com, "
+    "SSN: 123-45-6789, account balance: $15,230.00"
+)
+
+# Encrypt PII before storage
+encrypted = client.encrypt(customer_record, encryption_key="your-encryption-key")
+# Store encrypted.text in your database — auditor sees encrypted values
+
+print(encrypted.text)
+# → "Customer: aGVsbG8..., email: dGVzdA...,
+#    SSN: c2VjcmV0..., account balance: $15,230.00"
+
+# Decrypt when authorized access is needed
+decrypted = client.decrypt(encrypted.text, encryption_key="your-encryption-key")
+print(decrypted.text)  # Original text restored
+```
+
+```typescript TypeScript
+import { Blindfold } from '@blindfold/sdk';
+
+const client = new Blindfold({ apiKey: 'your-key' });
+
+const customerRecord =
+  'Customer: Alex Chen, email: alex.chen@example.com, ' +
+  'SSN: 123-45-6789, account balance: $15,230.00';
+
+// Encrypt PII before storage
+const encrypted = await client.encrypt(customerRecord, {
+  encryptionKey: 'your-encryption-key',
+});
+// Store encrypted.text in your database
+
+console.log(encrypted.text);
+
+// Decrypt when authorized access is needed
+const decrypted = await client.decrypt(encrypted.text, {
+  encryptionKey: 'your-encryption-key',
+});
+console.log(decrypted.text); // Original text restored
+```
+</CodeGroup>
+
+### Complete Data Protection Pipeline
+
+Demonstrate multiple SOC 2 controls in a single flow: detection (CC6.1), tokenization (C1.2), AI processing (PI1.1), and restoration — all with a full audit trail.
+
+```python
+from blindfold import Blindfold
+from openai import OpenAI
+
+blindfold = Blindfold(api_key="your-key")
+openai_client = OpenAI(api_key="your-openai-key")
+
+# Incoming customer support message
+support_ticket = (
+    "My name is Alex Chen and I'm having trouble with my account. "
+    "My email is alex.chen@example.com, phone (555) 123-4567. "
+    "I was charged $299 on card ending 3456. My address is "
+    "742 Evergreen Terrace, Springfield, IL 62704."
+)
+
+# Step 1: Detect — identify all PII in the text
+detected = blindfold.detect(support_ticket)
+print(f"Found {detected.entities_count} entities:")
+for entity in detected.detected_entities:
+    print(f"  [{entity.type}] {entity.text}")
+# [Person] Alex Chen
+# [Email Address] alex.chen@example.com
+# [Phone Number] (555) 123-4567
+# [Credit Card Number] 3456
+# [Address] 742 Evergreen Terrace, Springfield, IL 62704
+
+# Step 2: Tokenize — replace PII with tokens
+tokenized = blindfold.tokenize(support_ticket)
+print(f"\nTokenized: {tokenized.text}")
+# "My name is <Person_1> and I'm having trouble with my account.
+#  My email is <Email Address_1>, phone <Phone Number_1>..."
+
+# Step 3: Send to AI — only anonymized tokens reach the provider
+completion = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are a customer support agent."},
+        {"role": "user", "content": tokenized.text},
+    ],
+)
+ai_response = completion.choices[0].message.content
+
+# Step 4: Restore — put real values back into the AI response
+restored = blindfold.detokenize(ai_response, tokenized.mapping)
+print(f"\nFinal response: {restored.text}")
+
+# Audit trail captures every step:
+# - detect: 5 entities identified (CC6.1, C1.1)
+# - tokenize: 5 entities replaced (C1.2, P3.1)
+# - detokenize: response restored (PI1.1)
+```
+
+## Providing Evidence to Auditors
+
+During your SOC 2 audit, you can provide the following evidence from Blindfold:
+
+- **Audit log exports** from the Blindfold dashboard showing every PII operation with timestamps
+- **API documentation** demonstrating the data protection controls available
+- **Policy configurations** showing how data is classified and which entity types are detected
+- **Encryption key management** documentation for data-at-rest protection
+
+<Note>
+  Blindfold's audit logs provide evidence for CC7.2 (monitoring), C1.1 (data identification), and P3.2 (collection practices).
+</Note>
+
+## SOC 2 Readiness Checklist
+
+<Steps>
+  <Step title="Integrate Blindfold into your data pipeline">
+    Add Blindfold SDK calls before any AI provider interaction or sensitive data storage. This establishes the technical controls auditors evaluate.
+  </Step>
+
+  <Step title="Configure appropriate policies for data classification">
+    Select detection policies that match your data types — `default` for general PII, or specialized policies like `gdpr_eu`, `hipaa_us`, or `pci_dss` for regulated data.
+  </Step>
+
+  <Step title="Enable audit logging for all PII operations">
+    Every Blindfold API call is automatically logged. Ensure your application routes all sensitive text through Blindfold so the audit trail is complete.
+  </Step>
+
+  <Step title="Implement encryption for sensitive data at rest">
+    Use `blindfold.encrypt()` with AES-256 encryption before storing any text containing sensitive information in your database.
+  </Step>
+
+  <Step title="Set up separate API keys per application">
+    Create different API keys for each application or environment (development, staging, production) to enforce logical access controls.
+  </Step>
+
+  <Step title="Export and review audit logs regularly">
+    Schedule regular exports from the [Blindfold Dashboard](https://app.blindfold.dev) and review them for anomalies or unexpected access patterns.
+  </Step>
+
+  <Step title="Document your data protection practices for auditors">
+    Prepare documentation describing how Blindfold fits into your data pipeline, which protection methods you use, and how audit evidence is collected.
+  </Step>
+</Steps>

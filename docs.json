@@ -28,7 +28,11 @@
               "compliance/gdpr",
               "compliance/hipaa",
               "compliance/pci-dss",
-              "compliance/eu-ai-act"
+              "compliance/eu-ai-act",
+              "compliance/data-residency",
+              "compliance/ccpa",
+              "compliance/lgpd",
+              "compliance/soc2"
             ]
           },
           {
