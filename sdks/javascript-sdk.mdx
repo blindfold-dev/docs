@@ -357,6 +357,127 @@ console.log(response.text);
 - `detected_entities`: Array of encrypted entities
 - `entities_count`: Number of entities encrypted
 
+## Image Processing
+
+Process PII in images — upload an image, and receive a modified PNG with PII protected. All image methods return an `ImageProcessResponse` containing the processed image and metadata.
+
+### ImageProcessResponse
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `image` | `ArrayBuffer` | Processed PNG image |
+| `detected_entities` | `DetectedEntity[]` | Entities found in the image |
+| `entities_count` | `number` | Number of entities detected |
+| `mapping` | `Record<string, string>` | Token-to-original mapping |
+| `ocr_confidence` | `number \| null` | Average OCR confidence (0-100) |
+
+### imageDetect()
+
+Detect PII in an image without modifying it. Returns extracted text and entities (JSON, not an image).
+
+```typescript
+import { readFileSync } from 'fs'
+
+const result = await client.imageDetect(readFileSync('screenshot.png'))
+console.log(result.extracted_text)
+console.log(result.ocr_confidence)
+result.detected_entities.forEach(e => console.log(`${e.type}: ${e.text}`))
+```
+
+See [Image Processing](/methods/image-detection) for full details.
+
+### imageTokenize()
+
+Replace PII with token labels in the image.
+
+```typescript
+import { readFileSync, writeFileSync } from 'fs'
+
+const result = await client.imageTokenize(readFileSync('screenshot.png'))
+writeFileSync('tokenized.png', Buffer.from(result.image))
+console.log(result.mapping)
+```
+
+### imageRedact()
+
+Remove PII with black boxes.
+
+```typescript
+const result = await client.imageRedact(readFileSync('screenshot.png'), {
+  policy: 'gdpr_eu',
+})
+writeFileSync('redacted.png', Buffer.from(result.image))
+```
+
+### imageMask()
+
+Partially hide PII with masking characters.
+
+```typescript
+const result = await client.imageMask(readFileSync('screenshot.png'), {
+  chars_to_show: 4,
+  from_end: true,
+  masking_char: '*',
+})
+writeFileSync('masked.png', Buffer.from(result.image))
+```
+
+**Config type:** `ImageMaskConfig` — adds `chars_to_show` (default: 3), `from_end` (default: false), `masking_char` (default: `*`)
+
+### imageSynthesize()
+
+Replace PII with realistic fake data.
+
+```typescript
+const result = await client.imageSynthesize(readFileSync('screenshot.png'), {
+  synthesis_language: 'de',
+})
+writeFileSync('synthesized.png', Buffer.from(result.image))
+```
+
+**Config type:** `ImageSynthesizeConfig` — adds `synthesis_language` (e.g., `en`, `de`, `fr`)
+
+### imageHash()
+
+Replace PII with deterministic hashes.
+
+```typescript
+const result = await client.imageHash(readFileSync('screenshot.png'), {
+  hash_type: 'sha256',
+  hash_prefix: 'ID_',
+  hash_length: 12,
+})
+writeFileSync('hashed.png', Buffer.from(result.image))
+```
+
+**Config type:** `ImageHashConfig` — adds `hash_type` (default: `sha256`), `hash_prefix` (default: `HASH_`), `hash_length` (default: 16)
+
+### imageEncrypt()
+
+Encrypt PII with AES encryption.
+
+```typescript
+const result = await client.imageEncrypt(readFileSync('screenshot.png'), {
+  encryption_key: 'your-secure-key-min-16-chars',
+})
+writeFileSync('encrypted.png', Buffer.from(result.image))
+```
+
+**Config type:** `ImageEncryptConfig` — adds `encryption_key` (min 16 characters, uses tenant default if omitted)
+
+### Common Config (ImageProcessConfig)
+
+All image methods accept a config object with:
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `language` | `string` | `eng` | Tesseract OCR language code |
+| `entities` | `string[]` | — | Entity types to detect |
+| `score_threshold` | `number` | — | Minimum confidence (0.0-1.0) |
+| `policy` | `string` | — | Detection policy name |
+
+**Input:** All image methods accept `Blob | Buffer` as the first argument.
+
 ## Batch Processing
 
 Process multiple texts in a single API call. All 7 methods (except detokenize) support batch processing.

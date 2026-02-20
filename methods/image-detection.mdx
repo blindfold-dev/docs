@@ -1,39 +1,19 @@
 ---
-title: "Image Detection"
-description: "Detect PII in images using OCR + entity detection"
+title: "Image Processing"
+description: "Detect and protect PII in images using OCR + entity detection"
 ---
 
-## What is Image Detection?
+Blindfold can process images to detect and protect PII. Images are first analyzed with OCR (Optical Character Recognition) to extract text, then PII detection and protection is applied. The 7 image methods mirror the text-based methods:
 
-Image Detection extracts text from images using OCR (Optical Character Recognition), then runs PII detection on the extracted text. This enables detecting sensitive data in screenshots, scanned documents, photos of IDs, receipts, and more.
-
-**Example:**
-```
-Input:  Photo of a business card
-Output: {
-  extracted_text: "John Doe, CEO - john@acme.com - (555) 123-4567",
-  detected_entities: [
-    {type: "Person", text: "John Doe", score: 0.95},
-    {type: "Email Address", text: "john@acme.com", score: 0.99},
-    {type: "Phone Number", text: "(555) 123-4567", score: 0.97}
-  ]
-}
-```
-
-## How It Works
-
-1. **Upload**: Send an image via multipart/form-data
-2. **OCR**: Tesseract extracts text from the image
-3. **Detection**: GLiNER identifies PII entities in the extracted text
-4. **Response**: Returns extracted text, detected entities, and OCR confidence
-
-## When to Use Image Detection
-
-- **Document scanning**: Detect PII in scanned contracts, invoices, or forms
-- **Screenshot analysis**: Find sensitive data in screenshots before sharing
-- **ID verification**: Detect personal information in photos of ID cards or passports
-- **Data loss prevention**: Scan uploaded images for sensitive content
-- **Compliance auditing**: Verify that images don't contain protected health information (PHI)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| [Detect](#image-detection) | `POST /file/detect` | Detect PII — returns JSON with extracted text and entities |
+| [Tokenize](#image-tokenization) | `POST /file/tokenize` | Replace PII with tokens — returns modified PNG |
+| [Redact](#image-redaction) | `POST /file/redact` | Remove PII with black boxes — returns modified PNG |
+| [Mask](#image-masking) | `POST /file/mask` | Partially hide PII — returns modified PNG |
+| [Synthesize](#image-synthesis) | `POST /file/synthesize` | Replace PII with fake data — returns modified PNG |
+| [Hash](#image-hashing) | `POST /file/hash` | Replace PII with hashes — returns modified PNG |
+| [Encrypt](#image-encryption) | `POST /file/encrypt` | Encrypt PII — returns modified PNG |
 
 ## Supported Image Formats
 
@@ -45,50 +25,6 @@ Output: {
 | BMP | `image/bmp` |
 | WebP | `image/webp` |
 
-## API Reference
-
-```
-POST /api/public/v1/file/detect
-Content-Type: multipart/form-data
-```
-
-### Parameters
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `file` | file | Yes | — | Image file (JPEG, PNG, TIFF, BMP, WebP) |
-| `language` | string | No | `eng` | Tesseract language code |
-| `entities` | string | No | — | Comma-separated entity types to detect |
-| `score_threshold` | float | No | — | Minimum confidence score (0.0-1.0) |
-| `policy` | string | No | — | Detection policy name |
-
-### Response
-
-```json
-{
-  "extracted_text": "John Doe, john@example.com",
-  "detected_entities": [
-    {
-      "type": "Person",
-      "text": "John Doe",
-      "start": 0,
-      "end": 8,
-      "score": 0.95
-    },
-    {
-      "type": "Email Address",
-      "text": "john@example.com",
-      "start": 10,
-      "end": 26,
-      "score": 0.99
-    }
-  ],
-  "entities_count": 2,
-  "ocr_confidence": 92.3,
-  "language_used": "eng"
-}
-```
-
 ### Size Limits
 
 | Plan | Max Image Size |
@@ -97,6 +33,59 @@ Content-Type: multipart/form-data
 | Pay As You Go | 10 MB |
 
 **Billing**: Characters are counted from the OCR-extracted text length (not the image file size).
+
+**Pixel limit**: Images are limited to 25 million pixels (e.g., 5000x5000) to prevent excessive processing time.
+
+## How It Works
+
+1. **Upload**: Send an image via `multipart/form-data`
+2. **OCR**: Tesseract extracts text from the image
+3. **Detection**: GLiNER identifies PII entities in the extracted text
+4. **Protection**: The selected method is applied (tokenize, redact, mask, etc.)
+5. **Response**: `/file/detect` returns JSON; all other methods return a modified PNG image with metadata in response headers
+
+## Response Format
+
+### Detection (`/file/detect`)
+
+Returns a standard JSON response:
+
+```json
+{
+  "extracted_text": "John Doe, john@example.com",
+  "detected_entities": [
+    { "type": "Person", "text": "John Doe", "start": 0, "end": 8, "score": 0.95 },
+    { "type": "Email Address", "text": "john@example.com", "start": 10, "end": 26, "score": 0.99 }
+  ],
+  "entities_count": 2,
+  "ocr_confidence": 92.3,
+  "language_used": "eng"
+}
+```
+
+### Processing Methods (tokenize, redact, mask, synthesize, hash, encrypt)
+
+Returns **binary PNG image data** with metadata in HTTP response headers:
+
+| Header | Description |
+|--------|-------------|
+| `Content-Type` | `image/png` |
+| `X-Entities-Count` | Number of entities detected |
+| `X-Detected-Entities` | JSON array of detected entities |
+| `X-Mapping` | JSON object mapping tokens to original values |
+| `X-OCR-Confidence` | Average OCR confidence score (0-100) |
+
+## Common Parameters
+
+All image endpoints share these parameters (sent as `multipart/form-data` fields):
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file` | file | Yes | — | Image file (JPEG, PNG, TIFF, BMP, WebP) |
+| `language` | string | No | `eng` | Tesseract OCR language code |
+| `entities` | string | No | — | Comma-separated entity types to detect |
+| `score_threshold` | float | No | — | Minimum confidence score (0.0-1.0) |
+| `policy` | string | No | — | Detection policy name |
 
 ## OCR Languages
 
@@ -112,22 +101,25 @@ Common Tesseract language codes:
 
 You can combine languages with `+`: `eng+deu` for English and German.
 
-## Code Examples
+---
 
-### Python SDK
+## Image Detection
 
-```python
+Detect PII in an image without modifying it. Returns JSON with extracted text and detected entities.
+
+```
+POST /api/public/v1/file/detect
+```
+
+<CodeGroup>
+```python Python
 from blindfold import Blindfold
 
 client = Blindfold(api_key="your-api-key", region="eu")
 
-# Detect PII in an image file
 result = client.image_detect("screenshot.png")
-
 print(f"Extracted text: {result.extracted_text}")
 print(f"OCR confidence: {result.ocr_confidence}%")
-print(f"Entities found: {result.entities_count}")
-
 for entity in result.detected_entities:
     print(f"  {entity.type}: {entity.text} ({entity.score:.0%})")
 
@@ -136,77 +128,342 @@ result = client.image_detect(
     "document.jpg",
     language="deu",
     policy="gdpr_eu",
-    entities=["Person", "Email Address", "Phone Number"],
+    entities=["Person", "Email Address"],
     score_threshold=0.5,
 )
-
-# From bytes
-with open("photo.png", "rb") as f:
-    result = client.image_detect(f.read())
 ```
 
-### Python SDK (Async)
-
-```python
-from blindfold import AsyncBlindfold
-
-async with AsyncBlindfold(api_key="your-api-key", region="eu") as client:
-    result = await client.image_detect("screenshot.png")
-    print(result.extracted_text)
-```
-
-### JavaScript/TypeScript SDK
-
-```typescript
+```typescript JavaScript
 import { Blindfold } from '@blindfold/sdk'
+import { readFileSync } from 'fs'
 
 const client = new Blindfold({ apiKey: 'your-api-key', region: 'eu' })
-
-// From a file (Node.js)
-import { readFileSync } from 'fs'
 const imageBuffer = readFileSync('screenshot.png')
 const result = await client.imageDetect(imageBuffer)
 
 console.log(`Extracted: ${result.extracted_text}`)
 console.log(`Entities: ${result.entities_count}`)
-
-// From a Blob (browser)
-const file = document.querySelector('input[type="file"]').files[0]
-const result = await client.imageDetect(file, {
-  language: 'eng',
-  policy: 'gdpr_eu',
-})
 ```
 
-### CLI
-
-```bash
-# Basic usage
+```bash CLI
 blindfold image-detect --image screenshot.png
-
-# With options
-blindfold image-detect --image document.jpg \
-  --language deu \
-  --policy gdpr_eu \
-  --entities "Person,Email Address"
-
-# JSON output
-blindfold image-detect --image photo.png --json
+blindfold image-detect --image document.jpg --language deu --policy gdpr_eu
 ```
 
-### cURL
-
-```bash
+```bash cURL
 curl -X POST https://eu-api.blindfold.dev/api/public/v1/file/detect \
   -H "X-API-Key: your-api-key" \
   -F "file=@screenshot.png" \
   -F "language=eng" \
   -F "policy=gdpr_eu"
 ```
+</CodeGroup>
+
+---
+
+## Image Tokenization
+
+Replace PII in the image with token labels (e.g., `<Person_1>`). Returns a modified PNG.
+
+```
+POST /api/public/v1/file/tokenize
+```
+
+No additional parameters beyond [common parameters](#common-parameters).
+
+<CodeGroup>
+```python Python
+from blindfold import Blindfold
+
+client = Blindfold(api_key="your-api-key", region="eu")
+
+result = client.image_tokenize("screenshot.png")
+
+# Save the processed image
+with open("tokenized.png", "wb") as f:
+    f.write(result.image)
+
+print(f"Entities found: {result.entities_count}")
+print(f"Mapping: {result.mapping}")
+```
+
+```typescript JavaScript
+import { Blindfold } from '@blindfold/sdk'
+import { readFileSync, writeFileSync } from 'fs'
+
+const client = new Blindfold({ apiKey: 'your-api-key', region: 'eu' })
+const result = await client.imageTokenize(readFileSync('screenshot.png'))
+
+writeFileSync('tokenized.png', Buffer.from(result.image))
+console.log(`Entities: ${result.entities_count}`)
+console.log(`Mapping:`, result.mapping)
+```
+
+```bash CLI
+blindfold image-tokenize --image screenshot.png --output tokenized.png
+blindfold image-tokenize --image doc.jpg --output out.png --language deu --policy gdpr_eu
+```
+
+```bash cURL
+curl -X POST https://eu-api.blindfold.dev/api/public/v1/file/tokenize \
+  -H "X-API-Key: your-api-key" \
+  -F "file=@screenshot.png" \
+  -o tokenized.png
+```
+</CodeGroup>
+
+---
+
+## Image Redaction
+
+Replace PII with black boxes. Returns a modified PNG.
+
+```
+POST /api/public/v1/file/redact
+```
+
+No additional parameters beyond [common parameters](#common-parameters).
+
+<CodeGroup>
+```python Python
+result = client.image_redact("screenshot.png")
+
+with open("redacted.png", "wb") as f:
+    f.write(result.image)
+
+print(f"Redacted {result.entities_count} entities")
+```
+
+```typescript JavaScript
+const result = await client.imageRedact(readFileSync('screenshot.png'))
+writeFileSync('redacted.png', Buffer.from(result.image))
+```
+
+```bash CLI
+blindfold image-redact --image screenshot.png --output redacted.png
+```
+
+```bash cURL
+curl -X POST https://eu-api.blindfold.dev/api/public/v1/file/redact \
+  -H "X-API-Key: your-api-key" \
+  -F "file=@screenshot.png" \
+  -o redacted.png
+```
+</CodeGroup>
+
+---
+
+## Image Masking
+
+Partially hide PII with masking characters. Returns a modified PNG.
+
+```
+POST /api/public/v1/file/mask
+```
+
+**Additional parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `chars_to_show` | integer | `3` | Number of characters to keep visible |
+| `from_end` | boolean | `false` | Show visible characters from end instead of start |
+| `masking_char` | string | `*` | Character used for masking |
+
+<CodeGroup>
+```python Python
+result = client.image_mask(
+    "screenshot.png",
+    chars_to_show=4,
+    from_end=True,
+    masking_char="*",
+)
+
+with open("masked.png", "wb") as f:
+    f.write(result.image)
+```
+
+```typescript JavaScript
+const result = await client.imageMask(readFileSync('screenshot.png'), {
+  chars_to_show: 4,
+  from_end: true,
+  masking_char: '*',
+})
+writeFileSync('masked.png', Buffer.from(result.image))
+```
+
+```bash CLI
+blindfold image-mask --image screenshot.png --output masked.png \
+  --chars-to-show 4 --from-end --masking-char "*"
+```
+
+```bash cURL
+curl -X POST https://eu-api.blindfold.dev/api/public/v1/file/mask \
+  -H "X-API-Key: your-api-key" \
+  -F "file=@screenshot.png" \
+  -F "chars_to_show=4" \
+  -F "from_end=true" \
+  -F "masking_char=*" \
+  -o masked.png
+```
+</CodeGroup>
+
+---
+
+## Image Synthesis
+
+Replace PII with realistic fake data. Returns a modified PNG.
+
+```
+POST /api/public/v1/file/synthesize
+```
+
+**Additional parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `synthesis_language` | string | `en` | Language for fake data generation: `en`, `cs`, `de`, `fr`, `es`, `it`, `pl`, `sk` |
+
+<CodeGroup>
+```python Python
+result = client.image_synthesize(
+    "screenshot.png",
+    synthesis_language="de",
+)
+
+with open("synthesized.png", "wb") as f:
+    f.write(result.image)
+```
+
+```typescript JavaScript
+const result = await client.imageSynthesize(readFileSync('screenshot.png'), {
+  synthesis_language: 'de',
+})
+writeFileSync('synthesized.png', Buffer.from(result.image))
+```
+
+```bash CLI
+blindfold image-synthesize --image screenshot.png --output synthesized.png \
+  --synthesis-language de
+```
+
+```bash cURL
+curl -X POST https://eu-api.blindfold.dev/api/public/v1/file/synthesize \
+  -H "X-API-Key: your-api-key" \
+  -F "file=@screenshot.png" \
+  -F "synthesis_language=de" \
+  -o synthesized.png
+```
+</CodeGroup>
+
+---
+
+## Image Hashing
+
+Replace PII with deterministic hash values. Returns a modified PNG.
+
+```
+POST /api/public/v1/file/hash
+```
+
+**Additional parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `hash_type` | string | `sha256` | Hash algorithm: `md5`, `sha1`, `sha224`, `sha256`, `sha384`, `sha512` |
+| `hash_prefix` | string | `HASH_` | Prefix for hash values |
+| `hash_length` | integer | `16` | Length of hash to use |
+
+<CodeGroup>
+```python Python
+result = client.image_hash(
+    "screenshot.png",
+    hash_type="sha256",
+    hash_prefix="ID_",
+    hash_length=12,
+)
+
+with open("hashed.png", "wb") as f:
+    f.write(result.image)
+```
+
+```typescript JavaScript
+const result = await client.imageHash(readFileSync('screenshot.png'), {
+  hash_type: 'sha256',
+  hash_prefix: 'ID_',
+  hash_length: 12,
+})
+writeFileSync('hashed.png', Buffer.from(result.image))
+```
+
+```bash CLI
+blindfold image-hash --image screenshot.png --output hashed.png \
+  --hash-type sha256 --hash-prefix "ID_" --hash-length 12
+```
+
+```bash cURL
+curl -X POST https://eu-api.blindfold.dev/api/public/v1/file/hash \
+  -H "X-API-Key: your-api-key" \
+  -F "file=@screenshot.png" \
+  -F "hash_type=sha256" \
+  -F "hash_prefix=ID_" \
+  -F "hash_length=12" \
+  -o hashed.png
+```
+</CodeGroup>
+
+---
+
+## Image Encryption
+
+Encrypt PII with AES encryption. Returns a modified PNG.
+
+```
+POST /api/public/v1/file/encrypt
+```
+
+**Additional parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `encryption_key` | string | — | Encryption key (min 16 characters). Uses tenant default if omitted. |
+
+<CodeGroup>
+```python Python
+result = client.image_encrypt(
+    "screenshot.png",
+    encryption_key="your-secure-key-min-16-chars",
+)
+
+with open("encrypted.png", "wb") as f:
+    f.write(result.image)
+```
+
+```typescript JavaScript
+const result = await client.imageEncrypt(readFileSync('screenshot.png'), {
+  encryption_key: 'your-secure-key-min-16-chars',
+})
+writeFileSync('encrypted.png', Buffer.from(result.image))
+```
+
+```bash CLI
+blindfold image-encrypt --image screenshot.png --output encrypted.png \
+  --encryption-key "your-secure-key-min-16-chars"
+```
+
+```bash cURL
+curl -X POST https://eu-api.blindfold.dev/api/public/v1/file/encrypt \
+  -H "X-API-Key: your-api-key" \
+  -F "file=@screenshot.png" \
+  -F "encryption_key=your-secure-key-min-16-chars" \
+  -o encrypted.png
+```
+</CodeGroup>
+
+---
 
 ## Tips
 
 - **Image quality matters**: Higher resolution images produce better OCR results. The `ocr_confidence` field indicates how confident Tesseract is in the extraction.
 - **Language selection**: Choosing the correct language code improves OCR accuracy significantly, especially for non-Latin scripts.
-- **No text detected**: If `extracted_text` is empty, the image may not contain readable text, or the image quality may be too low for OCR.
-- **Pixel limit**: Images are limited to 25 million pixels (e.g., 5000x5000) to prevent excessive processing time.
+- **No text detected**: If no entities are found, the image may not contain readable text, or the image quality may be too low for OCR.
+- **Save output images**: All processing methods (except detect) return PNG binary data. Make sure to save the response body as a `.png` file.

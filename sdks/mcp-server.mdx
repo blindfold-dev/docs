@@ -199,6 +199,95 @@ Analyze text samples to discover what types of PII they contain.
 - `samples` (string[]) — Array of text samples to analyze
 - `threshold` (number, optional) — Detection confidence threshold
 
+### blindfold_image_detect
+
+Detect PII in an image using OCR. Returns extracted text and detected entities.
+
+**Parameters:**
+- `image_base64` (string) — Base64-encoded image data
+- `language` (string, optional) — Tesseract language code (default: `eng`)
+- `policy` (string, optional) — Detection policy
+- `entities` (string[], optional) — Entity types to detect
+- `score_threshold` (number, optional) — Minimum confidence (0.0-1.0)
+
+### blindfold_image_tokenize
+
+Replace PII in an image with token labels. Returns a modified PNG image.
+
+**Parameters:**
+- `image_base64` (string) — Base64-encoded image data
+- `language` (string, optional) — Tesseract language code (default: `eng`)
+- `policy` (string, optional) — Detection policy
+- `entities` (string[], optional) — Entity types to detect
+- `score_threshold` (number, optional) — Minimum confidence (0.0-1.0)
+
+### blindfold_image_redact
+
+Remove PII from an image with black boxes. Returns a modified PNG image.
+
+**Parameters:**
+- `image_base64` (string) — Base64-encoded image data
+- `language` (string, optional) — Tesseract language code (default: `eng`)
+- `policy` (string, optional) — Detection policy
+- `entities` (string[], optional) — Entity types to detect
+- `score_threshold` (number, optional) — Minimum confidence (0.0-1.0)
+
+### blindfold_image_mask
+
+Partially hide PII in an image with masking characters. Returns a modified PNG image.
+
+**Parameters:**
+- `image_base64` (string) — Base64-encoded image data
+- `language` (string, optional) — Tesseract language code (default: `eng`)
+- `policy` (string, optional) — Detection policy
+- `entities` (string[], optional) — Entity types to detect
+- `score_threshold` (number, optional) — Minimum confidence (0.0-1.0)
+- `masking_char` (string, optional) — Masking character (default: `*`, max 1 char)
+- `chars_to_show` (number, optional) — Characters to keep visible
+- `from_end` (boolean, optional) — Show visible chars from end
+
+### blindfold_image_synthesize
+
+Replace PII in an image with realistic fake data. Returns a modified PNG image.
+
+**Parameters:**
+- `image_base64` (string) — Base64-encoded image data
+- `language` (string, optional) — Tesseract language code (default: `eng`)
+- `policy` (string, optional) — Detection policy
+- `entities` (string[], optional) — Entity types to detect
+- `score_threshold` (number, optional) — Minimum confidence (0.0-1.0)
+- `synthesis_language` (string, optional) — Language for fake data (e.g., `en`, `de`, `fr`)
+
+### blindfold_image_hash
+
+Replace PII in an image with deterministic hashes. Returns a modified PNG image.
+
+**Parameters:**
+- `image_base64` (string) — Base64-encoded image data
+- `language` (string, optional) — Tesseract language code (default: `eng`)
+- `policy` (string, optional) — Detection policy
+- `entities` (string[], optional) — Entity types to detect
+- `score_threshold` (number, optional) — Minimum confidence (0.0-1.0)
+- `hash_type` (string, optional) — Hash algorithm (default: `sha256`)
+- `hash_prefix` (string, optional) — Prefix for hash values
+- `hash_length` (number, optional) — Length of hash to use
+
+### blindfold_image_encrypt
+
+Encrypt PII in an image with AES encryption. Returns a modified PNG image.
+
+**Parameters:**
+- `image_base64` (string) — Base64-encoded image data
+- `language` (string, optional) — Tesseract language code (default: `eng`)
+- `policy` (string, optional) — Detection policy
+- `entities` (string[], optional) — Entity types to detect
+- `score_threshold` (number, optional) — Minimum confidence (0.0-1.0)
+- `encryption_key` (string, optional) — Encryption key (min 16 characters)
+
+<Info>
+  Image tools return the processed image as an MCP image content block (PNG) alongside a text block containing detection metadata (entities, mapping, OCR confidence).
+</Info>
+
 ## Usage Examples
 
 Once the MCP server is connected, you can ask your AI assistant things like:

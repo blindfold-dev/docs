@@ -149,6 +149,93 @@ Analyze text samples to discover what types of PII they contain.
 blindfold discover "John Doe" "john@example.com" "+1-555-1234"
 ```
 
+### image-detect
+
+Detect PII in an image using OCR.
+
+```bash
+blindfold image-detect --image screenshot.png
+blindfold image-detect --image document.jpg --language deu --policy gdpr_eu --json
+```
+
+### image-tokenize
+
+Replace PII in an image with token labels. Outputs a modified PNG.
+
+```bash
+blindfold image-tokenize --image screenshot.png --output tokenized.png
+```
+
+### image-redact
+
+Remove PII from an image with black boxes. Outputs a modified PNG.
+
+```bash
+blindfold image-redact --image screenshot.png --output redacted.png
+```
+
+### image-mask
+
+Partially hide PII in an image with masking characters. Outputs a modified PNG.
+
+```bash
+blindfold image-mask --image screenshot.png --output masked.png \
+  --chars-to-show 4 --from-end --masking-char "*"
+```
+
+### image-synthesize
+
+Replace PII in an image with realistic fake data. Outputs a modified PNG.
+
+```bash
+blindfold image-synthesize --image screenshot.png --output synthesized.png \
+  --synthesis-language de
+```
+
+### image-hash
+
+Replace PII in an image with deterministic hashes. Outputs a modified PNG.
+
+```bash
+blindfold image-hash --image screenshot.png --output hashed.png \
+  --hash-type sha256 --hash-prefix "ID_" --hash-length 12
+```
+
+### image-encrypt
+
+Encrypt PII in an image with AES encryption. Outputs a modified PNG.
+
+```bash
+blindfold image-encrypt --image screenshot.png --output encrypted.png \
+  --encryption-key "your-secure-key-min-16-chars"
+```
+
+## Image Command Options
+
+All image processing commands (except `image-detect`) share these options:
+
+| Option | Description |
+|--------|-------------|
+| `-i, --image <path>` | Input image file (required) |
+| `-o, --output <path>` | Output path for processed PNG (required) |
+| `-l, --language <code>` | Tesseract OCR language code (default: `eng`) |
+| `-p, --policy <name>` | Detection policy |
+| `-e, --entities <types>` | Entity types to detect (comma-separated) |
+| `-t, --threshold <n>` | Minimum confidence score (0.0-1.0) |
+
+**Method-specific options:**
+
+| Command | Option | Description |
+|---------|--------|-------------|
+| `image-mask` | `--chars-to-show <n>` | Characters to keep visible (default: 3) |
+| `image-mask` | `--from-end` | Show visible chars from end |
+| `image-mask` | `--masking-char <char>` | Masking character (default: `*`) |
+| `image-synthesize` | `--synthesis-language <code>` | Fake data language (e.g., `en`, `de`) |
+| `image-hash` | `--hash-type <type>` | Hash algorithm (default: `sha256`) |
+| `image-hash` | `--hash-prefix <prefix>` | Hash prefix (default: `HASH_`) |
+| `image-hash` | `--hash-length <n>` | Hash length (default: 16) |
+| `image-encrypt` | `--encryption-key <key>` | Encryption key (min 16 chars) |
+
 ## Common Options
 
 All PII commands (except detokenize and discover) share these options:
