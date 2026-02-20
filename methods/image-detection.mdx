@@ -1,0 +1,212 @@
+---
+title: "Image Detection"
+description: "Detect PII in images using OCR + entity detection"
+---
+
+## What is Image Detection?
+
+Image Detection extracts text from images using OCR (Optical Character Recognition), then runs PII detection on the extracted text. This enables detecting sensitive data in screenshots, scanned documents, photos of IDs, receipts, and more.
+
+**Example:**
+```
+Input:  Photo of a business card
+Output: {
+  extracted_text: "John Doe, CEO - john@acme.com - (555) 123-4567",
+  detected_entities: [
+    {type: "Person", text: "John Doe", score: 0.95},
+    {type: "Email Address", text: "john@acme.com", score: 0.99},
+    {type: "Phone Number", text: "(555) 123-4567", score: 0.97}
+  ]
+}
+```
+
+## How It Works
+
+1. **Upload**: Send an image via multipart/form-data
+2. **OCR**: Tesseract extracts text from the image
+3. **Detection**: GLiNER identifies PII entities in the extracted text
+4. **Response**: Returns extracted text, detected entities, and OCR confidence
+
+## When to Use Image Detection
+
+- **Document scanning**: Detect PII in scanned contracts, invoices, or forms
+- **Screenshot analysis**: Find sensitive data in screenshots before sharing
+- **ID verification**: Detect personal information in photos of ID cards or passports
+- **Data loss prevention**: Scan uploaded images for sensitive content
+- **Compliance auditing**: Verify that images don't contain protected health information (PHI)
+
+## Supported Image Formats
+
+| Format | MIME Type |
+|--------|-----------|
+| JPEG | `image/jpeg` |
+| PNG | `image/png` |
+| TIFF | `image/tiff` |
+| BMP | `image/bmp` |
+| WebP | `image/webp` |
+
+## API Reference
+
+```
+POST /api/public/v1/file/detect
+Content-Type: multipart/form-data
+```
+
+### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `file` | file | Yes | — | Image file (JPEG, PNG, TIFF, BMP, WebP) |
+| `language` | string | No | `eng` | Tesseract language code |
+| `entities` | string | No | — | Comma-separated entity types to detect |
+| `score_threshold` | float | No | — | Minimum confidence score (0.0-1.0) |
+| `policy` | string | No | — | Detection policy name |
+
+### Response
+
+```json
+{
+  "extracted_text": "John Doe, john@example.com",
+  "detected_entities": [
+    {
+      "type": "Person",
+      "text": "John Doe",
+      "start": 0,
+      "end": 8,
+      "score": 0.95
+    },
+    {
+      "type": "Email Address",
+      "text": "john@example.com",
+      "start": 10,
+      "end": 26,
+      "score": 0.99
+    }
+  ],
+  "entities_count": 2,
+  "ocr_confidence": 92.3,
+  "language_used": "eng"
+}
+```
+
+### Size Limits
+
+| Plan | Max Image Size |
+|------|---------------|
+| Free | 5 MB |
+| Pay As You Go | 10 MB |
+
+**Billing**: Characters are counted from the OCR-extracted text length (not the image file size).
+
+## OCR Languages
+
+Common Tesseract language codes:
+
+| Code | Language |
+|------|----------|
+| `eng` | English |
+| `deu` | German |
+| `fra` | French |
+| `spa` | Spanish |
+| `ces` | Czech |
+
+You can combine languages with `+`: `eng+deu` for English and German.
+
+## Code Examples
+
+### Python SDK
+
+```python
+from blindfold import Blindfold
+
+client = Blindfold(api_key="your-api-key", region="eu")
+
+# Detect PII in an image file
+result = client.image_detect("screenshot.png")
+
+print(f"Extracted text: {result.extracted_text}")
+print(f"OCR confidence: {result.ocr_confidence}%")
+print(f"Entities found: {result.entities_count}")
+
+for entity in result.detected_entities:
+    print(f"  {entity.type}: {entity.text} ({entity.score:.0%})")
+
+# With options
+result = client.image_detect(
+    "document.jpg",
+    language="deu",
+    policy="gdpr_eu",
+    entities=["Person", "Email Address", "Phone Number"],
+    score_threshold=0.5,
+)
+
+# From bytes
+with open("photo.png", "rb") as f:
+    result = client.image_detect(f.read())
+```
+
+### Python SDK (Async)
+
+```python
+from blindfold import AsyncBlindfold
+
+async with AsyncBlindfold(api_key="your-api-key", region="eu") as client:
+    result = await client.image_detect("screenshot.png")
+    print(result.extracted_text)
+```
+
+### JavaScript/TypeScript SDK
+
+```typescript
+import { Blindfold } from '@blindfold/sdk'
+
+const client = new Blindfold({ apiKey: 'your-api-key', region: 'eu' })
+
+// From a file (Node.js)
+import { readFileSync } from 'fs'
+const imageBuffer = readFileSync('screenshot.png')
+const result = await client.imageDetect(imageBuffer)
+
+console.log(`Extracted: ${result.extracted_text}`)
+console.log(`Entities: ${result.entities_count}`)
+
+// From a Blob (browser)
+const file = document.querySelector('input[type="file"]').files[0]
+const result = await client.imageDetect(file, {
+  language: 'eng',
+  policy: 'gdpr_eu',
+})
+```
+
+### CLI
+
+```bash
+# Basic usage
+blindfold image-detect --image screenshot.png
+
+# With options
+blindfold image-detect --image document.jpg \
+  --language deu \
+  --policy gdpr_eu \
+  --entities "Person,Email Address"
+
+# JSON output
+blindfold image-detect --image photo.png --json
+```
+
+### cURL
+
+```bash
+curl -X POST https://eu-api.blindfold.dev/api/public/v1/file/detect \
+  -H "X-API-Key: your-api-key" \
+  -F "file=@screenshot.png" \
+  -F "language=eng" \
+  -F "policy=gdpr_eu"
+```
+
+## Tips
+
+- **Image quality matters**: Higher resolution images produce better OCR results. The `ocr_confidence` field indicates how confident Tesseract is in the extraction.
+- **Language selection**: Choosing the correct language code improves OCR accuracy significantly, especially for non-Latin scripts.
+- **No text detected**: If `extracted_text` is empty, the image may not contain readable text, or the image quality may be too low for OCR.
+- **Pixel limit**: Images are limited to 25 million pixels (e.g., 5000x5000) to prevent excessive processing time.

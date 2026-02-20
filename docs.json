@@ -54,7 +54,8 @@
               "methods/redaction",
               "methods/hashing",
               "methods/synthesis",
-              "methods/encryption"
+              "methods/encryption",
+              "methods/image-detection"
             ]
           },
           {
