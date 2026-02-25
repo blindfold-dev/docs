@@ -71,6 +71,7 @@
           {
             "group": "Guides",
             "pages": [
+              "rag",
               "best-practices",
               "examples",
               "faq"

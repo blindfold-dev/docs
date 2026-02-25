@@ -1,0 +1,309 @@
+---
+title: "RAG Pipeline Protection"
+description: "Protect PII in Retrieval-Augmented Generation pipelines with two-layer privacy protection"
+---
+
+Learn how to build RAG pipelines where personal data never reaches your LLM provider. Blindfold provides two protection layers: **ingestion-time redaction** (strip PII before indexing) and **query-time tokenization** (protect user questions and restore real data in responses).
+
+## Why RAG Needs PII Protection
+
+RAG pipelines are the #1 pattern where PII leaks into LLMs. Documents retrieved from your knowledge base — support tickets, customer records, internal reports — often contain personal data. When those documents are embedded, stored, and retrieved, the PII flows through multiple systems:
+
+1. **Vector database** — PII gets baked into embeddings and stored as plain text
+2. **Retrieval results** — documents with PII are injected into LLM prompts
+3. **LLM provider logs** — your provider sees the full prompt, including retrieved PII
+
+Blindfold solves this at both layers: strip PII from documents before they enter the vector store, and tokenize user queries before they reach the LLM.
+
+## Two Protection Layers
+
+### Layer 1: Ingestion-Time Redaction
+
+Redact PII from documents before embedding and indexing. The vector store never contains personal data.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+
+    blindfold = Blindfold(api_key="your-api-key")
+
+    # Redact PII from documents before indexing
+    documents = [
+        "Customer John Smith (john@example.com) reported a billing error.",
+        "Maria Garcia (+34 612 345 678) requested a data export.",
+    ]
+
+    safe_documents = []
+    for doc in documents:
+        result = blindfold.redact(doc)
+        safe_documents.append(result.text)
+        # "Customer [PERSON] ([EMAIL_ADDRESS]) reported a billing error."
+
+    # Index safe_documents into your vector store
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    const blindfold = new Blindfold({ apiKey: 'your-api-key' });
+
+    const documents = [
+      'Customer John Smith (john@example.com) reported a billing error.',
+      'Maria Garcia (+34 612 345 678) requested a data export.',
+    ];
+
+    const safeDocuments = [];
+    for (const doc of documents) {
+      const result = await blindfold.redact(doc);
+      safeDocuments.push(result.text);
+    }
+
+    // Index safeDocuments into your vector store
+    ```
+  </Tab>
+
+  <Tab title="LangChain">
+    ```python
+    from langchain_blindfold import BlindfoldPIITransformer
+    from langchain_core.documents import Document
+
+    transformer = BlindfoldPIITransformer(
+        pii_method="redact",
+        policy="basic",
+    )
+
+    docs = [
+        Document(page_content="Customer John Smith (john@example.com) reported a billing error."),
+        Document(page_content="Maria Garcia (+34 612 345 678) requested a data export."),
+    ]
+
+    safe_docs = transformer.transform_documents(docs)
+    # Index safe_docs into your vector store
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  **Redact vs. Tokenize at ingestion:** Use `redact` when you don't need to reverse the transformation (recommended for most RAG use cases). Use `tokenize` if you need to restore original values later — the mapping is stored in document metadata.
+</Info>
+
+### Layer 2: Query-Time Tokenization
+
+Tokenize user questions before they reach the LLM, then detokenize the response to restore real data.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+    from openai import OpenAI
+
+    blindfold = Blindfold(api_key="your-api-key")
+    openai_client = OpenAI()
+
+    question = "What happened with John Smith's billing issue?"
+
+    # Step 1: Tokenize the question
+    tokenized = blindfold.tokenize(question)
+    # "What happened with <Person_1>'s billing issue?"
+
+    # Step 2: Retrieve context from vector store (already redacted)
+    context = retrieve_from_vectorstore(tokenized.text)
+
+    # Step 3: Send to LLM — no PII in the prompt
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": f"Answer using this context:\n{context}"},
+            {"role": "user", "content": tokenized.text},
+        ],
+    )
+    ai_response = response.choices[0].message.content
+
+    # Step 4: Detokenize — restore real names in the response
+    final = blindfold.detokenize(ai_response, tokenized.mapping)
+    print(final.text)
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+    import OpenAI from 'openai';
+
+    const blindfold = new Blindfold({ apiKey: 'your-api-key' });
+    const openai = new OpenAI();
+
+    const question = "What happened with John Smith's billing issue?";
+
+    // Step 1: Tokenize the question
+    const tokenized = await blindfold.tokenize(question);
+
+    // Step 2: Retrieve context (already redacted)
+    const context = await retrieveFromVectorstore(tokenized.text);
+
+    // Step 3: Send to LLM
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: `Answer using this context:\n${context}` },
+        { role: 'user', content: tokenized.text },
+      ],
+    });
+    const aiResponse = response.choices[0].message.content;
+
+    // Step 4: Detokenize
+    const final = blindfold.detokenize(aiResponse, tokenized.mapping);
+    console.log(final.text);
+    ```
+  </Tab>
+
+  <Tab title="LangChain">
+    ```python
+    from langchain_blindfold import blindfold_protect
+    from langchain_openai import ChatOpenAI
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_core.output_parsers import StrOutputParser
+    from langchain_core.runnables import RunnablePassthrough
+
+    tokenize, detokenize = blindfold_protect(policy="basic")
+
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "Answer using this context:\n{context}"),
+        ("human", "{question}"),
+    ])
+
+    def format_docs(docs):
+        return "\n\n".join(doc.page_content for doc in docs)
+
+    chain = (
+        tokenize
+        | {"context": retriever | format_docs, "question": RunnablePassthrough()}
+        | prompt
+        | ChatOpenAI(model="gpt-4o")
+        | StrOutputParser()
+        | detokenize
+    )
+
+    answer = chain.invoke("What happened with John Smith's billing issue?")
+    ```
+  </Tab>
+</Tabs>
+
+## LlamaIndex Integration
+
+For LlamaIndex, use a custom node postprocessor to tokenize retrieved nodes before they reach the LLM:
+
+```python
+from blindfold import Blindfold
+from llama_index.core.postprocessor.types import BaseNodePostprocessor
+from llama_index.core.schema import NodeWithScore, QueryBundle
+
+blindfold = Blindfold(api_key="your-api-key")
+
+
+class BlindfoldNodePostprocessor(BaseNodePostprocessor):
+    """Tokenizes PII in retrieved nodes before LLM processing."""
+
+    _mapping: dict = {}
+
+    def _postprocess_nodes(
+        self,
+        nodes: list[NodeWithScore],
+        query_bundle: QueryBundle | None = None,
+    ) -> list[NodeWithScore]:
+        for node_with_score in nodes:
+            result = blindfold.tokenize(node_with_score.node.text)
+            node_with_score.node.text = result.text
+            self._mapping.update(result.mapping)
+        return nodes
+
+    def detokenize_response(self, response_text: str) -> str:
+        result = blindfold.detokenize(response_text, self._mapping)
+        self._mapping = {}
+        return result.text
+
+
+# Use in query engine
+postprocessor = BlindfoldNodePostprocessor()
+query_engine = index.as_query_engine(
+    node_postprocessors=[postprocessor],
+)
+```
+
+## Protection Method Comparison
+
+Choose the right protection method for your RAG use case:
+
+| Method | Reversible | Best for | Example output |
+|--------|-----------|----------|----------------|
+| **Redact** | No | Ingestion — permanent PII removal | `[PERSON]`, `[EMAIL_ADDRESS]` |
+| **Tokenize** | Yes | Queries — protect input, restore output | `<Person_1>`, `<Email Address_1>` |
+| **Encrypt** | Yes (with key) | Regulated data requiring audit trail | `ENC_a8f3b2...` |
+| **Hash** | No | Analytics — consistent pseudonymous IDs | `HASH_a3f8b9c2d4e5` |
+
+<Tip>
+  **Recommended pattern:** Use `redact` at ingestion time (Layer 1) and `tokenize` at query time (Layer 2). This gives you the strongest protection: the vector store contains no PII at all, and user queries are protected end-to-end with reversible tokens.
+</Tip>
+
+## Policy Recommendations
+
+Match your compliance policy to your use case:
+
+| Use case | Policy | Region | Key entities detected |
+|----------|--------|--------|----------------------|
+| General RAG | `basic` | — | Names, emails, phones, addresses, credit cards |
+| EU customer data | `gdpr_eu` | `eu` | Names, emails, IBANs, national IDs, DOB, addresses |
+| US healthcare | `hipaa_us` | `us` | All 18 HIPAA identifiers (SSN, MRN, DOB, etc.) |
+| Payment data | `pci_dss` | — | Credit cards, CVVs, expiration dates |
+| Maximum coverage | `strict` | — | All supported entity types, lowest threshold |
+
+```python
+# GDPR-compliant RAG
+blindfold = Blindfold(api_key="your-key", region="eu")
+result = blindfold.redact(document, policy="gdpr_eu")
+
+# HIPAA-compliant RAG
+blindfold = Blindfold(api_key="your-key", region="us")
+result = blindfold.redact(document, policy="hipaa_us")
+```
+
+## Performance Tips
+
+- **Batch redaction at ingestion** — use `blindfold.redact_batch()` for processing multiple documents in one API call
+- **Async processing** — use `AsyncBlindfold` for concurrent document processing during ingestion
+- **Detokenization is free** — `detokenize()` is a local string replacement, no API call required
+- **Cache redacted documents** — once documents are redacted and indexed, no further Blindfold calls are needed for retrieval
+
+## Cookbook Examples
+
+Complete, runnable examples for every RAG framework:
+
+<CardGroup cols={2}>
+  <Card title="OpenAI + ChromaDB (Python)" icon="python" href="https://github.com/blindfold-dev/blindfold-cookbook/tree/main/examples/rag-openai-python">
+    Plain OpenAI + ChromaDB with two-layer protection
+  </Card>
+  <Card title="OpenAI + ChromaDB (Node.js)" icon="js" href="https://github.com/blindfold-dev/blindfold-cookbook/tree/main/examples/rag-openai-node">
+    TypeScript OpenAI + ChromaDB RAG pipeline
+  </Card>
+  <Card title="LangChain + FAISS (Python)" icon="python" href="https://github.com/blindfold-dev/blindfold-cookbook/tree/main/examples/rag-langchain-python">
+    BlindfoldPIITransformer + blindfold_protect()
+  </Card>
+  <Card title="LangChain + FAISS (Node.js)" icon="js" href="https://github.com/blindfold-dev/blindfold-cookbook/tree/main/examples/rag-langchain-node">
+    LangChain.js RAG with inline PII protection
+  </Card>
+  <Card title="LlamaIndex (Python)" icon="python" href="https://github.com/blindfold-dev/blindfold-cookbook/tree/main/examples/rag-llamaindex-python">
+    Custom BlindfoldNodePostprocessor
+  </Card>
+  <Card title="LlamaIndex (Node.js)" icon="js" href="https://github.com/blindfold-dev/blindfold-cookbook/tree/main/examples/rag-llamaindex-node">
+    LlamaIndex.TS with node postprocessor
+  </Card>
+  <Card title="GDPR Customer Support (Python)" icon="shield-check" href="https://github.com/blindfold-dev/blindfold-cookbook/tree/main/examples/rag-customer-support-python">
+    Multi-turn EU support chatbot with gdpr_eu policy
+  </Card>
+  <Card title="GDPR Customer Support (Node.js)" icon="shield-check" href="https://github.com/blindfold-dev/blindfold-cookbook/tree/main/examples/rag-customer-support-node">
+    TypeScript multi-turn EU support chatbot
+  </Card>
+</CardGroup>
