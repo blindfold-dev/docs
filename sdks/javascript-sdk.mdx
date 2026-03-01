@@ -49,6 +49,23 @@ const client = new Blindfold({
 });
 ```
 
+### Local Mode (No API Key)
+
+All SDKs include **local mode** with 80+ regex-based entity types. No API key, no network calls — your data never leaves your infrastructure.
+
+```typescript
+import { Blindfold } from '@blindfold/sdk';
+
+// No API key needed — runs entirely in-process
+const client = new Blindfold();
+
+const result = await client.tokenize("Contact john@example.com or call +1-555-1234");
+console.log(result.text);
+// "Contact <Email Address_1> or call <Phone Number_1>"
+```
+
+Local mode detects emails, phone numbers, credit cards, SSNs, IBANs, IP addresses, and 70+ more entity types using regex patterns. For NLP-powered detection (names, addresses, organizations), compliance policies, and audit logs, initialize with an API key to use the Cloud API.
+
 ### With Region Selection
 
 ```typescript

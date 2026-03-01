@@ -288,18 +288,31 @@ description: "Frequently Asked Questions about Blindfold"
     ```
   </Accordion>
 
-  <Accordion title="Can I use Blindfold offline?" icon="wifi-slash">
-    **No - Blindfold is a cloud API service.**
+  <Accordion title="Can I use Blindfold without an API key?" icon="wifi-slash">
+    **Yes! All SDKs include local mode** with 80+ regex-based entity types, zero dependencies, and no API key required.
 
-    **Why cloud-based:**
-    - ✅ Always up-to-date detection models
-    - ✅ No installation or maintenance
-    - ✅ Scales automatically
-    - ✅ Regular accuracy improvements
+    In local mode, **no data ever leaves your infrastructure** — everything runs in-process with no network calls.
 
-    **For offline needs:**
-    - Contact us about enterprise self-hosted options
-    - Email: hello@blindfold.dev
+    ```python
+    from blindfold import Blindfold
+
+    # No API key needed
+    client = Blindfold()
+    result = client.tokenize("Contact john@example.com or call +1-555-1234")
+    ```
+
+    **Local mode vs Cloud API:**
+
+    | | Local Mode | Cloud API |
+    |---|---|---|
+    | **Entity types** | 80+ (regex-based) | 60+ NLP + 80+ regex |
+    | **API key** | Not needed | Required |
+    | **Data privacy** | Never leaves your infrastructure | Processed in EU/US, not stored |
+    | **Names & addresses** | Not supported | NLP-powered detection |
+    | **Compliance policies** | Not available | GDPR, HIPAA, PCI DSS |
+    | **Audit logs** | Not available | Full audit trail |
+
+    **Upgrade path:** When you need NLP-powered detection (names, addresses, organizations), compliance policies, or audit logs, add an API key to switch to the Cloud API.
   </Accordion>
 </AccordionGroup>
 

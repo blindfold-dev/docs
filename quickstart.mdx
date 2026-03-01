@@ -5,6 +5,54 @@ description: "Start protecting PII in under 5 minutes"
 
 Get your first API call working in under 5 minutes. This guide shows you the fastest path from zero to protecting sensitive data.
 
+## Try It Instantly (No API Key)
+
+All SDKs include **local mode** with 80+ regex-based entity types. No signup, no API key, no network calls — your data never leaves your infrastructure.
+
+<Tabs>
+  <Tab title="Python">
+    ```bash
+    pip install blindfold-sdk
+    ```
+
+    ```python
+    from blindfold import Blindfold
+
+    # No API key needed — runs entirely in-process
+    client = Blindfold()
+
+    result = client.tokenize("Contact john@example.com or call +1-555-1234")
+    print(result.text)
+    # "Contact <Email Address_1> or call <Phone Number_1>"
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```bash
+    npm install @blindfold/sdk
+    ```
+
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+
+    // No API key needed — runs entirely in-process
+    const client = new Blindfold();
+
+    const result = await client.tokenize("Contact john@example.com or call +1-555-1234");
+    console.log(result.text);
+    // "Contact <Email Address_1> or call <Phone Number_1>"
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  In local mode, no data leaves your infrastructure — everything runs in-process with zero network calls. Local mode supports 80+ regex-based entity types (emails, phones, credit cards, SSNs, IBANs, and more).
+</Info>
+
+Ready for NLP-powered detection (names, addresses, organizations), compliance policies, and audit logs? Continue below to set up the Cloud API.
+
+---
+
 ## Step 1: Create an Account
 
 Sign up for a Blindfold account to get started.
