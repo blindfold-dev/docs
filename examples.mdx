@@ -1,13 +1,13 @@
 ---
 title: "Examples"
-description: "Practical examples and integration patterns for Blindfold"
+description: "Practical examples for integrating Blindfold with OpenAI, Anthropic Claude, Google Gemini, and more"
 ---
 
 Learn how to integrate Blindfold into real-world applications with these practical examples.
 
-## AI Chat with Privacy Protection
+## AI Chat with OpenAI
 
-Protect user data when building AI chatbots with OpenAI, Anthropic, or other LLM providers.
+Protect user data when building AI chatbots with OpenAI.
 
 <Tabs>
   <Tab title="Python">
@@ -135,6 +135,131 @@ Protect user data when building AI chatbots with OpenAI, Anthropic, or other LLM
 - User data never reaches OpenAI in plain text
 - Compliant with privacy regulations
 - Transparent to end users
+
+---
+
+## AI Chat with Anthropic Claude
+
+Protect user data when building AI chatbots with Anthropic Claude.
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import os
+    from blindfold import Blindfold
+    import anthropic
+
+    # Initialize clients
+    blindfold = Blindfold(api_key=os.environ["BLINDFOLD_API_KEY"])
+    client = anthropic.Anthropic()
+
+    def secure_chat(user_message: str) -> str:
+        """Process chat message with privacy protection"""
+
+        # Step 1: Tokenize sensitive data
+        protected = blindfold.tokenize(user_message)
+        print(f"Protected input: {protected.text}")
+        print(f"Detected {protected.entities_count} sensitive entities")
+
+        # Step 2: Send protected text to Claude
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            messages=[
+                {"role": "user", "content": protected.text}
+            ]
+        )
+
+        ai_response = response.content[0].text
+
+        # Step 3: Restore original data in AI response
+        final = blindfold.detokenize(ai_response, protected.mapping)
+
+        return final.text
+
+    # Usage
+    user_input = "My name is John Doe, email john@example.com. Help me book a flight."
+    response = secure_chat(user_input)
+    print(f"Response: {response}")
+    ```
+  </Tab>
+
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+    import Anthropic from '@anthropic-ai/sdk';
+
+    // Initialize clients
+    const blindfold = new Blindfold({
+      apiKey: process.env.BLINDFOLD_API_KEY
+    });
+
+    const anthropic = new Anthropic();
+
+    async function secureChat(userMessage) {
+      // Step 1: Tokenize sensitive data
+      const protected = await blindfold.tokenize(userMessage);
+      console.log(`Protected input: ${protected.text}`);
+      console.log(`Detected ${protected.entities_count} sensitive entities`);
+
+      // Step 2: Send protected text to Claude
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        messages: [
+          { role: 'user', content: protected.text }
+        ]
+      });
+
+      const aiResponse = response.content[0].text;
+
+      // Step 3: Restore original data in AI response
+      const final = await blindfold.detokenize(aiResponse, protected.mapping);
+
+      return final.text;
+    }
+
+    // Usage
+    const userInput = "My name is John Doe, email john@example.com. Help me book a flight.";
+    const response = await secureChat(userInput);
+    console.log(`Response: ${response}`);
+    ```
+  </Tab>
+
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold blindfold = new Blindfold(System.getenv("BLINDFOLD_API_KEY"));
+
+    String secureChat(String userMessage) {
+        // Step 1: Tokenize sensitive data
+        var protected_ = blindfold.tokenize(userMessage);
+        System.out.println("Protected input: " + protected_.getText());
+        System.out.println("Detected " + protected_.getEntitiesCount() + " sensitive entities");
+
+        // Step 2: Send protected text to Claude
+        // (use your preferred Anthropic Java client)
+        String aiResponse = callClaude(protected_.getText());
+
+        // Step 3: Restore original data in AI response
+        var final_ = blindfold.detokenize(aiResponse, protected_.getMapping());
+
+        return final_.getText();
+    }
+
+    // Usage
+    String userInput = "My name is John Doe, email john@example.com. Help me book a flight.";
+    String response = secureChat(userInput);
+    System.out.println("Response: " + response);
+    ```
+  </Tab>
+</Tabs>
+
+**Benefits:**
+- User data never reaches Anthropic in plain text
+- Works with Claude Sonnet, Opus, and Haiku
+- Same tokenize/detokenize pattern as other providers
 
 ---
 

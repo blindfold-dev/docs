@@ -1,11 +1,11 @@
 ---
 title: "Introduction"
-description: "Open source PII detection SDK — free local mode with 86 entity types, optional Cloud API for NLP-powered detection"
+description: "Open source PII detection SDK for AI applications — protect sensitive data before sending to OpenAI, Anthropic Claude, Google Gemini, or any LLM"
 ---
 
 ## What is Blindfold?
 
-**Open source SDKs for PII detection and protection.** Install the SDK, detect sensitive data locally — no API key, no signup, no network calls. Free forever.
+**Open source PII SDKs for AI applications.** Protect sensitive data before sending to OpenAI, Anthropic Claude, Google Gemini, or any LLM. Install the SDK, detect and tokenize PII locally — no API key, no signup, no network calls. Free forever.
 
 Need NLP-powered detection (names, addresses, organizations), compliance policies, or audit logs? Upgrade to the Cloud API.
 
@@ -34,7 +34,7 @@ Need NLP-powered detection (names, addresses, organizations), compliance policie
     PII is replaced with tokens like `<person_1>`, `<email_1>`
   </Step>
   <Step title="Send to AI safely">
-    Protected text goes to OpenAI/Anthropic without exposing PII
+    Protected text goes to OpenAI, Anthropic Claude, Google Gemini, or any LLM without exposing PII
   </Step>
   <Step title="Restore original (optional)">
     Convert AI response back to original data
@@ -63,6 +63,35 @@ Need NLP-powered detection (names, addresses, organizations), compliance policie
     AES-256 encryption
   </Card>
 </Columns>
+
+## Works With
+
+<CardGroup cols={4}>
+  <Card title="OpenAI" icon="robot" href="/integrations">
+    GPT-4o, GPT-4, o1
+  </Card>
+  <Card title="Anthropic Claude" icon="robot" href="/integrations">
+    Sonnet, Opus, Haiku
+  </Card>
+  <Card title="Google Gemini" icon="robot" href="/integrations">
+    Gemini 2.5 Flash, Pro
+  </Card>
+  <Card title="LangChain" icon="link" href="/sdks/langchain">
+    Official integration
+  </Card>
+  <Card title="LlamaIndex" icon="database" href="/integrations">
+    Node postprocessor
+  </Card>
+  <Card title="Vercel AI SDK" icon="code" href="/integrations">
+    generateText, streamText
+  </Card>
+  <Card title="AWS Bedrock" icon="cloud" href="/integrations">
+    All Bedrock models
+  </Card>
+  <Card title="Any LLM" icon="sparkles" href="/integrations">
+    Provider-agnostic SDK
+  </Card>
+</CardGroup>
 
 ## What Can Blindfold Protect?
 
@@ -116,16 +145,16 @@ Install the SDK and start detecting PII immediately — no signup, no API key, f
 
 <CardGroup cols={2}>
   <Card title="AI Chatbots" icon="robot">
-    Protect user data before sending to OpenAI, Anthropic, or other LLMs
+    Tokenize PII before OpenAI, Anthropic Claude, or Google Gemini processes user messages
   </Card>
-  <Card title="Customer Support" icon="headset">
-    Anonymize tickets and conversations while maintaining context
+  <Card title="RAG Pipelines" icon="database">
+    Redact PII at ingestion, tokenize at query time — PII never reaches your vector DB or LLM
   </Card>
-  <Card title="Healthcare" icon="heart-pulse">
-    HIPAA-compliant handling of patient data in AI applications
+  <Card title="AI Agents" icon="sparkles">
+    Protect sensitive data in multi-step agent workflows (CrewAI, LangChain agents, custom)
   </Card>
-  <Card title="Financial Services" icon="building-columns">
-    PCI DSS and regulatory compliance for payment data
+  <Card title="Compliance" icon="scale-balanced">
+    Meet GDPR, HIPAA, PCI DSS, and EU AI Act requirements with built-in policies
   </Card>
 </CardGroup>
 

@@ -22,6 +22,15 @@
             ]
           },
           {
+            "group": "AI Integrations",
+            "pages": [
+              "integrations",
+              "sdks/langchain",
+              "sdks/guardrails",
+              "sdks/mcp-server"
+            ]
+          },
+          {
             "group": "Compliance",
             "pages": [
               "compliance",
@@ -63,10 +72,7 @@
               "sdks/python-sdk",
               "sdks/javascript-sdk",
               "sdks/java-sdk",
-              "sdks/cli",
-              "sdks/mcp-server",
-              "sdks/guardrails",
-              "sdks/langchain"
+              "sdks/cli"
             ]
           },
           {

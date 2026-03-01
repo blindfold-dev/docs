@@ -265,27 +265,81 @@ description: "Frequently Asked Questions about Blindfold"
   </Accordion>
 
   <Accordion title="Does Blindfold work with all AI providers?" icon="robot">
-    **Yes! Blindfold is provider-agnostic:**
+    **Yes! Blindfold is provider-agnostic.** The pattern is always the same: tokenize, send to AI, detokenize.
 
-    - ✅ OpenAI (GPT-4, GPT-3.5)
-    - ✅ Anthropic (Claude)
-    - ✅ Google (Gemini, PaLM)
-    - ✅ Cohere
-    - ✅ Hugging Face models
-    - ✅ Self-hosted models
+    - ✅ OpenAI (GPT-4o, GPT-4, o1)
+    - ✅ Anthropic (Claude Sonnet, Opus, Haiku)
+    - ✅ Google (Gemini 2.5 Flash, Pro)
+    - ✅ AWS Bedrock, Azure OpenAI
+    - ✅ LangChain, LlamaIndex, Vercel AI SDK
+    - ✅ Cohere, Hugging Face, self-hosted models
     - ✅ Any LLM API
 
-    **Works with any text-based AI service:**
-    ```python
-    # Protect before sending to ANY AI
-    protected = blindfold.tokenize(user_input, policy="gdpr_eu")
+    <Tabs>
+      <Tab title="OpenAI">
+        ```python
+        from blindfold import Blindfold
+        from openai import OpenAI
 
-    # Send to your AI provider
-    ai_response = your_ai_provider.chat(protected.text)
+        bf = Blindfold()
+        client = OpenAI()
 
-    # Restore original data
-    final = blindfold.detokenize(ai_response, protected.mapping)
-    ```
+        safe = bf.tokenize(user_input)
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": safe.text}]
+        )
+        result = bf.detokenize(response.choices[0].message.content, safe.mapping)
+        ```
+      </Tab>
+      <Tab title="Anthropic Claude">
+        ```python
+        from blindfold import Blindfold
+        import anthropic
+
+        bf = Blindfold()
+        client = anthropic.Anthropic()
+
+        safe = bf.tokenize(user_input)
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            messages=[{"role": "user", "content": safe.text}]
+        )
+        result = bf.detokenize(response.content[0].text, safe.mapping)
+        ```
+      </Tab>
+      <Tab title="Google Gemini">
+        ```python
+        from blindfold import Blindfold
+        from google import genai
+
+        bf = Blindfold()
+        client = genai.Client()
+
+        safe = bf.tokenize(user_input)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash", contents=safe.text
+        )
+        result = bf.detokenize(response.text, safe.mapping)
+        ```
+      </Tab>
+      <Tab title="Any Provider">
+        ```python
+        from blindfold import Blindfold
+
+        bf = Blindfold()
+
+        safe = bf.tokenize(user_input)
+        response = your_ai_provider.chat(safe.text)
+        result = bf.detokenize(response, safe.mapping)
+        ```
+      </Tab>
+    </Tabs>
+
+    <Card title="See All Integrations" icon="puzzle-piece" href="/integrations" horizontal>
+      Code examples for every major AI provider and framework
+    </Card>
   </Accordion>
 
   <Accordion title="Can I use Blindfold without an API key?" icon="wifi-slash">

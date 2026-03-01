@@ -1,0 +1,312 @@
+---
+title: "AI Integrations"
+description: "Protect PII before sending to OpenAI, Anthropic Claude, Google Gemini, LangChain, LlamaIndex, Vercel AI SDK, AWS Bedrock, Azure OpenAI, or any LLM"
+---
+
+Blindfold is provider-agnostic. The pattern is always the same: **tokenize** sensitive data, send safe text to your AI provider, then **detokenize** the response to restore original values.
+
+## OpenAI
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+    from openai import OpenAI
+
+    bf = Blindfold()  # Free local mode, or add api_key="..." for NLP
+    openai = OpenAI()
+
+    # Tokenize PII
+    safe = bf.tokenize("My name is John Smith, email john@acme.com")
+
+    # Send to GPT — PII never reaches OpenAI
+    response = openai.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": safe.text}]
+    )
+
+    # Restore original data
+    result = bf.detokenize(response.choices[0].message.content, safe.mapping)
+    print(result.text)
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+    import OpenAI from 'openai';
+
+    const bf = new Blindfold(); // Free local mode
+    const openai = new OpenAI();
+
+    // Tokenize PII
+    const safe = await bf.tokenize("My name is John Smith, email john@acme.com");
+
+    // Send to GPT — PII never reaches OpenAI
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [{ role: 'user', content: safe.text }]
+    });
+
+    // Restore original data
+    const result = bf.detokenize(response.choices[0].message.content, safe.mapping);
+    console.log(result.text);
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold bf = new Blindfold(); // Free local mode
+
+    // Tokenize PII
+    var safe = bf.tokenize("My name is John Smith, email john@acme.com");
+
+    // Send to GPT — PII never reaches OpenAI
+    String aiResponse = callOpenAI(safe.getText());
+
+    // Restore original data
+    var result = bf.detokenize(aiResponse, safe.getMapping());
+    System.out.println(result.getText());
+    ```
+  </Tab>
+</Tabs>
+
+## Anthropic Claude
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+    import anthropic
+
+    bf = Blindfold()
+    client = anthropic.Anthropic()
+
+    safe = bf.tokenize("My name is John Smith, email john@acme.com")
+
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": safe.text}]
+    )
+
+    result = bf.detokenize(response.content[0].text, safe.mapping)
+    print(result.text)
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+    import Anthropic from '@anthropic-ai/sdk';
+
+    const bf = new Blindfold();
+    const anthropic = new Anthropic();
+
+    const safe = await bf.tokenize("My name is John Smith, email john@acme.com");
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1024,
+      messages: [{ role: 'user', content: safe.text }]
+    });
+
+    const result = bf.detokenize(response.content[0].text, safe.mapping);
+    console.log(result.text);
+    ```
+  </Tab>
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold bf = new Blindfold();
+
+    var safe = bf.tokenize("My name is John Smith, email john@acme.com");
+
+    // Send to Claude via your preferred Anthropic Java client
+    String aiResponse = callClaude(safe.getText());
+
+    var result = bf.detokenize(aiResponse, safe.getMapping());
+    System.out.println(result.getText());
+    ```
+  </Tab>
+</Tabs>
+
+## Google Gemini
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from blindfold import Blindfold
+    from google import genai
+
+    bf = Blindfold()
+    client = genai.Client()
+
+    safe = bf.tokenize("My name is John Smith, email john@acme.com")
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=safe.text
+    )
+
+    result = bf.detokenize(response.text, safe.mapping)
+    print(result.text)
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import { Blindfold } from '@blindfold/sdk';
+    import { GoogleGenAI } from '@google/genai';
+
+    const bf = new Blindfold();
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    const safe = await bf.tokenize("My name is John Smith, email john@acme.com");
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: safe.text
+    });
+
+    const result = bf.detokenize(response.text, safe.mapping);
+    console.log(result.text);
+    ```
+  </Tab>
+</Tabs>
+
+## Vercel AI SDK
+
+```javascript
+import { Blindfold } from '@blindfold/sdk';
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const bf = new Blindfold();
+
+const safe = await bf.tokenize("My name is John Smith, email john@acme.com");
+
+const { text } = await generateText({
+  model: openai('gpt-4o'),
+  prompt: safe.text
+});
+
+const result = bf.detokenize(text, safe.mapping);
+console.log(result.text);
+```
+
+## AWS Bedrock
+
+```python
+from blindfold import Blindfold
+import boto3
+import json
+
+bf = Blindfold()
+bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
+
+safe = bf.tokenize("My name is John Smith, email john@acme.com")
+
+response = bedrock.invoke_model(
+    modelId="anthropic.claude-sonnet-4-20250514-v1:0",
+    body=json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 1024,
+        "messages": [{"role": "user", "content": safe.text}]
+    })
+)
+
+body = json.loads(response["body"].read())
+result = bf.detokenize(body["content"][0]["text"], safe.mapping)
+print(result.text)
+```
+
+## Azure OpenAI
+
+```python
+from blindfold import Blindfold
+from openai import AzureOpenAI
+
+bf = Blindfold()
+client = AzureOpenAI(
+    azure_endpoint="https://your-resource.openai.azure.com",
+    api_version="2024-02-15-preview"
+)
+
+safe = bf.tokenize("My name is John Smith, email john@acme.com")
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": safe.text}]
+)
+
+result = bf.detokenize(response.choices[0].message.content, safe.mapping)
+print(result.text)
+```
+
+## Framework Integrations
+
+<CardGroup cols={3}>
+  <Card title="LangChain" icon="link" href="/sdks/langchain">
+    Official `langchain-blindfold` package with BlindfoldPIITransformer and RunnableLambda support
+  </Card>
+  <Card title="Guardrails AI" icon="shield-check" href="/sdks/guardrails">
+    Official `guardrails-blindfold` validator for PII protection in Guardrails pipelines
+  </Card>
+  <Card title="MCP Server" icon="server" href="/sdks/mcp-server">
+    Official Blindfold MCP server for Claude Desktop and any MCP client
+  </Card>
+</CardGroup>
+
+## CrewAI
+
+```python
+from blindfold import Blindfold
+from crewai import Agent, Task, Crew
+
+bf = Blindfold()
+
+user_input = "Analyze the account for John Smith, SSN 123-45-6789"
+safe = bf.tokenize(user_input)
+
+analyst = Agent(
+    role="Data Analyst",
+    goal="Analyze user accounts",
+    backstory="You are a helpful analyst."
+)
+
+task = Task(
+    description=safe.text,  # PII-free input
+    agent=analyst,
+    expected_output="Account analysis"
+)
+
+crew = Crew(agents=[analyst], tasks=[task])
+output = crew.kickoff()
+
+result = bf.detokenize(output.raw, safe.mapping)
+print(result.text)
+```
+
+## Works with any provider
+
+The pattern is always the same regardless of provider:
+
+```python
+from blindfold import Blindfold
+
+bf = Blindfold()  # Free local mode, or add api_key="..." for NLP
+
+# 1. Tokenize PII
+safe = bf.tokenize(user_input)
+# "Hi, I'm John Smith" → "Hi, I'm <Person_1>"
+
+# 2. Send to any AI provider
+response = your_ai_provider.chat(safe.text)
+
+# 3. Restore original data
+result = bf.detokenize(response, safe.mapping)
+```
+
+<Card title="Quickstart" icon="bolt" href="/quickstart" horizontal>
+  Start protecting PII in 5 minutes — install the SDK, no signup required for local mode
+</Card>
