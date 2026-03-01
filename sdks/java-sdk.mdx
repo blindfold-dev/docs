@@ -1,0 +1,21 @@
+---
+title: "Java SDK"
+description: "Official Java SDK for Blindfold"
+---
+
+```xml
+<dependency>
+    <groupId>dev.blindfold</groupId>
+    <artifactId>blindfold-sdk</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+```java
+Blindfold client = new Blindfold();  // no API key needed
+DetectResponse result = client.detect("Email john@acme.com, SSN 123-45-6789");
+```
+
+<Card title="Full documentation on GitHub" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/java-sdk">
+  All methods, configuration options, async client, batch processing, and examples.
+</Card>

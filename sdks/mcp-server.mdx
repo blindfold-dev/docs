@@ -3,118 +3,21 @@ title: "MCP Server"
 description: "Blindfold MCP Server for Claude, Cursor, and other AI assistants"
 ---
 
-The Blindfold MCP Server lets AI assistants like Claude Desktop, Claude Code, Cursor, and Windsurf detect and protect PII through tool calls. Works offline with zero dependencies — no API key needed.
-
-## Setup (no API key needed)
-
-Add to your MCP config file:
-
-<Tabs>
-  <Tab title="Claude Desktop">
-    Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
-
-    ```json
-    {
-      "mcpServers": {
-        "blindfold": {
-          "command": "npx",
-          "args": ["-y", "@blindfold/mcp-server"]
-        }
-      }
-    }
-    ```
-  </Tab>
-
-  <Tab title="Claude Code">
-    Add to your project's `.mcp.json`:
-
-    ```json
-    {
-      "mcpServers": {
-        "blindfold": {
-          "command": "npx",
-          "args": ["-y", "@blindfold/mcp-server"]
-        }
-      }
-    }
-    ```
-  </Tab>
-
-  <Tab title="Cursor">
-    Add via Settings > MCP Servers, or in `.cursor/mcp.json`:
-
-    ```json
-    {
-      "mcpServers": {
-        "blindfold": {
-          "command": "npx",
-          "args": ["-y", "@blindfold/mcp-server"]
-        }
-      }
-    }
-    ```
-  </Tab>
-</Tabs>
-
-That's it. No API key needed — the server runs in **local mode** automatically with 80+ entity types.
-
-## With API Key (optional)
-
-For names, addresses, organizations, and 60+ additional entity types, add your API key:
+Add to your MCP config (Claude Desktop, Claude Code, or Cursor):
 
 ```json
 {
   "mcpServers": {
     "blindfold": {
       "command": "npx",
-      "args": ["-y", "@blindfold/mcp-server"],
-      "env": {
-        "BLINDFOLD_API_KEY": "sk-...",
-        "BLINDFOLD_REGION": "eu"
-      }
+      "args": ["-y", "@blindfold/mcp-server"]
     }
   }
 }
 ```
 
-## Available Tools
+No API key needed. 9 tools available: detect, tokenize, detokenize, redact, mask, synthesize, hash, encrypt, discover.
 
-| Tool | Description |
-|------|-------------|
-| `blindfold_detect` | Detect PII without modifying text |
-| `blindfold_tokenize` | Replace PII with reversible tokens |
-| `blindfold_detokenize` | Restore original values from tokens |
-| `blindfold_mask` | Partially hide sensitive data |
-| `blindfold_redact` | Permanently remove PII |
-| `blindfold_synthesize` | Replace with realistic fake data |
-| `blindfold_hash` | One-way hash PII |
-| `blindfold_encrypt` | Encrypt PII with a password |
-| `blindfold_discover` | Analyze samples for PII types (API mode only) |
-
-All tools support batch processing via `text` (single) or `texts` (array) parameters.
-
-## Usage
-
-Once configured, ask your AI assistant naturally:
-
-- *"Tokenize this patient record before summarizing: John Doe, SSN 123-45-6789"*
-- *"Redact all PII from these server logs before analyzing them"*
-- *"Replace real customer data in this CSV with synthetic data"*
-
-### Recommended Prompt
-
-Add to your `CLAUDE.md` or system prompt for automatic PII protection:
-
-```
-Always use blindfold_tokenize before processing any text that contains
-personal information. After generating a response, use blindfold_detokenize
-to restore original values.
-```
-
-## Full Documentation
-
-For all tool parameters, environment variables, policies, and troubleshooting, see the full README on GitHub:
-
-<Card title="MCP Server on GitHub" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/mcp-server">
-  Complete documentation with all tools, configuration options, and setup guides.
+<Card title="Full documentation on GitHub" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/mcp-server">
+  All tools, environment variables, setup guides, and examples.
 </Card>

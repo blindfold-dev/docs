@@ -62,6 +62,7 @@
             "pages": [
               "sdks/python-sdk",
               "sdks/javascript-sdk",
+              "sdks/java-sdk",
               "sdks/cli",
               "sdks/mcp-server",
               "sdks/guardrails",

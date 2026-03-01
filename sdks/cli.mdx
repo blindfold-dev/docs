@@ -1,74 +1,17 @@
 ---
 title: "CLI"
-description: "Official Blindfold CLI — detect and protect PII from the terminal"
+description: "Official Blindfold CLI"
 ---
-
-The Blindfold CLI lets you detect, redact, tokenize, and mask PII directly from the terminal. Works offline with zero dependencies — no API key needed. Run it on your own infrastructure, in CI/CD pipelines, or on air-gapped servers.
-
-## Install
 
 ```bash
 npm install -g @blindfold/cli
 ```
 
-Or run without installing:
-
 ```bash
-npx -y @blindfold/cli detect "Email john@acme.com, SSN 123-45-6789"
-```
-
-## Quick Start (no API key needed)
-
-```bash
-# Detect PII locally — no API key, no network call
-blindfold detect "Email john@acme.com, SSN 123-45-6789"
-
-# Redact
-blindfold redact "Email john@acme.com, SSN 123-45-6789"
-
-# Tokenize (reversible)
-blindfold tokenize "Patient: Sarah Johnson, SSN: 123-45-6789"
-
-# Mask (partial)
-blindfold mask "Card: 4532-1234-5678-9010"
-
-# Process a file
+blindfold detect "Email john@acme.com, SSN 123-45-6789"  # no API key needed
 blindfold redact --file sensitive-data.txt --quiet > clean.txt
-
-# Force local mode (even with API key configured)
-blindfold detect --local "SSN 123-45-6789"
 ```
 
-Everything above runs **100% locally**. No API key. No network calls. No data leaves your machine.
-
-## With API Key (optional)
-
-For names, addresses, organizations, and 60+ additional entity types:
-
-```bash
-blindfold config set-key sk-...
-blindfold detect "John Smith lives at 123 Oak Street"
-```
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `detect` | Detect PII without modifying text |
-| `tokenize` | Replace PII with reversible tokens |
-| `detokenize` | Restore original values from tokens |
-| `redact` | Permanently remove PII |
-| `mask` | Partially hide PII |
-| `synthesize` | Replace with realistic fake data |
-| `hash` | One-way hash PII |
-| `encrypt` | Encrypt PII with AES |
-| `discover` | Analyze samples for PII types |
-| `config` | Manage API key and settings |
-
-## Full Documentation
-
-For all options, output formats, batch processing, policies, and scripting examples, see the full README on GitHub:
-
-<Card title="CLI on GitHub" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/cli">
-  Complete documentation with all commands, flags, and usage examples.
+<Card title="Full documentation on GitHub" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/cli">
+  All commands, flags, input methods, output formats, and examples.
 </Card>

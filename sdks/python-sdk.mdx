@@ -1,64 +1,19 @@
 ---
 title: "Python SDK"
-description: "Official Python SDK for Blindfold — detect, redact, tokenize, and mask PII"
+description: "Official Python SDK for Blindfold"
 ---
-
-The official Python SDK for Blindfold. Works offline with zero dependencies — no API key needed for local detection. Add an API key to unlock NLP-powered detection with 60+ additional entity types.
-
-## Install
 
 ```bash
 pip install blindfold-sdk
 ```
 
-## Quick Start (no API key needed)
-
 ```python
 from blindfold import Blindfold
 
-client = Blindfold()
-
-# Detect PII locally — no API key, no network call
+client = Blindfold()  # no API key needed
 result = client.detect("Email john@acme.com, SSN 123-45-6789")
-for entity in result.detected_entities:
-    print(f"{entity.type}: {entity.text} (score: {entity.score})")
-# Email Address: john@acme.com (score: 0.95)
-# Social Security Number: 123-45-6789 (score: 1.0)
-
-# Redact PII locally
-result = client.redact("Email john@acme.com, SSN 123-45-6789")
-print(result.text)
-# "Email, SSN"
 ```
 
-## With API Key (optional)
-
-```python
-client = Blindfold(api_key="sk-...", region="eu")
-
-# NLP-powered detection — names, addresses, organizations
-result = client.tokenize(
-    "Contact John Doe at john@example.com",
-    policy="gdpr_eu"
-)
-print(result.text)
-# "Contact <Person_1> at <Email Address_1>"
-```
-
-## Features
-
-- Synchronous (`Blindfold`) and asynchronous (`AsyncBlindfold`) clients
-- 8 operations: detect, tokenize, detokenize, redact, mask, hash, encrypt, synthesize
-- Batch processing (up to 100 texts per request)
-- 80+ local entity types across 30+ countries
-- Built-in policies: `basic`, `strict`, `gdpr_eu`, `hipaa_us`, `pci_dss`
-- Multi-region support (EU / US)
-- Pydantic response models with full type hints
-
-## Full Documentation
-
-For the complete API reference, all operations with examples, local PII scanner usage, error handling, and supported entity types, see the full README on GitHub:
-
-<Card title="Python SDK on GitHub" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/python-sdk">
-  Complete documentation with all methods, configuration options, and code examples.
+<Card title="Full documentation on GitHub" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/python-sdk">
+  All methods, configuration options, local scanner, batch processing, and examples.
 </Card>

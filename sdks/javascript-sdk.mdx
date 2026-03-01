@@ -1,80 +1,19 @@
 ---
 title: "JavaScript SDK"
-description: "Official JavaScript/TypeScript SDK for Blindfold — detect, redact, tokenize, and mask PII"
+description: "Official JavaScript/TypeScript SDK for Blindfold"
 ---
 
-The official JavaScript/TypeScript SDK for Blindfold. Works offline with zero dependencies — no API key needed for local detection. Add an API key to unlock NLP-powered detection with 60+ additional entity types.
-
-## Install
-
-<Tabs>
-  <Tab title="npm">
-    ```bash
-    npm install @blindfold/sdk
-    ```
-  </Tab>
-  <Tab title="yarn">
-    ```bash
-    yarn add @blindfold/sdk
-    ```
-  </Tab>
-  <Tab title="pnpm">
-    ```bash
-    pnpm add @blindfold/sdk
-    ```
-  </Tab>
-</Tabs>
-
-## Quick Start (no API key needed)
+```bash
+npm install @blindfold/sdk
+```
 
 ```typescript
 import { Blindfold } from '@blindfold/sdk'
 
-const client = new Blindfold()
-
-// Detect PII locally — no API key, no network call
+const client = new Blindfold()  // no API key needed
 const result = await client.detect("Email john@acme.com, SSN 123-45-6789")
-for (const entity of result.detected_entities) {
-  console.log(`${entity.type}: ${entity.text} (score: ${entity.score})`)
-}
-// Email Address: john@acme.com (score: 0.95)
-// Social Security Number: 123-45-6789 (score: 1.0)
-
-// Redact PII locally
-const redacted = await client.redact("Email john@acme.com, SSN 123-45-6789")
-console.log(redacted.text)
-// "Email, SSN"
 ```
 
-## With API Key (optional)
-
-```typescript
-const client = new Blindfold({ apiKey: 'sk-...', region: 'eu' })
-
-// NLP-powered detection — names, addresses, organizations
-const result = await client.tokenize(
-  "Contact John Doe at john@example.com",
-  { policy: 'gdpr_eu' }
-)
-console.log(result.text)
-// "Contact <Person_1> at <Email Address_1>"
-```
-
-## Features
-
-- Full TypeScript support with type definitions
-- CommonJS and ESM builds
-- 8 operations: detect, tokenize, detokenize, redact, mask, hash, encrypt, synthesize
-- Batch processing (up to 100 texts per request)
-- 80+ local entity types across 30+ countries
-- Built-in policies: `basic`, `strict`, `gdpr_eu`, `hipaa_us`, `pci_dss`
-- Multi-region support (EU / US)
-- Subpath export `@blindfold/sdk/regex` for standalone local scanning
-
-## Full Documentation
-
-For the complete API reference, all operations with examples, local PII scanner usage, error handling, and supported entity types, see the full README on GitHub:
-
-<Card title="JavaScript SDK on GitHub" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/js-sdk">
-  Complete documentation with all methods, configuration options, and code examples.
+<Card title="Full documentation on GitHub" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/js-sdk">
+  All methods, configuration options, local scanner, batch processing, and examples.
 </Card>
