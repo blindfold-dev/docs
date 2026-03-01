@@ -72,6 +72,8 @@
               "sdks/python-sdk",
               "sdks/javascript-sdk",
               "sdks/java-sdk",
+              "sdks/go-sdk",
+              "sdks/dotnet-sdk",
               "sdks/cli"
             ]
           },

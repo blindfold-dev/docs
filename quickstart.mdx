@@ -64,6 +64,40 @@ All SDKs include **local mode** with 86 regex-based entity types and all 8 opera
     // "Contact <Email Address_1> or call <Phone Number_1>"
     ```
   </Tab>
+
+  <Tab title="Go">
+    ```bash
+    go get github.com/blindfold-dev/Blindfold/packages/go-sdk
+    ```
+
+    ```go
+    import blindfold "github.com/blindfold-dev/Blindfold/packages/go-sdk"
+
+    // No API key needed — runs entirely in-process
+    client := blindfold.New()
+
+    result, _ := client.Tokenize(ctx, "Contact john@example.com or call +1-555-1234")
+    fmt.Println(result.Text)
+    // "Contact <Email Address_1> or call <Phone Number_1>"
+    ```
+  </Tab>
+
+  <Tab title=".NET">
+    ```bash
+    dotnet add package Blindfold.Sdk
+    ```
+
+    ```csharp
+    using Blindfold.Sdk;
+
+    // No API key needed — runs entirely in-process
+    using var client = new BlindfoldClient();
+
+    var result = await client.TokenizeAsync("Contact john@example.com or call +1-555-1234");
+    Console.WriteLine(result.Text);
+    // "Contact <Email Address_1> or call <Phone Number_1>"
+    ```
+  </Tab>
 </Tabs>
 
 <Info>
@@ -205,6 +239,66 @@ Choose your preferred integration method and make your first request.
 
     <Tip>
       The SDK works with Java 11+ and has no external HTTP dependencies.
+    </Tip>
+  </Tab>
+
+  <Tab title="Go">
+    Install the Go SDK and tokenize your first text.
+
+    ```bash
+    go get github.com/blindfold-dev/Blindfold/packages/go-sdk
+    ```
+
+    ```go
+    import blindfold "github.com/blindfold-dev/Blindfold/packages/go-sdk"
+
+    // Initialize the client
+    client := blindfold.New(blindfold.WithAPIKey("your-api-key-here"))
+
+    // Tokenize text with sensitive data
+    result, err := client.Tokenize(ctx,
+        "My email is john@example.com and phone is +1-555-1234",
+    )
+
+    fmt.Println(result.Text)
+    // Output: "My email is <EMAIL_ADDRESS_1> and phone is <PHONE_NUMBER_1>"
+
+    fmt.Println(result.Mapping)
+    // Output: map[<EMAIL_ADDRESS_1>:john@example.com <PHONE_NUMBER_1>:+1-555-1234]
+    ```
+
+    <Tip>
+      The SDK has zero external dependencies — uses only the Go standard library.
+    </Tip>
+  </Tab>
+
+  <Tab title=".NET">
+    Install the .NET SDK and tokenize your first text.
+
+    ```bash
+    dotnet add package Blindfold.Sdk
+    ```
+
+    ```csharp
+    using Blindfold.Sdk;
+
+    // Initialize the client
+    using var client = new BlindfoldClient("your-api-key-here");
+
+    // Tokenize text with sensitive data
+    var result = await client.TokenizeAsync(
+        "My email is john@example.com and phone is +1-555-1234"
+    );
+
+    Console.WriteLine(result.Text);
+    // Output: "My email is <EMAIL_ADDRESS_1> and phone is <PHONE_NUMBER_1>"
+
+    Console.WriteLine(result.Mapping);
+    // Output: {<EMAIL_ADDRESS_1>: john@example.com, <PHONE_NUMBER_1>: +1-555-1234}
+    ```
+
+    <Tip>
+      The SDK targets net6.0, net8.0, and netstandard2.1. Zero external dependencies.
     </Tip>
   </Tab>
 
@@ -351,6 +445,56 @@ After sending tokenized data to AI or processing, you can restore the original v
     ```
   </Tab>
 
+  <Tab title="Go">
+    ```go
+    import blindfold "github.com/blindfold-dev/Blindfold/packages/go-sdk"
+
+    client := blindfold.New(blindfold.WithAPIKey("your-api-key-here"))
+
+    // Step 1: Tokenize sensitive data
+    protected, _ := client.Tokenize(ctx,
+        "Contact John Doe at john@example.com or call +1-555-1234",
+    )
+
+    fmt.Println(protected.Text)
+    // "Contact <PERSON_1> at <EMAIL_ADDRESS_1> or call <PHONE_NUMBER_1>"
+
+    // Step 2: Send to AI (protected data only)
+    aiResponse := fmt.Sprintf("We received your request: %s", protected.Text)
+
+    // Step 3: Restore original data
+    original := client.Detokenize(aiResponse, protected.Mapping)
+
+    fmt.Println(original.Text)
+    // "We received your request: Contact John Doe at john@example.com or call +1-555-1234"
+    ```
+  </Tab>
+
+  <Tab title=".NET">
+    ```csharp
+    using Blindfold.Sdk;
+
+    using var client = new BlindfoldClient("your-api-key-here");
+
+    // Step 1: Tokenize sensitive data
+    var safe = await client.TokenizeAsync(
+        "Contact John Doe at john@example.com or call +1-555-1234"
+    );
+
+    Console.WriteLine(safe.Text);
+    // "Contact <PERSON_1> at <EMAIL_ADDRESS_1> or call <PHONE_NUMBER_1>"
+
+    // Step 2: Send to AI (protected data only)
+    var aiResponse = $"We received your request: {safe.Text}";
+
+    // Step 3: Restore original data
+    var original = client.Detokenize(aiResponse, safe.Mapping);
+
+    Console.WriteLine(original.Text);
+    // "We received your request: Contact John Doe at john@example.com or call +1-555-1234"
+    ```
+  </Tab>
+
   <Tab title="cURL">
     ```bash
     # Step 1: Tokenize
@@ -458,6 +602,38 @@ Instead of specifying entities manually, use pre-configured compliance policies:
     ```
   </Tab>
 
+  <Tab title="Go">
+    ```go
+    // GDPR compliance (European data)
+    result, _ := client.Tokenize(ctx,
+        "Contact: John Doe, john@example.com, +49 30 12345",
+        blindfold.WithCallPolicy("gdpr_eu"),
+    )
+
+    // HIPAA compliance (Healthcare data)
+    result2, _ := client.Tokenize(ctx,
+        "Patient: Jane Smith, SSN: 123-45-6789",
+        blindfold.WithCallPolicy("hipaa_us"),
+    )
+    ```
+  </Tab>
+
+  <Tab title=".NET">
+    ```csharp
+    // GDPR compliance (European data)
+    var result = await client.TokenizeAsync(
+        "Contact: John Doe, john@example.com, +49 30 12345",
+        policy: "gdpr_eu"
+    );
+
+    // HIPAA compliance (Healthcare data)
+    var result2 = await client.TokenizeAsync(
+        "Patient: Jane Smith, SSN: 123-45-6789",
+        policy: "hipaa_us"
+    );
+    ```
+  </Tab>
+
   <Tab title="cURL">
     ```bash
     # GDPR compliance
@@ -494,6 +670,14 @@ Now that you have made your first API call, explore more features:
 
   <Card title="Java SDK Guide" icon="java" href="/sdks/java-sdk">
     Sync and async clients for Java 11+.
+  </Card>
+
+  <Card title="Go SDK Guide" icon="golang" href="/sdks/go-sdk">
+    Zero-dependency SDK with context support.
+  </Card>
+
+  <Card title=".NET SDK Guide" icon="microsoft" href="/sdks/dotnet-sdk">
+    async/await for .NET 6, 8, and Standard 2.1.
   </Card>
 
   <Card title="REST API Reference" icon="terminal" href="/api-reference/rest-api">

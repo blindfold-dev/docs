@@ -1,0 +1,257 @@
+---
+title: ".NET SDK"
+description: "Official .NET SDK for Blindfold — detect, tokenize, mask, redact, hash, encrypt, and synthesize PII"
+---
+
+## Installation
+
+```bash
+dotnet add package Blindfold.Sdk
+```
+
+**Zero external dependencies** — uses only built-in .NET libraries (System.Text.Json).
+
+Targets `net6.0`, `net8.0`, and `netstandard2.1`.
+
+## Quick Start (Local Mode)
+
+No API key needed — runs entirely in-process with 86 regex-based entity types.
+
+```csharp
+using Blindfold.Sdk;
+
+using var client = new BlindfoldClient();  // no API key needed
+
+var result = await client.DetectAsync("Email john@acme.com, SSN 123-45-6789");
+
+foreach (var entity in result.DetectedEntities)
+{
+    Console.WriteLine($"{entity.Type}: {entity.Text}");
+}
+// Email Address: john@acme.com
+// Social Security Number: 123-45-6789
+```
+
+## Cloud API Setup
+
+For NLP-powered detection (names, addresses, organizations), compliance policies, and audit logs:
+
+```csharp
+using Blindfold.Sdk;
+
+// Simple initialization
+using var client = new BlindfoldClient("your-api-key");
+
+// Full configuration
+using var client = new BlindfoldClient(new BlindfoldOptions
+{
+    ApiKey = "your-api-key",
+    Region = "eu",                          // "eu" (default) or "us"
+    MaxRetries = 3,
+    Timeout = TimeSpan.FromSeconds(30),
+    UserId = "user-123",                    // optional user tracking
+});
+```
+
+## Methods
+
+All methods are async with `Async` suffix and accept an optional `CancellationToken` parameter. The client implements `IDisposable`.
+
+### DetectAsync
+
+Identify PII without modifying the text.
+
+```csharp
+var result = await client.DetectAsync("Contact John Doe at john@example.com");
+
+Console.WriteLine(result.EntitiesCount);  // 2
+
+foreach (var entity in result.DetectedEntities)
+{
+    Console.WriteLine($"{entity.Type}: {entity.Text} ({entity.Score:F2})");
+}
+```
+
+### TokenizeAsync / Detokenize
+
+Replace PII with reversible tokens, then restore.
+
+```csharp
+// Tokenize
+var response = await client.TokenizeAsync(
+    "Contact John Doe at john@example.com"
+);
+
+Console.WriteLine(response.Text);
+// "Contact <Person_1> at <Email Address_1>"
+
+Console.WriteLine(response.Mapping);
+// {<Person_1>: John Doe, <Email Address_1>: john@example.com}
+
+// Detokenize (sync — runs client-side, no API call)
+var original = client.Detokenize(
+    response.Text,
+    response.Mapping
+);
+
+Console.WriteLine(original.Text);
+// "Contact John Doe at john@example.com"
+```
+
+### RedactAsync
+
+Permanently remove PII from text.
+
+```csharp
+var result = await client.RedactAsync(
+    "Patient Jane Smith, SSN: 123-45-6789"
+);
+
+Console.WriteLine(result.Text);
+// "Patient , SSN: "
+```
+
+### MaskAsync
+
+Partially hide PII while keeping some characters visible.
+
+```csharp
+var result = await client.MaskAsync(
+    "Card: 4532-7562-9102-3456",
+    charsToShow: 4,       // chars to show
+    fromEnd: true,         // from end
+    maskChar: "*",         // masking character
+    entities: null         // entities filter (null = all)
+);
+
+Console.WriteLine(result.Text);
+// "Card: ***************3456"
+```
+
+### HashAsync
+
+Create deterministic identifiers for analytics.
+
+```csharp
+var result = await client.HashAsync(
+    "User john@example.com purchased item",
+    hashType: "SHA-256",    // hash type
+    prefix: "user_",        // prefix
+    hashLength: 16,         // hash length
+    entities: null           // entities filter
+);
+
+Console.WriteLine(result.Text);
+// "User user_a3f8b9c2d4e5f6g7 purchased item"
+```
+
+### EncryptAsync
+
+Encrypt PII using AES-256.
+
+```csharp
+var result = await client.EncryptAsync(
+    "API Key: sk-1234567890abcdef",
+    "your-secure-key-min-16-chars"
+);
+
+Console.WriteLine(result.Text);
+// "API Key: gAAAAABh3K7x..."
+```
+
+### SynthesizeAsync
+
+Replace PII with realistic fake data.
+
+```csharp
+var result = await client.SynthesizeAsync(
+    "John Doe lives in New York",
+    language: "en",    // language
+    entities: null     // entities filter
+);
+
+Console.WriteLine(result.Text);
+// "Michael Smith lives in Boston" (example - will vary)
+```
+
+## Batch Processing
+
+Process multiple texts in a single call.
+
+```csharp
+var texts = new[]
+{
+    "Contact John Doe",
+    "Email jane@example.com",
+    "No PII here"
+};
+
+var result = await client.TokenizeBatchAsync(texts);
+
+Console.WriteLine(result.Total);      // 3
+Console.WriteLine(result.Succeeded);  // 3
+
+foreach (var item in result.Results)
+{
+    Console.WriteLine(item.Text);
+}
+```
+
+All methods have batch variants: `DetectBatchAsync`, `TokenizeBatchAsync`, `RedactBatchAsync`, `MaskBatchAsync`, `HashBatchAsync`, `EncryptBatchAsync`, `SynthesizeBatchAsync`.
+
+## Entity Filtering
+
+Only detect specific entity types:
+
+```csharp
+var result = await client.DetectAsync(
+    "John Doe, SSN 123-45-6789, email john@example.com",
+    entities: new[] { "Social Security Number", "Email Address" }
+);
+// Only SSN and email detected, name is ignored
+```
+
+## Error Handling
+
+```csharp
+using Blindfold.Sdk.Errors;
+
+try
+{
+    var result = await client.TokenizeAsync("...");
+}
+catch (AuthenticationException ex)
+{
+    // Invalid API key (401)
+    Console.Error.WriteLine("Invalid API key");
+}
+catch (ApiException ex)
+{
+    // API error (validation, rate limit, etc.)
+    Console.Error.WriteLine($"API error {ex.StatusCode}");
+}
+catch (NetworkException ex)
+{
+    // Connection issues
+    Console.Error.WriteLine($"Network error: {ex.Message}");
+}
+```
+
+## Locales
+
+Configure country-specific entity detection:
+
+```csharp
+using var client = new BlindfoldClient(new BlindfoldOptions
+{
+    Locales = new[] { "us", "de", "fr" }
+});
+```
+
+Available locales: `us`, `uk`, `eu`, `de`, `fr`, `es`, `it`, `pt`, `pl`, `cz`, `sk`, `ru`, `nl`, `ro`, `dk`, `se`, `no`, `be`, `at`, `ie`, `fi`, `hu`, `bg`, `hr`, `si`, `lt`, `lv`, `ee`, `ca`, `ch`, `au`, `nz`, `in`, `jp`, `kr`, `za`, `tr`, `il`, `ar`, `cl`, `co`, `br`
+
+## Source Code
+
+<Card title="GitHub Repository" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/dotnet-sdk">
+  Full source code, API reference, and additional examples.
+</Card>

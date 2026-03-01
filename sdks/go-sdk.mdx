@@ -1,0 +1,274 @@
+---
+title: "Go SDK"
+description: "Official Go SDK for Blindfold — detect, tokenize, mask, redact, hash, encrypt, and synthesize PII"
+---
+
+## Installation
+
+```bash
+go get github.com/blindfold-dev/Blindfold/packages/go-sdk
+```
+
+**Zero external dependencies** — uses only the Go standard library.
+
+## Quick Start (Local Mode)
+
+No API key needed — runs entirely in-process with 86 regex-based entity types.
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    blindfold "github.com/blindfold-dev/Blindfold/packages/go-sdk"
+)
+
+func main() {
+    client := blindfold.New() // no API key needed
+
+    ctx := context.Background()
+
+    result, err := client.Detect(ctx, "Email john@acme.com, SSN 123-45-6789")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    for _, entity := range result.DetectedEntities {
+        fmt.Printf("%s: %s\n", entity.Type, entity.Text)
+    }
+    // Email Address: john@acme.com
+    // Social Security Number: 123-45-6789
+}
+```
+
+## Cloud API Setup
+
+For NLP-powered detection (names, addresses, organizations), compliance policies, and audit logs:
+
+```go
+import (
+    "time"
+
+    blindfold "github.com/blindfold-dev/Blindfold/packages/go-sdk"
+)
+
+// Simple initialization
+client := blindfold.New(blindfold.WithAPIKey("your-api-key"))
+
+// Full configuration
+client := blindfold.New(
+    blindfold.WithAPIKey("your-api-key"),
+    blindfold.WithRegion("eu"),                    // "eu" (default) or "us"
+    blindfold.WithLocales([]string{"us", "eu"}),
+    blindfold.WithMaxRetries(3),
+    blindfold.WithTimeout(30 * time.Second),
+    blindfold.WithPolicy("gdpr_eu"),
+    blindfold.WithUserID("user-123"),              // optional user tracking
+)
+```
+
+## Methods
+
+### Detect
+
+Identify PII without modifying the text.
+
+```go
+ctx := context.Background()
+
+result, err := client.Detect(ctx, "Contact John Doe at john@example.com")
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(result.EntitiesCount) // 2
+
+for _, entity := range result.DetectedEntities {
+    fmt.Printf("%s: %s (%.2f)\n", entity.Type, entity.Text, entity.Score)
+}
+```
+
+### Tokenize / Detokenize
+
+Replace PII with reversible tokens, then restore.
+
+```go
+// Tokenize
+result, err := client.Tokenize(ctx, "Contact John Doe at john@example.com")
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(result.Text)
+// "Contact <Person_1> at <Email Address_1>"
+
+fmt.Println(result.Mapping)
+// map[<Person_1>:John Doe <Email Address_1>:john@example.com]
+
+// Detokenize (client-side only, no context needed)
+original := client.Detokenize(result.Text, result.Mapping)
+
+fmt.Println(original.Text)
+// "Contact John Doe at john@example.com"
+```
+
+### Redact
+
+Permanently remove PII from text.
+
+```go
+result, err := client.Redact(ctx, "Patient Jane Smith, SSN: 123-45-6789")
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(result.Text)
+// "Patient , SSN: "
+```
+
+### Mask
+
+Partially hide PII while keeping some characters visible.
+
+```go
+result, err := client.Mask(ctx, "Card: 4532-7562-9102-3456",
+    blindfold.WithCharsToShow(4),
+    blindfold.WithFromEnd(true),
+    blindfold.WithMaskingChar("*"),
+)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(result.Text)
+// "Card: ***************3456"
+```
+
+### Hash
+
+Create deterministic identifiers for analytics.
+
+```go
+result, err := client.Hash(ctx, "User john@example.com purchased item",
+    blindfold.WithHashType("SHA-256"),
+    blindfold.WithHashPrefix("user_"),
+    blindfold.WithHashLength(16),
+)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(result.Text)
+// "User user_a3f8b9c2d4e5f6g7 purchased item"
+```
+
+### Encrypt
+
+Encrypt PII using AES-256.
+
+```go
+result, err := client.Encrypt(ctx, "API Key: sk-1234567890abcdef", "your-secure-key-min-16-chars")
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(result.Text)
+// "API Key: gAAAAABh3K7x..."
+```
+
+### Synthesize
+
+Replace PII with realistic fake data.
+
+```go
+result, err := client.Synthesize(ctx, "John Doe lives in New York")
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(result.Text)
+// "Michael Smith lives in Boston" (example - will vary)
+```
+
+## Batch Processing
+
+Process multiple texts in a single call.
+
+```go
+texts := []string{
+    "Contact John Doe",
+    "Email jane@example.com",
+    "No PII here",
+}
+
+result, err := client.TokenizeBatch(ctx, texts)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Println(result.Total)     // 3
+fmt.Println(result.Succeeded) // 3
+
+for _, item := range result.Results {
+    fmt.Println(item.Text)
+}
+```
+
+## Entity Filtering
+
+Only detect specific entity types:
+
+```go
+result, err := client.Detect(ctx,
+    "John Doe, SSN 123-45-6789, email john@example.com",
+    blindfold.WithEntities([]string{"Social Security Number", "Email Address"}),
+)
+// Only SSN and email detected, name is ignored
+```
+
+## Error Handling
+
+```go
+import "errors"
+
+result, err := client.Tokenize(ctx, "...")
+if err != nil {
+    var authErr *blindfold.AuthenticationError
+    var apiErr  *blindfold.APIError
+    var netErr  *blindfold.NetworkError
+
+    switch {
+    case errors.As(err, &authErr):
+        // Invalid API key (401)
+        fmt.Println("Invalid API key")
+    case errors.As(err, &apiErr):
+        // API error (validation, rate limit, etc.)
+        fmt.Printf("API error %d\n", apiErr.StatusCode)
+    case errors.As(err, &netErr):
+        // Connection issues
+        fmt.Printf("Network error: %s\n", netErr.Error())
+    }
+}
+```
+
+## Locales
+
+Configure country-specific entity detection:
+
+```go
+client := blindfold.New(
+    blindfold.WithAPIKey("your-api-key"),
+    blindfold.WithLocales([]string{"us", "de", "fr"}),
+)
+```
+
+Available locales: `us`, `uk`, `eu`, `de`, `fr`, `es`, `it`, `pt`, `pl`, `cz`, `sk`, `ru`, `nl`, `ro`, `dk`, `se`, `no`, `be`, `at`, `ie`, `fi`, `hu`, `bg`, `hr`, `si`, `lt`, `lv`, `ee`, `ca`, `ch`, `au`, `nz`, `in`, `jp`, `kr`, `za`, `tr`, `il`, `ar`, `cl`, `co`, `br`
+
+## Source Code
+
+<Card title="GitHub Repository" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/go-sdk">
+  Full source code, documentation, and additional examples.
+</Card>
