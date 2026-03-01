@@ -176,6 +176,29 @@ If you know you want tokenization or redaction, call that method directly — it
     ```
   </Tab>
 
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold client = new Blindfold("your-api-key");
+
+    var result = client.detect(
+        "Patient Jane Smith (DOB: 1985-04-12, SSN: 123-45-6789) prescribed Metformin"
+    );
+
+    System.out.println("Found " + result.getEntitiesCount() + " entities");
+
+    for (var entity : result.getDetectedEntities()) {
+        System.out.printf("- %s: %s (confidence: %.2f)%n",
+            entity.getType(), entity.getText(), entity.getScore());
+    }
+    // - Person: Jane Smith (confidence: 0.99)
+    // - Date of Birth: 1985-04-12 (confidence: 0.94)
+    // - Social Security Number: 123-45-6789 (confidence: 0.97)
+    // - Medication: Metformin (confidence: 0.99)
+    ```
+  </Tab>
+
   <Tab title="cURL">
     ```bash
     curl -X POST https://api.blindfold.dev/api/public/v1/detect \
@@ -296,6 +319,9 @@ def log_pii_detection(user_id: str, text: str) -> None:
   </Card>
   <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
     Complete JavaScript guide
+  </Card>
+  <Card title="Java SDK" icon="java" href="/sdks/java-sdk">
+    Sync and async Java client
   </Card>
   <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
     HTTP API reference for /detect

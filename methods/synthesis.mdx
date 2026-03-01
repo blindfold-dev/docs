@@ -230,6 +230,35 @@ hash2 = client.hash("john@example.com")  # ID_a3f8b9... (same)
     ```
   </Tab>
 
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold client = new Blindfold("your-api-key");
+
+    // Basic synthesis
+    var result = client.synthesize(
+        "John Doe lives in New York and works at Microsoft",
+        "en", null
+    );
+
+    System.out.println(result.getText());
+    // "Michael Smith lives in Boston and works at TechCorp"
+    // (example output - will vary)
+
+    // Generate multiple variations
+    String template = "Customer: Jane Doe, Email: jane@example.com";
+
+    for (int i = 0; i < 3; i++) {
+        var r = client.synthesize(template, "en", null);
+        System.out.println((i + 1) + ". " + r.getText());
+    }
+    // 1. Customer: Sarah Johnson, Email: sarah@example.org
+    // 2. Customer: Michael Brown, Email: michael@example.net
+    // 3. Customer: Emily Davis, Email: emily@example.com
+    ```
+  </Tab>
+
   <Tab title="cURL">
     ```bash
     curl -X POST https://api.blindfold.dev/api/public/v1/synthesize \
@@ -589,6 +618,9 @@ prod_data = client.tokenize(real_user_input)
   </Card>
   <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
     Complete JavaScript guide
+  </Card>
+  <Card title="Java SDK" icon="java" href="/sdks/java-sdk">
+    Sync and async Java client
   </Card>
   <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
     HTTP API reference for /synthesize

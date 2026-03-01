@@ -213,6 +213,33 @@ Tokens follow a predictable format: `<ENTITY_TYPE_N>`
     ```
   </Tab>
 
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold client = new Blindfold("your-api-key");
+
+    // Tokenize
+    var response = client.tokenize(
+        "My email is john@example.com and phone is +1-555-1234"
+    );
+
+    System.out.println(response.getText());
+    // "My email is <EMAIL_ADDRESS_1> and phone is <PHONE_NUMBER_1>"
+
+    System.out.println(response.getMapping());
+    // {<EMAIL_ADDRESS_1>=john@example.com, <PHONE_NUMBER_1>=+1-555-1234}
+
+    // Detokenize
+    var original = client.detokenize(
+        "Contact <EMAIL_ADDRESS_1>",
+        response.getMapping()
+    );
+    System.out.println(original.getText());
+    // "Contact john@example.com"
+    ```
+  </Tab>
+
   <Tab title="cURL">
     ```bash
     # Tokenize
@@ -398,6 +425,9 @@ del protected.mapping  # or delete from storage
   </Card>
   <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
     Complete JavaScript guide
+  </Card>
+  <Card title="Java SDK" icon="java" href="/sdks/java-sdk">
+    Sync and async Java client
   </Card>
   <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
     HTTP API reference for /tokenize

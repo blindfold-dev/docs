@@ -241,6 +241,38 @@ protected = client.tokenize(api_key)
     ```
   </Tab>
 
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold client = new Blindfold("your-api-key");
+
+    // Basic masking (show last 4)
+    var result = client.mask(
+        "Credit card: 4532-7562-9102-3456",
+        4, true, "*", null
+    );
+    System.out.println(result.getText());
+    // "Credit card: ***************3456"
+
+    // Custom mask character
+    var result2 = client.mask(
+        "SSN: 123-45-6789",
+        4, true, "X", null
+    );
+    System.out.println(result2.getText());
+    // "SSN: XXXXXXX6789"
+
+    // Show from beginning
+    var result3 = client.mask(
+        "Email: john.doe@company.com",
+        3, false, "*", null
+    );
+    System.out.println(result3.getText());
+    // "Email: joh******************"
+    ```
+  </Tab>
+
   <Tab title="cURL">
     ```bash
     curl -X POST https://api.blindfold.dev/api/public/v1/mask \
@@ -546,6 +578,9 @@ Masking reduces but does not eliminate risk. Consider:
   </Card>
   <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
     Complete JavaScript guide
+  </Card>
+  <Card title="Java SDK" icon="java" href="/sdks/java-sdk">
+    Sync and async Java client
   </Card>
   <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
     HTTP API reference for /mask

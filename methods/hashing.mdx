@@ -238,6 +238,38 @@ client.tokenize("1")  # Random tokens
     ```
   </Tab>
 
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold client = new Blindfold("your-api-key");
+
+    // Basic hashing
+    var result = client.hash(
+        "User john@example.com purchased item",
+        "sha256", "user_", 16, null
+    );
+
+    System.out.println(result.getText());
+    // "User user_a3f8b9c2d4e5f6g7 purchased item"
+
+    // Same input, same output
+    var result2 = client.hash(
+        "User john@example.com purchased item",
+        "sha256", "user_", 16, null
+    );
+
+    System.out.println(result.getText().equals(result2.getText()));
+    // true - deterministic!
+
+    // Different algorithm
+    var md5Result = client.hash(
+        "john@example.com",
+        "md5", "id_", 0, null
+    );
+    ```
+  </Tab>
+
   <Tab title="cURL">
     ```bash
     curl -X POST https://api.blindfold.dev/api/public/v1/hash \
@@ -601,6 +633,9 @@ Important hashing considerations:
   </Card>
   <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
     Complete JavaScript guide
+  </Card>
+  <Card title="Java SDK" icon="java" href="/sdks/java-sdk">
+    Sync and async Java client
   </Card>
   <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
     HTTP API reference for /hash

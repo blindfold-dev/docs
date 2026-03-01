@@ -225,6 +225,33 @@ hash2 = client.hash("User: john@example.com")  # ID_a3f8b9... (same)
     ```
   </Tab>
 
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold client = new Blindfold("your-api-key");
+
+    // Basic redaction
+    var result = client.redact(
+        "Contact John Doe at john@example.com or call +1-555-1234"
+    );
+
+    System.out.println(result.getText());
+    // "Contact  at  or call "
+
+    System.out.println("Redacted " + result.getEntitiesCount() + " entities");
+    // "Redacted 3 entities"
+
+    // Check what was redacted
+    for (var entity : result.getDetectedEntities()) {
+        System.out.println("- " + entity.getType() + ": " + entity.getText() + " (removed)");
+    }
+    // - PERSON: John Doe (removed)
+    // - EMAIL_ADDRESS: john@example.com (removed)
+    // - PHONE_NUMBER: +1-555-1234 (removed)
+    ```
+  </Tab>
+
   <Tab title="cURL">
     ```bash
     curl -X POST https://api.blindfold.dev/api/public/v1/redact \
@@ -554,6 +581,9 @@ Important redaction considerations:
   </Card>
   <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
     Complete JavaScript guide
+  </Card>
+  <Card title="Java SDK" icon="java" href="/sdks/java-sdk">
+    Sync and async Java client
   </Card>
   <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
     HTTP API reference for /redact

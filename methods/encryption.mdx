@@ -232,6 +232,36 @@ protected = client.tokenize(data)
     ```
   </Tab>
 
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold client = new Blindfold("your-api-key");
+
+    // Define encryption key (min 16 characters)
+    String encryptionKey = System.getenv("ENCRYPTION_KEY");
+
+    // Encrypt sensitive data
+    var result = client.encrypt(
+        "API Key: sk-1234567890abcdef, Secret: my_secret",
+        encryptionKey
+    );
+
+    System.out.println(result.getText());
+    // "API Key: gAAAAABh..., Secret: gAAAAABh..."
+
+    System.out.println("Encrypted " + result.getEntitiesCount() + " entities");
+    // "Encrypted 2 entities"
+
+    // Check what was encrypted
+    for (var entity : result.getDetectedEntities()) {
+        System.out.println("- " + entity.getType() + ": " + entity.getText());
+    }
+    // - API_KEY: sk-1234567890abcdef
+    // - PASSWORD: my_secret
+    ```
+  </Tab>
+
   <Tab title="cURL">
     ```bash
     curl -X POST https://api.blindfold.dev/api/public/v1/encrypt \
@@ -587,6 +617,9 @@ Important encryption considerations:
   </Card>
   <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
     Complete JavaScript guide
+  </Card>
+  <Card title="Java SDK" icon="java" href="/sdks/java-sdk">
+    Sync and async Java client
   </Card>
   <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
     HTTP API reference for /encrypt

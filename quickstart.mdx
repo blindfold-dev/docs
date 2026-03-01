@@ -43,6 +43,27 @@ All SDKs include **local mode** with 80+ regex-based entity types. No signup, no
     // "Contact <Email Address_1> or call <Phone Number_1>"
     ```
   </Tab>
+
+  <Tab title="Java">
+    ```xml
+    <dependency>
+        <groupId>dev.blindfold</groupId>
+        <artifactId>blindfold-sdk</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+    ```
+
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    // No API key needed — runs entirely in-process
+    Blindfold client = new Blindfold();
+
+    var result = client.tokenize("Contact john@example.com or call +1-555-1234");
+    System.out.println(result.getText());
+    // "Contact <Email Address_1> or call <Phone Number_1>"
+    ```
+  </Tab>
 </Tabs>
 
 <Info>
@@ -150,6 +171,40 @@ Choose your preferred integration method and make your first request.
 
     <Tip>
       The SDK works in both Node.js and browser environments.
+    </Tip>
+  </Tab>
+
+  <Tab title="Java">
+    Install the Java SDK and tokenize your first text.
+
+    ```xml
+    <dependency>
+        <groupId>dev.blindfold</groupId>
+        <artifactId>blindfold-sdk</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+    ```
+
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    // Initialize the client
+    Blindfold client = new Blindfold("your-api-key-here");
+
+    // Tokenize text with sensitive data
+    var response = client.tokenize(
+        "My email is john@example.com and phone is +1-555-1234"
+    );
+
+    System.out.println(response.getText());
+    // Output: "My email is <EMAIL_ADDRESS_1> and phone is <PHONE_NUMBER_1>"
+
+    System.out.println(response.getMapping());
+    // Output: {<EMAIL_ADDRESS_1>=john@example.com, <PHONE_NUMBER_1>=+1-555-1234}
+    ```
+
+    <Tip>
+      The SDK works with Java 11+ and has no external HTTP dependencies.
     </Tip>
   </Tab>
 
@@ -270,6 +325,32 @@ After sending tokenized data to AI or processing, you can restore the original v
     ```
   </Tab>
 
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold client = new Blindfold("your-api-key-here");
+
+    // Step 1: Tokenize sensitive data
+    var protected_ = client.tokenize(
+        "Contact John Doe at john@example.com or call +1-555-1234"
+    );
+
+    System.out.println(protected_.getText());
+    // "Contact <PERSON_1> at <EMAIL_ADDRESS_1> or call <PHONE_NUMBER_1>"
+
+    // Step 2: Send to AI (protected data only)
+    String aiResponse = "We received your request: " + protected_.getText();
+    // AI never sees real PII!
+
+    // Step 3: Restore original data
+    var original = client.detokenize(aiResponse, protected_.getMapping());
+
+    System.out.println(original.getText());
+    // "We received your request: Contact John Doe at john@example.com or call +1-555-1234"
+    ```
+  </Tab>
+
   <Tab title="cURL">
     ```bash
     # Step 1: Tokenize
@@ -363,6 +444,20 @@ Instead of specifying entities manually, use pre-configured compliance policies:
     ```
   </Tab>
 
+  <Tab title="Java">
+    ```java
+    // GDPR compliance (European data)
+    var response = client.tokenize(
+        "Contact: John Doe, john@example.com, +49 30 12345"
+    );
+
+    // HIPAA compliance (Healthcare data)
+    var response2 = client.tokenize(
+        "Patient: Jane Smith, SSN: 123-45-6789"
+    );
+    ```
+  </Tab>
+
   <Tab title="cURL">
     ```bash
     # GDPR compliance
@@ -395,6 +490,10 @@ Now that you have made your first API call, explore more features:
 
   <Card title="JavaScript SDK Guide" icon="js" href="/sdks/javascript-sdk">
     Explore JavaScript/TypeScript SDK capabilities.
+  </Card>
+
+  <Card title="Java SDK Guide" icon="java" href="/sdks/java-sdk">
+    Sync and async clients for Java 11+.
   </Card>
 
   <Card title="REST API Reference" icon="terminal" href="/api-reference/rest-api">

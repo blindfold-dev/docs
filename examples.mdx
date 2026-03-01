@@ -94,6 +94,36 @@ Protect user data when building AI chatbots with OpenAI, Anthropic, or other LLM
     console.log(`Response: ${response}`);
     ```
   </Tab>
+
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+    import com.openai.OpenAI;
+
+    Blindfold blindfold = new Blindfold(System.getenv("BLINDFOLD_API_KEY"));
+
+    String secureChat(String userMessage) {
+        // Step 1: Tokenize sensitive data
+        var protected_ = blindfold.tokenize(userMessage);
+        System.out.println("Protected input: " + protected_.getText());
+        System.out.println("Detected " + protected_.getEntitiesCount() + " sensitive entities");
+
+        // Step 2: Send protected text to OpenAI
+        // (use your preferred OpenAI Java client)
+        String aiResponse = callOpenAI(protected_.getText());
+
+        // Step 3: Restore original data in AI response
+        var final_ = blindfold.detokenize(aiResponse, protected_.getMapping());
+
+        return final_.getText();
+    }
+
+    // Usage
+    String userInput = "My name is John Doe, email john@example.com. Help me book a flight.";
+    String response = secureChat(userInput);
+    System.out.println("Response: " + response);
+    ```
+  </Tab>
 </Tabs>
 
 **What's Protected:**
@@ -194,6 +224,39 @@ Anonymize customer support tickets before storing in databases or sending to thi
     console.log(`PII types found: ${processed.entity_types}`);
     ```
   </Tab>
+
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold client = new Blindfold(System.getenv("BLINDFOLD_API_KEY"));
+
+    Map<String, Object> processSupportTicket(String ticketText) {
+        // Redact sensitive data permanently
+        var result = client.redact(ticketText);
+
+        return Map.of(
+            "text", result.getText(),
+            "pii_detected", result.getEntitiesCount(),
+            "entity_types", result.getDetectedEntities().stream()
+                .map(e -> e.getType()).toList()
+        );
+    }
+
+    // Example ticket
+    String ticket = """
+        Customer: Jane Smith
+        Email: jane.smith@email.com
+        Phone: +1-555-9876
+        Issue: Cannot access account after password reset.
+        SSN for verification: 123-45-6789
+        """;
+
+    var processed = processSupportTicket(ticket);
+    System.out.println("Anonymized ticket:\n" + processed.get("text"));
+    System.out.println("PII types found: " + processed.get("entity_types"));
+    ```
+  </Tab>
 </Tabs>
 
 **Use Cases:**
@@ -272,6 +335,33 @@ Show partial credit card numbers in user interfaces while protecting full detail
     Backup: 5425-2334-3010-9903
     `;
     console.log(await displayPaymentInfo(multipleCards));
+    // Output:
+    // Primary: ***************3456
+    // Backup: ***************9903
+    ```
+  </Tab>
+
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold client = new Blindfold("your-api-key");
+
+    String displayPaymentInfo(String paymentText) {
+        var result = client.mask(paymentText, 4, true, "*", null);
+        return result.getText();
+    }
+
+    // Examples
+    String cardInfo = "Card ending in 4532-7562-9102-3456";
+    System.out.println(displayPaymentInfo(cardInfo));
+    // Output: "Card ending in ***************3456"
+
+    String multipleCards = """
+        Primary: 4532-7562-9102-3456
+        Backup: 5425-2334-3010-9903
+        """;
+    System.out.println(displayPaymentInfo(multipleCards));
     // Output:
     // Primary: ***************3456
     // Backup: ***************9903
@@ -380,6 +470,36 @@ Create consistent identifiers for analytics without storing actual PII.
     events.forEach(event => {
       console.log(JSON.stringify(event, null, 2));
     });
+    ```
+  </Tab>
+
+  <Tab title="Java">
+    ```java
+    import dev.blindfold.sdk.Blindfold;
+
+    Blindfold client = new Blindfold("your-api-key");
+
+    Map<String, Object> trackUserEvent(String userEmail, String event) {
+        // Hash email for consistent user ID
+        var hashed = client.hash(
+            "User: " + userEmail,
+            "sha256", "user_", 16, null
+        );
+
+        String userId = hashed.getText().replace("User: ", "");
+
+        return Map.of(
+            "user_id", userId,
+            "event", event,
+            "timestamp", Instant.now().toString()
+        );
+    }
+
+    // Track events for same user
+    var event1 = trackUserEvent("john@example.com", "page_view");
+    var event2 = trackUserEvent("john@example.com", "button_click");
+    var event3 = trackUserEvent("john@example.com", "purchase");
+    // All events have same hashed user_id (deterministic)
     ```
   </Tab>
 </Tabs>
@@ -967,6 +1087,9 @@ Can't find what you're looking for? Check out:
   </Card>
   <Card title="JavaScript SDK" icon="js" href="/sdks/javascript-sdk">
     Complete JavaScript SDK guide
+  </Card>
+  <Card title="Java SDK" icon="java" href="/sdks/java-sdk">
+    Sync and async Java client
   </Card>
   <Card title="REST API" icon="terminal" href="/api-reference/rest-api">
     HTTP API reference

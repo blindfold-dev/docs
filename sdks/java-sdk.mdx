@@ -1,21 +1,293 @@
 ---
 title: "Java SDK"
-description: "Official Java SDK for Blindfold"
+description: "Official Java SDK for Blindfold — detect, tokenize, mask, redact, hash, encrypt, and synthesize PII"
 ---
 
-```xml
-<dependency>
-    <groupId>dev.blindfold</groupId>
-    <artifactId>blindfold-sdk</artifactId>
-    <version>1.0.0</version>
-</dependency>
-```
+## Installation
+
+<Tabs>
+  <Tab title="Maven">
+    ```xml
+    <dependency>
+        <groupId>dev.blindfold</groupId>
+        <artifactId>blindfold-sdk</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+    ```
+  </Tab>
+
+  <Tab title="Gradle">
+    ```gradle
+    implementation 'dev.blindfold:blindfold-sdk:1.0.0'
+    ```
+  </Tab>
+</Tabs>
+
+## Quick Start (Local Mode)
+
+No API key needed — runs entirely in-process with 86 regex-based entity types.
 
 ```java
+import dev.blindfold.sdk.Blindfold;
+import dev.blindfold.sdk.models.DetectResponse;
+
 Blindfold client = new Blindfold();  // no API key needed
+
 DetectResponse result = client.detect("Email john@acme.com, SSN 123-45-6789");
+
+for (var entity : result.getDetectedEntities()) {
+    System.out.println(entity.getType() + ": " + entity.getText());
+}
+// Email Address: john@acme.com
+// Social Security Number: 123-45-6789
 ```
 
-<Card title="Full documentation on GitHub" icon="github" href="https://github.com/blindfold-dev/Blindfold/tree/main/packages/java-sdk">
-  All methods, configuration options, async client, batch processing, and examples.
+## Cloud API Setup
+
+For NLP-powered detection (names, addresses, organizations), compliance policies, and audit logs:
+
+```java
+import dev.blindfold.sdk.Blindfold;
+import dev.blindfold.sdk.BlindfoldOptions;
+
+// Simple initialization
+Blindfold client = new Blindfold("your-api-key");
+
+// Full configuration
+Blindfold client = new Blindfold(BlindfoldOptions.builder()
+    .apiKey("your-api-key")
+    .region("eu")                          // "eu" (default) or "us"
+    .maxRetries(3)
+    .retryDelay(Duration.ofMillis(500))
+    .timeout(Duration.ofSeconds(30))
+    .userId("user-123")                    // optional user tracking
+    .build());
+```
+
+## Methods
+
+### Detect
+
+Identify PII without modifying the text.
+
+```java
+DetectResponse result = client.detect("Contact John Doe at john@example.com");
+
+System.out.println(result.getEntitiesCount());  // 2
+
+for (var entity : result.getDetectedEntities()) {
+    System.out.printf("%s: %s (%.2f)%n",
+        entity.getType(), entity.getText(), entity.getScore());
+}
+```
+
+### Tokenize / Detokenize
+
+Replace PII with reversible tokens, then restore.
+
+```java
+import dev.blindfold.sdk.models.TokenizeResponse;
+import dev.blindfold.sdk.models.DetokenizeResponse;
+
+// Tokenize
+TokenizeResponse response = client.tokenize(
+    "Contact John Doe at john@example.com"
+);
+
+System.out.println(response.getText());
+// "Contact <Person_1> at <Email Address_1>"
+
+System.out.println(response.getMapping());
+// {<Person_1>=John Doe, <Email Address_1>=john@example.com}
+
+// Detokenize
+DetokenizeResponse original = client.detokenize(
+    response.getText(),
+    response.getMapping()
+);
+
+System.out.println(original.getText());
+// "Contact John Doe at john@example.com"
+```
+
+### Redact
+
+Permanently remove PII from text.
+
+```java
+import dev.blindfold.sdk.models.RedactResponse;
+
+RedactResponse result = client.redact(
+    "Patient Jane Smith, SSN: 123-45-6789"
+);
+
+System.out.println(result.getText());
+// "Patient , SSN: "
+```
+
+### Mask
+
+Partially hide PII while keeping some characters visible.
+
+```java
+import dev.blindfold.sdk.models.MaskResponse;
+
+MaskResponse result = client.mask(
+    "Card: 4532-7562-9102-3456",
+    4,       // chars to show
+    true,    // from end
+    "*",     // masking character
+    null     // entities filter (null = all)
+);
+
+System.out.println(result.getText());
+// "Card: ***************3456"
+```
+
+### Hash
+
+Create deterministic identifiers for analytics.
+
+```java
+import dev.blindfold.sdk.models.HashResponse;
+
+HashResponse result = client.hash(
+    "User john@example.com purchased item",
+    "sha256",    // hash type
+    "user_",     // prefix
+    16,          // hash length
+    null         // entities filter
+);
+
+System.out.println(result.getText());
+// "User user_a3f8b9c2d4e5f6g7 purchased item"
+```
+
+### Encrypt
+
+Encrypt PII using AES-256.
+
+```java
+import dev.blindfold.sdk.models.EncryptResponse;
+
+EncryptResponse result = client.encrypt(
+    "API Key: sk-1234567890abcdef",
+    "your-secure-key-min-16-chars"
+);
+
+System.out.println(result.getText());
+// "API Key: gAAAAABh3K7x..."
+```
+
+### Synthesize
+
+Replace PII with realistic fake data.
+
+```java
+import dev.blindfold.sdk.models.SynthesizeResponse;
+
+SynthesizeResponse result = client.synthesize(
+    "John Doe lives in New York",
+    "en",    // language
+    null     // entities filter
+);
+
+System.out.println(result.getText());
+// "Michael Smith lives in Boston" (example - will vary)
+```
+
+## Batch Processing
+
+Process multiple texts in a single call.
+
+```java
+import dev.blindfold.sdk.models.BatchResponse;
+
+BatchResponse<TokenizeResponse> result = client.tokenizeBatch(
+    List.of(
+        "Contact John Doe",
+        "Email jane@example.com",
+        "No PII here"
+    )
+);
+
+System.out.println(result.getTotal());      // 3
+System.out.println(result.getSucceeded());  // 3
+
+for (TokenizeResponse item : result.getResults()) {
+    System.out.println(item.getText());
+}
+```
+
+## Async Client
+
+For non-blocking operations using `CompletableFuture`.
+
+```java
+import dev.blindfold.sdk.BlindfoldAsync;
+
+BlindfoldAsync asyncClient = new BlindfoldAsync(
+    BlindfoldOptions.builder()
+        .apiKey("your-api-key")
+        .region("eu")
+        .build()
+);
+
+CompletableFuture<DetectResponse> future = asyncClient.detectAsync(
+    "Email john@acme.com"
+);
+
+DetectResponse response = future.get();
+System.out.println(response.getEntitiesCount());
+```
+
+## Entity Filtering
+
+Only detect specific entity types:
+
+```java
+DetectResponse result = client.detect(
+    "John Doe, SSN 123-45-6789, email john@example.com",
+    List.of("Social Security Number", "Email Address")
+);
+// Only SSN and email detected, name is ignored
+```
+
+## Error Handling
+
+```java
+import dev.blindfold.sdk.errors.AuthenticationException;
+import dev.blindfold.sdk.errors.ApiException;
+import dev.blindfold.sdk.errors.NetworkException;
+
+try {
+    client.tokenize("...");
+} catch (AuthenticationException e) {
+    // Invalid API key (401)
+    System.err.println("Invalid API key");
+} catch (ApiException e) {
+    // API error (validation, rate limit, etc.)
+    System.err.println("API error " + e.getStatusCode());
+} catch (NetworkException e) {
+    // Connection issues
+    System.err.println("Network error: " + e.getMessage());
+}
+```
+
+## Locales
+
+Configure country-specific entity detection:
+
+```java
+Blindfold client = new Blindfold(BlindfoldOptions.builder()
+    .locales(List.of("us", "de", "fr"))
+    .build());
+```
+
+Available locales: `us`, `uk`, `eu`, `de`, `fr`, `es`, `it`, `pt`, `pl`, `cz`, `sk`, `ru`, `nl`, `ro`, `dk`, `se`, `no`, `be`, `at`, `ie`, `fi`, `hu`, `bg`, `hr`, `si`, `lt`, `lv`, `ee`, `ca`, `ch`, `au`, `nz`, `in`, `jp`, `kr`, `za`, `tr`, `il`, `ar`, `cl`, `co`, `br`
+
+## Source Code
+
+<Card title="GitHub Repository" icon="github" href="https://github.com/blindfold-dev/java-sdk">
+  Full source code, Javadoc, and additional examples.
 </Card>
